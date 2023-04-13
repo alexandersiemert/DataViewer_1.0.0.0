@@ -1,0 +1,12 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:fa="http://schemas.fontawesome.io/icons/">
+
+    <ControlTemplate x:Key="FontAwesomeIconMenuItemTemplate" TargetType="{x:Type MenuItem}">
+        <Grid>
+            <fa:ImageAwesome Icon="{TemplateBinding Icon}" Margin="5"/>
+            <TextBlock Text="{TemplateBinding Header}" Margin="30,0,0,0"/>
+        </Grid>
+    </ControlTemplate>
+
+</ResourceDictionary>

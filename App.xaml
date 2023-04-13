@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:DataViewer_1._0._0._0"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary Source="Theme/ButtonThemes.xaml"/>
     </Application.Resources>
 </Application>
