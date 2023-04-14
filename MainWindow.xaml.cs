@@ -31,12 +31,49 @@ namespace DataViewer_1._0._0._0
         {
             InitializeComponent();
 
+            //Testdaten für Entwicklung erzeugen
+            (double[] xh, double[] yh) = DataGen.RandomWalk2D(new Random(0), 10000); //Testdaten Höhe
+            (double[] xt, double[] yt) = DataGen.RandomWalk2D(new Random(1), 10000); //Testdaten Temperatur
+            (double[] xa, double[] ya) = DataGen.RandomWalk2D(new Random(2), 10000); //Testdaten Beschleunigung
+
+            //Plot Titel festlegen
+            WpfPlot1.Plot.Title("SI-TL1");
+
+            //Daten für Höhe zum Plot WpfPlot1 (in XAML definiert) hinzufügen
+            var pltAlt = WpfPlot1.Plot.AddScatter(xh, yh);
+            pltAlt.YAxisIndex = WpfPlot1.Plot.LeftAxis.AxisIndex;
+            WpfPlot1.Plot.YAxis.Label("Altitude [m]");
+            pltAlt.MarkerSize = 1;
+            pltAlt.Color = Color.Black;
+            WpfPlot1.Plot.YAxis.Color(pltAlt.Color);
+
+            //Daten für Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzufügen
+            var pltTemp = WpfPlot1.Plot.AddScatter(xh, yt);
+            var yAxisTemp = WpfPlot1.Plot.AddAxis(Edge.Right);
+            pltTemp.YAxisIndex = yAxisTemp.AxisIndex;
+            yAxisTemp.Label("Temperature [°C]");
+            pltTemp.MarkerSize = 1;
+            pltTemp.Color = Color.Red;
+            yAxisTemp.Color(pltTemp.Color);
+
+            //Daten für Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzufügen
+            var pltAcc = WpfPlot1.Plot.AddScatter(xh, ya);
+            var yAxisAcc = WpfPlot1.Plot.AddAxis(Edge.Right);
+            pltAcc.YAxisIndex = yAxisAcc.AxisIndex;
+            yAxisAcc.Label("Acceleration [g]");
+            pltAcc.MarkerSize = 1;
+            pltAcc.Color = Color.Green;
+            yAxisAcc.Color(pltAcc.Color);
+
+
+
+
+            /*  DAS WAR ALLES NUR TESTCODE
+             *  
             double[] dataX = new double[] { 1, 2, 3, 4, 5 };
             double[] dataY = new double[] { 1, 4, 9, 16, 25 };
 
             (double[] xs, double[] ys) = DataGen.RandomWalk2D(new Random(0), 200);
-
-       
 
             var sp = WpfPlot1.Plot.AddScatter(xs, ys);
             sp.YAxisIndex = WpfPlot1.Plot.LeftAxis.AxisIndex;
@@ -103,9 +140,10 @@ namespace DataViewer_1._0._0._0
                     //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
                 }
             };
-
-
+           
+*/
             WpfPlot1.Refresh();
+            
         }
     }
 }
