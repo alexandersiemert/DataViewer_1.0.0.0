@@ -7,7 +7,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" MinHeight="450" MinWidth="800">
 
     
     <Grid>
@@ -79,6 +79,9 @@
         </DockPanel>
 
         <Border Grid.Row="1" Background="#38383D" BorderBrush="#272539" BorderThickness="0.2">
+            <Grid>
+                <Image Source="/Pictures/dataviewer.png" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,8,8,8"/>
+
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,5,5,5">
                 
@@ -105,7 +108,7 @@
                         </Style>
                     </ToggleButton.Resources>
                 </ToggleButton>
-                
+
                 <ToggleButton Content="Legend" Width="60" Margin="5,0,0,0">
                     <ToggleButton.Resources>
                         <Style TargetType="Border">
@@ -113,31 +116,59 @@
                         </Style>
                     </ToggleButton.Resources>
                 </ToggleButton>
-
-
+                
             </StackPanel>
+                <Image Source="/Pictures/siemert.png" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,8,8,8"/>
+            </Grid>
         </Border>
         
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="150"/>
+                <ColumnDefinition MinWidth="100" MaxWidth="200" Width="150"/>
+                <ColumnDefinition Width="3"/>
                 <ColumnDefinition/>
                 <ColumnDefinition Width="150"/>
             </Grid.ColumnDefinitions>
 
-            <StackPanel Background="#272539">
-                
-                   
-                
-            </StackPanel>
 
-            <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Column="1"/>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
 
-            <StackPanel Grid.Column="2" Background="#272539">
+                <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:ImageAwesome Icon="CodeFork" Margin="5,3,0,3" Rotation="90"/>
+                        <TextBlock Text="Device List" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                </Border>
+                
+
+                <TreeView x:Name="deviceListTreeView" Grid.Row="1">
+                    <TreeViewItem Header="SI-TL1 No. 0001">
+                        <TreeViewItem Header="Test"/>
+                    </TreeViewItem>
+                    <TreeViewItem Header="SI-TL1 No. 0002">
+                        <TreeViewItem Header="Test"/>
+                    </TreeViewItem>
+                </TreeView>
+            </Grid>
+            
+            
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch"/>
+
+            <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Column="2"/>
+
+            <Border Grid.Column="3" BorderBrush="Black" BorderThickness="0.4" Margin="0,-1,0,-1">
+                <StackPanel Grid.Column="3">
                
 
             </StackPanel>
+            </Border>
+            
 
         </Grid>
         
