@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using ScottPlot;
 using ScottPlot.Plottable;
 using ScottPlot.Renderable;
@@ -26,6 +27,10 @@ namespace DataViewer_1._0._0._0
     public partial class MainWindow : Window
     {
         HSpan vLine1;
+
+        private DispatcherTimer timer;
+        private int currentIndex;
+        private Rectangle[] rectangles;
 
         public MainWindow()
         {
@@ -140,10 +145,32 @@ namespace DataViewer_1._0._0._0
                     //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
                 }
             };
+
+
            
 */
+            // Array von Rectangles erstellen, die als Lichter dienen
+            rectangles = new Rectangle[] { rectangle1, rectangle2, rectangle3, rectangle4, rectangle5 };
+
+            // Timer für die Animation erstellen
+            timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromMilliseconds(500); // Intervall in Millisekunden (0,5 Sekunden)
+            timer.Tick += Timer_Tick;
+            timer.Start();
+
+
             WpfPlot1.Refresh();
             
+        }
+
+        private void Timer_Tick(object sender, System.EventArgs e)
+        {
+            // Aktuellen Zustand zurücksetzen
+            rectangles[currentIndex].Fill = Brushes.Black;
+
+            // Nächsten Zustand aktualisieren
+            currentIndex = (currentIndex + 1) % rectangles.Length;
+            rectangles[currentIndex].Fill = Brushes.Green;
         }
     }
 }
