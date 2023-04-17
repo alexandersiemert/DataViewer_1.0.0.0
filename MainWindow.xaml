@@ -84,8 +84,8 @@
 
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,5,5,5">
-                
-                <ToggleButton Content="Measuring Cursor" Width="120" VerticalAlignment="Center">
+
+                    <ToggleButton x:Name="toggleButtonMeasuringCursor" Content="Measuring Cursor" Width="120" VerticalAlignment="Center" Checked="toggleButtonMeasuringCursor_Checked" Unchecked="toggleButtonMeasuringCursor_Unchecked">
                     <ToggleButton.Resources>
                         <Style TargetType="Border">
                             <Setter Property="CornerRadius" Value="5"/>
@@ -93,7 +93,7 @@
                     </ToggleButton.Resources>
                 </ToggleButton>
                 
-                <ToggleButton Content="Crosshair" Width="70" Margin="5,0,0,0">
+                <ToggleButton Content="Crosshair" Width="70" Margin="5,0,0,0" Checked="toggleButtonCrosshair_Checked" Unchecked="toggleButtonCrosshair_Unchecked">
                     <ToggleButton.Resources>
                         <Style TargetType="Border">
                             <Setter Property="CornerRadius" Value="5"/>
@@ -256,7 +256,7 @@
 
                             <GroupBox Height="Auto" Header="Acceleration">
                             <StackPanel Orientation="Vertical">
-                                <TextBlock Text="3-Axis" Margin="5"/>
+                                <TextBlock Text="3-Axis Absolute" Margin="5"/>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
