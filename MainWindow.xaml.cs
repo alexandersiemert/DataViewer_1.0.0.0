@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
@@ -34,6 +35,8 @@ namespace DataViewer_1._0._0._0
         VLine crosshairX;
         HLine crosshairAlt, crosshairTemp, crosshairAcc;
 
+        DraggableMarkerPlot marker;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -47,7 +50,7 @@ namespace DataViewer_1._0._0._0
             WpfPlot1.Plot.Title("SI-TL1");
 
             //Daten für Höhe zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltAlt = WpfPlot1.Plot.AddScatter(xh, yh);
+            pltAlt = WpfPlot1.Plot.AddScatter(xh, yh, label: "Altitude");
             pltAlt.YAxisIndex = WpfPlot1.Plot.LeftAxis.AxisIndex;
             WpfPlot1.Plot.YAxis.Label("Altitude [m]");
             pltAlt.MarkerSize = 1;
@@ -55,7 +58,7 @@ namespace DataViewer_1._0._0._0
             WpfPlot1.Plot.YAxis.Color(pltAlt.Color);
 
             //Daten für Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltTemp = WpfPlot1.Plot.AddScatter(xh, yt);
+            pltTemp = WpfPlot1.Plot.AddScatter(xh, yt, label: "Temperature");
             yAxisTemp = WpfPlot1.Plot.AddAxis(Edge.Right);
             pltTemp.YAxisIndex = yAxisTemp.AxisIndex;
             yAxisTemp.Label("Temperature [°C]");
@@ -64,7 +67,7 @@ namespace DataViewer_1._0._0._0
             yAxisTemp.Color(pltTemp.Color);
 
             //Daten für Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltAcc = WpfPlot1.Plot.AddScatter(xh, ya);
+            pltAcc = WpfPlot1.Plot.AddScatter(xh, ya, label: "3-Axis Acceleration");
             yAxisAcc = WpfPlot1.Plot.AddAxis(Edge.Right);
             pltAcc.YAxisIndex = yAxisAcc.AxisIndex;
             yAxisAcc.Label("Acceleration [g]");
@@ -150,7 +153,7 @@ namespace DataViewer_1._0._0._0
            
             
 */
-           
+
             WpfPlot1.Refresh();
             
         }
@@ -159,6 +162,34 @@ namespace DataViewer_1._0._0._0
         //-----------------EVENTHANDLER-------------------------------------------
 
         // EventHandler für das Dragged-Ereignis
+
+        private void measuringSpan_Edge1Dragged(object sender, double e)
+        {
+            if (measuringSpan.X1 < measuringSpan.X2)
+            {
+                measuringSpan.X1 = e;
+                //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
+            }
+            else if (measuringSpan.X2 < measuringSpan.X1)
+            {
+                measuringSpan.X2 = e;
+                //x2SpanPosTextBlock.Text = vLine1.X2.ToString();
+            }
+        }
+
+        private void measuringSpan_Edge2Dragged(object sender, double e)
+        {
+            if (measuringSpan.X1 < measuringSpan.X2)
+            {
+                measuringSpan.X2 = e;
+                //x2SpanPosTextBlock.Text = vLine1.X2.ToString();
+            }
+            else if (measuringSpan.X2 < measuringSpan.X1)
+            {
+                measuringSpan.X1 = e;
+                //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
+            }
+        }
 
         private void crosshairX_Dragged(object sender, EventArgs e)
         {
@@ -176,10 +207,16 @@ namespace DataViewer_1._0._0._0
         //Measuring Cursor enable / disable
         private void toggleButtonMeasuringCursor_Checked(object sender, RoutedEventArgs e)
         {
-            measuringSpan = WpfPlot1.Plot.AddHorizontalSpan((WpfPlot1.Plot.GetAxisLimits().XMin+((WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 4)), (WpfPlot1.Plot.GetAxisLimits().XMax - ((WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 4)));
+            measuringSpan = WpfPlot1.Plot.AddHorizontalSpan((WpfPlot1.Plot.GetAxisLimits().XMin+((WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 4)), (WpfPlot1.Plot.GetAxisLimits().XMax - ((WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 4)), label: "Measuring Cursor");
             measuringSpan.DragEnabled = true;
+
+            // Registriere einen EventHandler für das Dragged-Ereignis
+            measuringSpan.Edge1Dragged += measuringSpan_Edge1Dragged;
+            measuringSpan.Edge2Dragged += measuringSpan_Edge2Dragged;
+
             WpfPlot1.Refresh();
         }
+
         private void toggleButtonMeasuringCursor_Unchecked(object sender, RoutedEventArgs e)
         {
             WpfPlot1.Plot.Remove(measuringSpan);
@@ -189,19 +226,18 @@ namespace DataViewer_1._0._0._0
         //Crosshair enable / disable
         private void toggleButtonCrosshair_Checked(object sender, RoutedEventArgs e)
         {
-            crosshairX = WpfPlot1.Plot.AddVerticalLine(WpfPlot1.Plot.GetAxisLimits().XMin + (WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 2);
+            crosshairX = WpfPlot1.Plot.AddVerticalLine(WpfPlot1.Plot.GetAxisLimits().XMin + (WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 2, label: "Crosshair X-Axis");
             crosshairX.PositionLabel = true;
             crosshairX.PositionLabelBackground = crosshairX.Color;
             crosshairX.DragEnabled = true;
 
-            crosshairAlt = WpfPlot1.Plot.AddHorizontalLine(WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 2, color: Color.Black);
+            crosshairAlt = WpfPlot1.Plot.AddHorizontalLine(WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 2, color: Color.Black, label: "Crosshair Y-Axis");
             crosshairAlt.YAxisIndex = pltAlt.YAxisIndex;
             crosshairAlt.PositionLabel = true;
             crosshairAlt.PositionLabelBackground = crosshairAlt.Color;
             crosshairAlt.DragEnabled = true;
 
-
-            crosshairTemp = WpfPlot1.Plot.AddHorizontalLine(pltTemp.GetAxisLimits().YMin + (pltTemp.GetAxisLimits().YMax - pltTemp.GetAxisLimits().YMin) / 2, color: Color.Transparent);
+            crosshairTemp = WpfPlot1.Plot.AddHorizontalLine(WpfPlot1.Plot.GetCoordinateY(WpfPlot1.Plot.GetPixelY(crosshairAlt.Y), yAxisTemp.AxisIndex), color: Color.Transparent);
             crosshairTemp.YAxisIndex = pltTemp.YAxisIndex;
             crosshairTemp.PositionLabel = true;
             crosshairTemp.PositionLabelOppositeAxis = true;
@@ -209,7 +245,7 @@ namespace DataViewer_1._0._0._0
             crosshairTemp.PositionLabelAxis = yAxisTemp;
             crosshairTemp.DragEnabled = true;
 
-            crosshairAcc = WpfPlot1.Plot.AddHorizontalLine(pltAcc.GetAxisLimits().YMin + (pltAcc.GetAxisLimits().YMax - pltAcc.GetAxisLimits().YMin) / 2, color: Color.Transparent);
+            crosshairAcc = WpfPlot1.Plot.AddHorizontalLine(WpfPlot1.Plot.GetCoordinateY(WpfPlot1.Plot.GetPixelY(crosshairAlt.Y), yAxisAcc.AxisIndex), color: Color.Transparent);
             crosshairAcc.YAxisIndex = pltAcc.YAxisIndex;
             crosshairAcc.PositionLabel = true;
             crosshairAcc.PositionLabelOppositeAxis = true;
@@ -230,6 +266,31 @@ namespace DataViewer_1._0._0._0
             WpfPlot1.Plot.Remove(crosshairAlt);
             WpfPlot1.Plot.Remove(crosshairTemp);
             WpfPlot1.Plot.Remove(crosshairAcc);
+            WpfPlot1.Refresh();
+        }
+
+        private void toggleButtonMarker_Checked(object sender, RoutedEventArgs e)
+        {
+            // place the marker at the first data point
+            marker = WpfPlot1.Plot.AddMarkerDraggable((WpfPlot1.Plot.GetAxisLimits().XMin + (WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 2), (WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 2), MarkerShape.filledTriangleDown, 15, Color.Magenta, label: "Marker");
+            WpfPlot1.Refresh();
+        }
+
+        private void toggleButtonMarker_Unchecked(object sender, RoutedEventArgs e)
+        {
+            WpfPlot1.Plot.Remove(marker);
+            WpfPlot1.Refresh();
+        }
+
+        private void toggleButtonLegend_Checked(object sender, RoutedEventArgs e)
+        {
+            WpfPlot1.Plot.Legend(true);
+            WpfPlot1.Refresh();
+        }
+
+        private void toggleButtonLegend_Unchecked(object sender, RoutedEventArgs e)
+        {
+            WpfPlot1.Plot.Legend(false);
             WpfPlot1.Refresh();
         }
     }
