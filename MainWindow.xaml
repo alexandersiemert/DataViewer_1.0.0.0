@@ -131,7 +131,6 @@
                 <ColumnDefinition Width="170"/>
             </Grid.ColumnDefinitions>
 
-
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20"/>
@@ -143,9 +142,8 @@
                         <fa:ImageAwesome Icon="CodeFork" Margin="5,3,0,3" Rotation="90"/>
                         <TextBlock Text="Device List" Margin="8,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
-                    
+
                 </Border>
-                
 
                 <TreeView x:Name="deviceListTreeView" Grid.Row="1">
                     <TreeViewItem Header="SI-TL1 No. 0001">
@@ -156,11 +154,45 @@
                     </TreeViewItem>
                 </TreeView>
             </Grid>
-            
-            
+
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch"/>
 
-            <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Column="2"/>
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <Border BorderBrush="Black" BorderThickness="0.4">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <ToggleButton Content="Lock Altitude" Width="100" Margin="5,0,0,0" Checked="toggleButtonLockAltitude_Checked" Unchecked="toggleButtonLockAltitude_Unchecked">
+                            <ToggleButton.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </ToggleButton.Resources>
+                        </ToggleButton>
+                        <ToggleButton Content="Lock Temperature" Width="100" Margin="5,0,0,0" Checked="toggleButtonLockTemperature_Checked" Unchecked="toggleButtonLockTemperature_Unchecked">
+                            <ToggleButton.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </ToggleButton.Resources>
+                        </ToggleButton>
+                        <ToggleButton Content="Lock Acceleration" Width="100" Margin="5,0,0,0" Checked="toggleButtonLockAcceleration_Checked" Unchecked="toggleButtonLockAcceleration_Unchecked">
+                            <ToggleButton.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </ToggleButton.Resources>
+                        </ToggleButton>
+                    </StackPanel>
+                </Border>
+                
+                <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Row="1"/>
+                
+            </Grid>
+            
 
             <Border Grid.Column="3" BorderBrush="Black" BorderThickness="0.4" Margin="0,-1,0,-1">
 
