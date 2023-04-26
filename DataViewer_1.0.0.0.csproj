@@ -129,6 +129,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Icons\folder-open-regular.svg" />
+    <Resource Include="Pictures\up-arrow.png" />
+    <Resource Include="Pictures\arrow-down-sign-to-navigate.png" />
     <Resource Include="Pictures\dataviewer.png" />
     <Resource Include="Pictures\siemert.png" />
   </ItemGroup>

@@ -20,7 +20,7 @@
 
         <DockPanel Background="White">
             <Menu DockPanel.Dock="Top">
-                
+
                 <MenuItem Header="File">
                     <MenuItem Header="Open">
                         <MenuItem.Icon>
@@ -43,7 +43,7 @@
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
-                
+
                 <MenuItem Header="Settings">
                     <MenuItem Header="Chart Style">
                         <MenuItem.Icon>
@@ -60,7 +60,7 @@
                             <fa:FontAwesome Icon="Usb" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-      
+
                 </MenuItem>
                 <MenuItem Header="Help">
                     <MenuItem Header="Docs">
@@ -82,46 +82,46 @@
             <Grid>
                 <Image Source="/Pictures/dataviewer.png" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,8,8,8"/>
 
-            
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,5,5,5">
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,5,5,5">
 
                     <ToggleButton x:Name="toggleButtonMeasuringCursor" Content="Measuring Cursor" Width="120" VerticalAlignment="Center" Checked="toggleButtonMeasuringCursor_Checked" Unchecked="toggleButtonMeasuringCursor_Unchecked">
-                    <ToggleButton.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="5"/>
-                        </Style>
-                    </ToggleButton.Resources>
-                </ToggleButton>
-                
-                <ToggleButton Content="Crosshair" Width="70" Margin="5,0,0,0" Checked="toggleButtonCrosshair_Checked" Unchecked="toggleButtonCrosshair_Unchecked">
-                    <ToggleButton.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="5"/>
-                        </Style>
-                    </ToggleButton.Resources>
-                </ToggleButton>
-                
-                <ToggleButton Content="Marker" Width="60" Margin="5,0,0,0" Checked="toggleButtonMarker_Checked" Unchecked="toggleButtonMarker_Unchecked">
-                    <ToggleButton.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="5"/>
-                        </Style>
-                    </ToggleButton.Resources>
-                </ToggleButton>
+                        <ToggleButton.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </ToggleButton.Resources>
+                    </ToggleButton>
 
-                <ToggleButton Content="Legend" Width="60" Margin="5,0,0,0" Checked="toggleButtonLegend_Checked" Unchecked="toggleButtonLegend_Unchecked">
-                    <ToggleButton.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="5"/>
-                        </Style>
-                    </ToggleButton.Resources>
-                </ToggleButton>
-                
-            </StackPanel>
+                    <ToggleButton Content="Crosshair" Width="70" Margin="5,0,0,0" Checked="toggleButtonCrosshair_Checked" Unchecked="toggleButtonCrosshair_Unchecked">
+                        <ToggleButton.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </ToggleButton.Resources>
+                    </ToggleButton>
+
+                    <ToggleButton Content="Marker" Width="60" Margin="5,0,0,0" Checked="toggleButtonMarker_Checked" Unchecked="toggleButtonMarker_Unchecked">
+                        <ToggleButton.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </ToggleButton.Resources>
+                    </ToggleButton>
+
+                    <ToggleButton Content="Legend" Width="60" Margin="5,0,0,0" Checked="toggleButtonLegend_Checked" Unchecked="toggleButtonLegend_Unchecked">
+                        <ToggleButton.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </ToggleButton.Resources>
+                    </ToggleButton>
+
+                </StackPanel>
                 <Image Source="/Pictures/siemert.png" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,8,8,8"/>
             </Grid>
         </Border>
-        
+
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
@@ -161,38 +161,56 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20"/>
                     <RowDefinition/>
+                    <RowDefinition Height="70"/>
                 </Grid.RowDefinitions>
 
                 <Border BorderBrush="Black" BorderThickness="0.4">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <ToggleButton Content="Lock Altitude" Width="100" Margin="5,0,0,0" Checked="toggleButtonLockAltitude_Checked" Unchecked="toggleButtonLockAltitude_Unchecked">
-                            <ToggleButton.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </ToggleButton.Resources>
-                        </ToggleButton>
-                        <ToggleButton Content="Lock Temperature" Width="100" Margin="5,0,0,0" Checked="toggleButtonLockTemperature_Checked" Unchecked="toggleButtonLockTemperature_Unchecked">
-                            <ToggleButton.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </ToggleButton.Resources>
-                        </ToggleButton>
-                        <ToggleButton Content="Lock Acceleration" Width="100" Margin="5,0,0,0" Checked="toggleButtonLockAcceleration_Checked" Unchecked="toggleButtonLockAcceleration_Unchecked">
-                            <ToggleButton.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </ToggleButton.Resources>
-                        </ToggleButton>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Platzhalter"/>
                     </StackPanel>
                 </Border>
-                
+
                 <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Row="1"/>
-                
+
+                <Border Grid.Row="2" BorderBrush="Transparent" BorderThickness="0.4">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <GroupBox Height="Auto" Header="Altitude Limits">
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Vertical">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBox x:Name="textBoxAltMin" AcceptsReturn="True" Width="60"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBox x:Name="textBoxAltMax" AcceptsReturn="True" Width="60"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
+                                    <Button Width="20" Height="15">
+                                        <Button.Background>
+                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
+                                        </Button.Background>
+                                    </Button>
+                                    <Button Width="20" Height="15" RenderTransformOrigin="0.5,0.5">
+                                        <Button.RenderTransform>
+                                            <TransformGroup>
+                                                <ScaleTransform ScaleY="-1"/>
+                                                
+                                            </TransformGroup>
+                                        </Button.RenderTransform>
+                                        <Button.Background>
+                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform" TileMode="None"/>
+                                        </Button.Background>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </Border>
+
             </Grid>
-            
+
 
             <Border Grid.Column="3" BorderBrush="Black" BorderThickness="0.4" Margin="0,-1,0,-1">
 
@@ -210,115 +228,115 @@
                     </Border>
 
                     <ScrollViewer Grid.Row="1">
-                    <StackPanel Width="Auto" Height="Auto" Orientation="Vertical" ScrollViewer.VerticalScrollBarVisibility="Visible">
-                        <GroupBox Height="Auto" Header="Altitude">
-                            <StackPanel Orientation="Vertical">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                    <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
+                        <StackPanel Width="Auto" Height="Auto" Orientation="Vertical" ScrollViewer.VerticalScrollBarVisibility="Visible">
+                            <GroupBox Height="Auto" Header="Altitude">
+                                <StackPanel Orientation="Vertical">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Speed" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="m/sec" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Speed" Width="60" FontWeight="Bold"/>
+                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBlock Text="m/sec" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </GroupBox>
+                            </GroupBox>
 
                             <GroupBox Height="Auto" Header="Temperature">
-                            <StackPanel Orientation="Vertical">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
+                                <StackPanel Orientation="Vertical">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </GroupBox>
+                            </GroupBox>
 
                             <GroupBox Height="Auto" Header="Acceleration">
-                            <StackPanel Orientation="Vertical">
-                                <TextBlock Text="3-Axis Absolute" Margin="5"/>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Text="3-Axis Absolute" Margin="5"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
+                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
                                         <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                    <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
+                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
 
                                     <TextBlock Text="X-Axis" Margin="5"/>
                                     <StackPanel Orientation="Horizontal">
@@ -416,19 +434,19 @@
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
-                        </GroupBox>
+                            </GroupBox>
 
 
-                    </StackPanel>
+                        </StackPanel>
                     </ScrollViewer>
                 </Grid>
-                
-                
-                
+
+
+
             </Border>
-            
+
 
         </Grid>
-        
+
     </Grid>
 </Window>

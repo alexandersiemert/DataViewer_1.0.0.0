@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ScottPlot;
+using ScottPlot.Drawing.Colormaps;
 using ScottPlot.Plottable;
 using ScottPlot.Renderable;
 using ScottPlot.Styles;
@@ -75,7 +76,7 @@ namespace DataViewer_1._0._0._0
             pltAcc.Color = Color.Green;
             yAxisAcc.Color(pltAcc.Color);
 
-            
+
 
 
             /*  DAS WAR ALLES NUR TESTCODE
@@ -150,9 +151,10 @@ namespace DataViewer_1._0._0._0
                     //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
                 }
             };
-           
-            
-*/
+ */          
+        
+
+            //Plot neu zeichnen
 
             WpfPlot1.Refresh();
             
@@ -294,36 +296,5 @@ namespace DataViewer_1._0._0._0
             WpfPlot1.Refresh();
         }
 
-        private void toggleButtonLockAltitude_Checked(object sender, RoutedEventArgs e)
-        {
-            WpfPlot1.Plot.YAxis.LockLimits(true);
-            WpfPlot1.Plot.XAxis.LockLimits(true);
-        }
-
-        private void toggleButtonLockAltitude_Unchecked(object sender, RoutedEventArgs e)
-        {
-            WpfPlot1.Plot.YAxis.LockLimits(false);
-            WpfPlot1.Plot.XAxis.LockLimits(false);
-        }
-
-        private void toggleButtonLockTemperature_Checked(object sender, RoutedEventArgs e)
-        {
-            yAxisTemp.LockLimits(true);
-        }
-
-        private void toggleButtonLockTemperature_Unchecked(object sender, RoutedEventArgs e)
-        {
-            yAxisTemp.LockLimits(false);
-        }
-
-        private void toggleButtonLockAcceleration_Checked(object sender, RoutedEventArgs e)
-        {
-            yAxisAcc.LockLimits(true);
-        }
-
-        private void toggleButtonLockAcceleration_Unchecked(object sender, RoutedEventArgs e)
-        {
-            yAxisAcc.LockLimits(false);
-        }
     }
 }
