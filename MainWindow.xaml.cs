@@ -151,19 +151,57 @@ namespace DataViewer_1._0._0._0
                     //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
                 }
             };
- */          
-        
+ */
+
+
+
+
+            /****************EventHandler registrieren******************/
+
+            //Plot mit Maus verschieben
+            WpfPlot1.MouseMove += WpfPlot1_MouseMove;
+            //Plot zoomen
+            WpfPlot1.MouseWheel += WpfPlot1_MouseWheel;
+
 
             //Plot neu zeichnen
-
             WpfPlot1.Refresh();
             
         }
 
+        
+
+
+
 
         //-----------------EVENTHANDLER-------------------------------------------
 
-        // EventHandler für das Dragged-Ereignis
+        // EventHandler für die Verschiebung des Plots mit der Maus
+        private void WpfPlot1_MouseMove(object sender, MouseEventArgs e)
+        {
+            //Textboxen für Achsenlimits aktualisieren
+            textBoxAltMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMax.ToString("F2");
+            textBoxAltMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMin.ToString("F2");
+            textBoxTempMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMax.ToString("F2");
+            textBoxTempMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMin.ToString("F2");
+            textBoxAccMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMax.ToString("F2");
+            textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");
+        }
+
+        // EventHandler für das Zoomen des Plots mit der Maus
+        private void WpfPlot1_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            //Textboxen für Achsenlimits aktualisieren
+            textBoxAltMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMax.ToString("F2");
+            textBoxAltMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMin.ToString("F2");
+            textBoxTempMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMax.ToString("F2");
+            textBoxTempMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMin.ToString("F2");
+            textBoxAccMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMax.ToString("F2");
+            textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");
+        }
+
+
+        // EventHandler für das Dragged-Ereignis des Messcursors
 
         private void measuringSpan_Edge1Dragged(object sender, double e)
         {

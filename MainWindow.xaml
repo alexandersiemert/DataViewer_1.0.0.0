@@ -178,25 +178,89 @@
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBox x:Name="textBoxAltMin" AcceptsReturn="True" Width="60"/>
+                                        <TextBox x:Name="textBoxAltMax" AcceptsReturn="True" Width="60"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBox x:Name="textBoxAltMax" AcceptsReturn="True" Width="60"/>
+                                        <TextBox x:Name="textBoxAltMin" AcceptsReturn="True" Width="60"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
-                                    <Button Width="20" Height="15">
+                                    <Button x:Name="buttonLimitAltUp" Width="20" Height="15">
                                         <Button.Background>
                                             <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
                                         </Button.Background>
                                     </Button>
-                                    <Button Width="20" Height="15" RenderTransformOrigin="0.5,0.5">
+                                    <Button x:Name="buttonLimitAltDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5">
                                         <Button.RenderTransform>
                                             <TransformGroup>
                                                 <ScaleTransform ScaleY="-1"/>
                                                 
+                                            </TransformGroup>
+                                        </Button.RenderTransform>
+                                        <Button.Background>
+                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform" TileMode="None"/>
+                                        </Button.Background>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Height="Auto" Header="Temperature Limits">
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Vertical">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBox x:Name="textBoxTempMax" AcceptsReturn="True" Width="60"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBox x:Name="textBoxTempMin" AcceptsReturn="True" Width="60"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
+                                    <Button x:Name="buttonLimitTempUp" Width="20" Height="15">
+                                        <Button.Background>
+                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
+                                        </Button.Background>
+                                    </Button>
+                                    <Button x:Name="buttonLimitTempDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5">
+                                        <Button.RenderTransform>
+                                            <TransformGroup>
+                                                <ScaleTransform ScaleY="-1"/>
+
+                                            </TransformGroup>
+                                        </Button.RenderTransform>
+                                        <Button.Background>
+                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform" TileMode="None"/>
+                                        </Button.Background>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Height="Auto" Header="Acceleration Limits">
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Vertical">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBox x:Name="textBoxAccMax" AcceptsReturn="True" Width="60"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBox x:Name="textBoxAccMin" AcceptsReturn="True" Width="60"/>
+                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
+                                    <Button x:Name="buttonLimitAccUp" Width="20" Height="15">
+                                        <Button.Background>
+                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
+                                        </Button.Background>
+                                    </Button>
+                                    <Button x:Name="buttonLimitAccDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5">
+                                        <Button.RenderTransform>
+                                            <TransformGroup>
+                                                <ScaleTransform ScaleY="-1"/>
+
                                             </TransformGroup>
                                         </Button.RenderTransform>
                                         <Button.Background>
