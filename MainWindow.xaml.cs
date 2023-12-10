@@ -358,6 +358,138 @@ namespace DataViewer_1._0._0._0
             WpfPlot1.Refresh();
         }
 
+        //---------------------------- Achsenlimit Textfelder ---------------------------------------
+
+
+        private void textBoxAltMax_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                // Versuchen Sie, den Text aus dem TextBox in eine Double-Zahl umzuwandeln.
+                if (double.TryParse(textBoxAltMax.Text, out double result))
+                {
+                    // result enthält jetzt den Double-Wert aus dem TextBox.
+                    // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
+                    WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin, result);
+                    WpfPlot1.Refresh();
+                }
+                else
+                {
+                    // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                    MessageBox.Show("Invalid input. Please enter a valid number.");
+                }
+                
+            }
+        }
+
+        private void textBoxAltMin_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                // Versuchen Sie, den Text aus dem TextBox in eine Double-Zahl umzuwandeln.
+                if (double.TryParse(textBoxAltMin.Text, out double result))
+                {
+                    // result enthält jetzt den Double-Wert aus dem TextBox.
+                    // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
+                    WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits().YMax);
+                    WpfPlot1.Refresh();
+                }
+                else
+                {
+                    // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                    MessageBox.Show("Invalid input. Please enter a valid number.");
+                }
+
+            }
+        }
+
+        private void textBoxTempMax_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                // Versuchen Sie, den Text aus dem TextBox in eine Double-Zahl umzuwandeln.
+                if (double.TryParse(textBoxTempMax.Text, out double result))
+                {
+                    // result enthält jetzt den Double-Wert aus dem TextBox.
+                    // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
+                    WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin, result, yAxisTemp.AxisIndex);
+                    WpfPlot1.Refresh();
+                }
+                else
+                {
+                    // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                    MessageBox.Show("Invalid input. Please enter a valid number.");
+                }
+
+            }
+        }
+
+        private void textBoxTempMin_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                // Versuchen Sie, den Text aus dem TextBox in eine Double-Zahl umzuwandeln.
+                if (double.TryParse(textBoxTempMin.Text, out double result))
+                {
+                    // result enthält jetzt den Double-Wert aus dem TextBox.
+                    // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
+                    WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax, yAxisTemp.AxisIndex);
+                    WpfPlot1.Refresh();
+                }
+                else
+                {
+                    // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                    MessageBox.Show("Invalid input. Please enter a valid number.");
+                }
+
+            }
+        }
+
+        private void textBoxAccMax_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                // Versuchen Sie, den Text aus dem TextBox in eine Double-Zahl umzuwandeln.
+                if (double.TryParse(textBoxAccMax.Text, out double result))
+                {
+                    // result enthält jetzt den Double-Wert aus dem TextBox.
+                    // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
+                    WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin, result, yAxisAcc.AxisIndex);
+                    WpfPlot1.Refresh();
+                }
+                else
+                {
+                    // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                    MessageBox.Show("Invalid input. Please enter a valid number.");
+                }
+
+            }
+        }
+
+        private void textBoxAccMin_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                // Versuchen Sie, den Text aus dem TextBox in eine Double-Zahl umzuwandeln.
+                if (double.TryParse(textBoxAccMin.Text, out double result))
+                {
+                    // result enthält jetzt den Double-Wert aus dem TextBox.
+                    // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
+                    WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin, yAxisAcc.AxisIndex);
+                    WpfPlot1.Refresh();
+                }
+                else
+                {
+                    // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                    MessageBox.Show("Invalid input. Please enter a valid number.");
+                }
+
+            }
+        }
+
+
+        //---------------------------- Achsenbuttons ------------------------------------------------
+
         private void buttonLimitAltUp_PreviewMouseDown(object sender, RoutedEventArgs e)
         {
             timer.Start();

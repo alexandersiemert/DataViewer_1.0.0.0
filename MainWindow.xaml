@@ -178,11 +178,11 @@
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBox x:Name="textBoxAltMax" AcceptsReturn="True" Width="60" HorizontalContentAlignment="Right"/>
+                                        <TextBox x:Name="textBoxAltMax" KeyDown="textBoxAltMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBox x:Name="textBoxAltMin" AcceptsReturn="True" Width="60" HorizontalContentAlignment="Right"/>
+                                        <TextBox x:Name="textBoxAltMin" KeyDown="textBoxAltMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -210,11 +210,11 @@
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBox x:Name="textBoxTempMax" AcceptsReturn="True" Width="60" HorizontalContentAlignment="Right"/>
+                                        <TextBox x:Name="textBoxTempMax" KeyDown="textBoxTempMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBox x:Name="textBoxTempMin" AcceptsReturn="True" Width="60" HorizontalContentAlignment="Right"/>
+                                        <TextBox x:Name="textBoxTempMin" KeyDown="textBoxTempMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -242,11 +242,11 @@
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBox x:Name="textBoxAccMax" AcceptsReturn="True" Width="60" HorizontalContentAlignment="Right"/>
+                                        <TextBox x:Name="textBoxAccMax" KeyDown="textBoxAccMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBox x:Name="textBoxAccMin" AcceptsReturn="True" Width="60" HorizontalContentAlignment="Right"/>
+                                        <TextBox x:Name="textBoxAccMin" KeyDown="textBoxAccMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
