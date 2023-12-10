@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using ScottPlot;
 using ScottPlot.Drawing.Colormaps;
 using ScottPlot.Plottable;
@@ -38,9 +40,21 @@ namespace DataViewer_1._0._0._0
 
         DraggableMarkerPlot marker;
 
+        bool buttonAltUpPressed = false;
+        bool buttonAltDownPressed = false;
+        bool buttonTempUpPressed = false;
+        bool buttonTempDownPressed = false;
+        bool buttonAccUpPressed = false;
+        bool buttonAccDownPressed = false;
+        bool timerStarted = false;
+        DispatcherTimer timer;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            //Timer initialisieren
+            InitTimer();
 
             //Testdaten für Entwicklung erzeugen
             (double[] xh, double[] yh) = DataGen.RandomWalk2D(new Random(0), 10000); //Testdaten Höhe
@@ -242,6 +256,49 @@ namespace DataViewer_1._0._0._0
             crosshairAcc.Y = WpfPlot1.Plot.GetCoordinateY(draggedPixel, yAxisAcc.AxisIndex);
         }
 
+        private void InitTimer()
+        {
+            timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(0.1);
+            timer.Tick += new EventHandler(Timer_Tick);
+        }
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            timerStarted = true;
+
+            if (buttonAltUpPressed)
+            {
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin - 1, WpfPlot1.Plot.GetAxisLimits().YMax - 1);
+                WpfPlot1.Refresh();
+            }
+            else if(buttonAltDownPressed)
+            {
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + 1, WpfPlot1.Plot.GetAxisLimits().YMax + 1);
+                WpfPlot1.Refresh();
+            }
+            else if (buttonTempUpPressed)
+            {
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - 1, yAxisTemp.AxisIndex);
+                WpfPlot1.Refresh();
+            }
+            else if (buttonTempDownPressed)
+            {
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + 1, yAxisTemp.AxisIndex);
+                WpfPlot1.Refresh();
+            }
+            else if (buttonAccUpPressed)
+            {
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - 1, yAxisAcc.AxisIndex);
+                WpfPlot1.Refresh();
+            }
+            else if (buttonAccDownPressed)
+            {
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + 1, yAxisAcc.AxisIndex);
+                WpfPlot1.Refresh();
+            }
+        }
+
         //------------------BUTTON FUNKTIONEN---------------------------------------
 
         //Measuring Cursor enable / disable
@@ -300,6 +357,91 @@ namespace DataViewer_1._0._0._0
             //Plot refreshen
             WpfPlot1.Refresh();
         }
+
+        private void buttonLimitAltUp_PreviewMouseDown(object sender, RoutedEventArgs e)
+        {
+            timer.Start();
+            buttonAltUpPressed = true;
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin-1, WpfPlot1.Plot.GetAxisLimits().YMax-1);
+            WpfPlot1.Refresh();
+        }
+
+        private void buttonLimitAltDown_PreviewMouseDown(object sender, RoutedEventArgs e)
+        {
+            timer.Start();
+            buttonAltDownPressed = true;
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + 1, WpfPlot1.Plot.GetAxisLimits().YMax + 1);
+            WpfPlot1.Refresh();
+        }
+
+        private void buttonLimitTempUp_PreviewMouseDown(object sender, RoutedEventArgs e)
+        {
+            timer.Start();
+            buttonTempUpPressed = true;
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - 1,yAxisTemp.AxisIndex);
+            WpfPlot1.Refresh();
+        }
+
+        private void buttonLimitTempDown_PreviewMouseDown(object sender, RoutedEventArgs e)
+        {
+            timer.Start();
+            buttonTempDownPressed = true;
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0,yAxisTemp.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + 1, yAxisTemp.AxisIndex);
+            WpfPlot1.Refresh();
+        }
+
+        private void buttonLimitAccUp_PreviewMouseDown(object sender, RoutedEventArgs e)
+        {
+            timer.Start();
+            buttonAccUpPressed = true;
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - 1, yAxisAcc.AxisIndex);
+            WpfPlot1.Refresh();
+        }
+
+        private void buttonLimitAccDown_PreviewMouseDown(object sender, RoutedEventArgs e)
+        {
+            timer.Start();
+            buttonAccDownPressed = true;
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + 1, yAxisAcc.AxisIndex);
+            WpfPlot1.Refresh();
+        }
+
+        private void buttonLimitAltUp_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            buttonAltUpPressed = false;
+            timer.Stop();
+        }
+
+        private void buttonLimitAltDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            buttonAltDownPressed = false;
+            timer.Stop();
+        }
+
+        private void buttonLimitTempUp_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            buttonTempUpPressed = false;
+            timer.Stop();
+        }
+
+        private void buttonLimitTempDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            buttonTempDownPressed = false;
+            timer.Stop();
+        }
+
+        private void buttonLimitAccUp_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            buttonAccUpPressed = false;
+            timer.Stop();
+        }
+
+        private void buttonLimitAccDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            buttonAccUpPressed = false;
+            timer.Stop();
+        }
+
         private void toggleButtonCrosshair_Unchecked(object sender, RoutedEventArgs e)
         {
             WpfPlot1.Plot.Remove(crosshairX);

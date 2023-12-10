@@ -187,12 +187,12 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
-                                    <Button x:Name="buttonLimitAltUp" Width="20" Height="15">
+                                    <Button x:Name="buttonLimitAltUp" Width="20" Height="15" PreviewMouseDown="buttonLimitAltUp_PreviewMouseDown" PreviewMouseUp="buttonLimitAltUp_PreviewMouseUp">
                                         <Button.Background>
                                             <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
                                         </Button.Background>
                                     </Button>
-                                    <Button x:Name="buttonLimitAltDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5">
+                                    <Button x:Name="buttonLimitAltDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5" PreviewMouseDown="buttonLimitAltDown_PreviewMouseDown" PreviewMouseUp="buttonLimitAltDown_PreviewMouseUp">
                                         <Button.RenderTransform>
                                             <TransformGroup>
                                                 <ScaleTransform ScaleY="-1"/>
@@ -219,12 +219,12 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
-                                    <Button x:Name="buttonLimitTempUp" Width="20" Height="15">
+                                    <Button x:Name="buttonLimitTempUp" Width="20" Height="15" PreviewMouseDown="buttonLimitTempUp_PreviewMouseDown" PreviewMouseUp="buttonLimitTempUp_PreviewMouseUp">
                                         <Button.Background>
                                             <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
                                         </Button.Background>
                                     </Button>
-                                    <Button x:Name="buttonLimitTempDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5">
+                                    <Button x:Name="buttonLimitTempDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5" PreviewMouseDown="buttonLimitTempDown_PreviewMouseDown" PreviewMouseUp="buttonLimitTempDown_PreviewMouseUp">
                                         <Button.RenderTransform>
                                             <TransformGroup>
                                                 <ScaleTransform ScaleY="-1"/>
@@ -251,12 +251,12 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
-                                    <Button x:Name="buttonLimitAccUp" Width="20" Height="15">
+                                    <Button x:Name="buttonLimitAccUp" Width="20" Height="15" PreviewMouseDown="buttonLimitAccUp_PreviewMouseDown" PreviewMouseUp="buttonLimitAccUp_PreviewMouseUp">
                                         <Button.Background>
                                             <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
                                         </Button.Background>
                                     </Button>
-                                    <Button x:Name="buttonLimitAccDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5">
+                                    <Button x:Name="buttonLimitAccDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5" PreviewMouseDown="buttonLimitAccDown_PreviewMouseDown" PreviewMouseUp="buttonLimitAccDown_PreviewMouseUp">
                                         <Button.RenderTransform>
                                             <TransformGroup>
                                                 <ScaleTransform ScaleY="-1"/>
