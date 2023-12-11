@@ -303,37 +303,37 @@
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAltCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAltCursor2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAltMin" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAltMax" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAltDelta" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAltAverage" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Speed" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAltSpeed" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="m/sec" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -343,32 +343,32 @@
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasTempCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasTempCursor2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasTempMin" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasTempMax" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasTempDelta" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasTempAverage" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -379,128 +379,128 @@
                                     <TextBlock Text="3-Axis Absolute" Margin="5"/>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccCursor2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccMin" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccMax" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccDelta" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccAverage" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
 
                                     <TextBlock Text="X-Axis" Margin="5"/>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccCursor1X" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccCursor2X" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccMinX" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccMaxX" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccDeltaX" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccAverageX" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
 
                                     <TextBlock Text="Y-Axis" Margin="5"/>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccCursor1Y" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccCursor2Y" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccMinY" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccMaxY" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccDeltaY" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccAverageY" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
 
                                     <TextBlock Text="Z-Axis" Margin="5"/>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccCursor1Z" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccCursor2Z" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccMinZ" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccMaxZ" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccDeltaZ" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                        <TextBox x:Name="textBoxMeasAccAverageZ" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
                                         <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>

@@ -10,6 +10,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
@@ -20,6 +21,7 @@ using ScottPlot.Drawing.Colormaps;
 using ScottPlot.Plottable;
 using ScottPlot.Renderable;
 using ScottPlot.Styles;
+using static ScottPlot.Plottable.PopulationPlot;
 using Color = System.Drawing.Color;
 
 namespace DataViewer_1._0._0._0
@@ -32,7 +34,19 @@ namespace DataViewer_1._0._0._0
         ScatterPlot pltAlt, pltTemp, pltAcc;
 
         Axis yAxisTemp, yAxisAcc;
-        
+
+        //XY-Datenarray für Höhe
+        double[] xh, yh;
+
+        //XY-Datenarray für Temperatur
+        double[] xt, yt;
+
+        //XY-Datenarray für Beschleunigung
+        double[] xa, ya; //Betrag 3-Achsen
+        double[] xax, yax; //Beschleunigung X-Achse
+        double[] xay, yay; //Beschleunigung Y-Achse
+        double[] xaz, yaz; //Beschleunigung Z-Achse
+
         HSpan measuringSpan;
 
         VLine crosshairX;
@@ -47,8 +61,11 @@ namespace DataViewer_1._0._0._0
         bool buttonAccUpPressed = false;
         bool buttonAccDownPressed = false;
 
+        //Timer für Achsen Limit Button
         DispatcherTimer timer;
+        //Zeit bis Button in Automatik geht
         const double passiveTime = 0.5;
+        //Intervall für inkrementieren wenn Button Automatik Aktiv
         const double activeTime = 0.05;
 
         public MainWindow()
@@ -59,9 +76,9 @@ namespace DataViewer_1._0._0._0
             InitTimer();
 
             //Testdaten für Entwicklung erzeugen
-            (double[] xh, double[] yh) = DataGen.RandomWalk2D(new Random(0), 10000); //Testdaten Höhe
-            (double[] xt, double[] yt) = DataGen.RandomWalk2D(new Random(1), 10000); //Testdaten Temperatur
-            (double[] xa, double[] ya) = DataGen.RandomWalk2D(new Random(2), 10000); //Testdaten Beschleunigung
+            (xh, yh) = DataGen.RandomWalk2D(new Random(0), 10000); //Testdaten Höhe
+            (xt, yt) = DataGen.RandomWalk2D(new Random(1), 10000); //Testdaten Temperatur
+            (xa, ya) = DataGen.RandomWalk2D(new Random(2), 10000); //Testdaten Beschleunigung
 
             //Plot Titel festlegen
             WpfPlot1.Plot.Title("SI-TL1");
@@ -100,6 +117,8 @@ namespace DataViewer_1._0._0._0
             //Plot zoomen
             WpfPlot1.MouseWheel += WpfPlot1_MouseWheel;
 
+            //Textboxen für Messungen leeren, weil da stehen sonst Fragezeichen drin und war zu faul das zu ändern :-D
+            ClearMeasuringTextBoxes();
 
             //Plot neu zeichnen
             WpfPlot1.Refresh();
@@ -120,7 +139,7 @@ namespace DataViewer_1._0._0._0
 
 
         //Textboxen für Achsenlimits aktualisieren
-        private void RefreshTextBoxes()
+        private void RefreshAxisTextBoxes()
         {
             //Textboxen für Achsenlimits aktualisieren
             textBoxAltMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMax.ToString("F2");
@@ -128,10 +147,102 @@ namespace DataViewer_1._0._0._0
             textBoxTempMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMax.ToString("F2");
             textBoxTempMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMin.ToString("F2");
             textBoxAccMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMax.ToString("F2");
-            textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");
+            textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");   
         }
 
+        //Textboxen für Messungen aktualisieren
+        private void RefreshMeasuringTextBoxes()
+        {
+            //Textboxen für Messungen aktualisieren
+            textBoxMeasAltCursor1.Text = InterpolateY(xh, yh, measuringSpan.X1).ToString("F2");
+            textBoxMeasAltCursor2.Text = InterpolateY(xh, yh, measuringSpan.X2).ToString("F2");
 
+            //Textboxen für Messungen aktualisieren
+            textBoxMeasTempCursor1.Text = InterpolateY(xt, yt, measuringSpan.X1).ToString("F2");
+            textBoxMeasTempCursor2.Text = InterpolateY(xt, yt, measuringSpan.X2).ToString("F2");
+
+            //Textboxen für Messungen aktualisieren
+            textBoxMeasAccCursor1.Text = InterpolateY(xa, ya, measuringSpan.X1).ToString("F2");
+            textBoxMeasAccCursor2.Text = InterpolateY(xa, ya, measuringSpan.X2).ToString("F2");
+
+            /*
+             * ################## FREISCHALTEN WENN ES SOWEIT IST ################################################################################################
+             * 
+            //Textboxen für Messungen aktualisieren
+            textBoxMeasAccCursor1X.Text = InterpolateY(xax, yax, measuringSpan.X1).ToString("F2");
+            textBoxMeasAccCursor2X.Text = InterpolateY(xax, yax, measuringSpan.X2).ToString("F2");
+
+            //Textboxen für Messungen aktualisieren
+            textBoxMeasAccCursor1Y.Text = InterpolateY(xay, yay, measuringSpan.X1).ToString("F2");
+            textBoxMeasAccCursor2Y.Text = InterpolateY(xay, yay, measuringSpan.X2).ToString("F2");
+
+            //Textboxen für Messungen aktualisieren
+            textBoxMeasAccCursor1Z.Text = InterpolateY(xaz, yaz, measuringSpan.X1).ToString("F2");
+            textBoxMeasAccCursor2Z.Text = InterpolateY(xaz, yaz, measuringSpan.X2).ToString("F2");
+            */
+        }
+
+        //Textboxen für Messungen leeren
+        private void ClearMeasuringTextBoxes()
+        {
+            textBoxMeasAltCursor1.Text = double.NaN.ToString();
+            textBoxMeasAltCursor2.Text = double.NaN.ToString();
+            textBoxMeasAltMin.Text = double.NaN.ToString();
+            textBoxMeasAltMax.Text = double.NaN.ToString();
+            textBoxMeasAltDelta.Text = double.NaN.ToString();
+            textBoxMeasAltAverage.Text = double.NaN.ToString();
+            textBoxMeasAltSpeed.Text = double.NaN.ToString();
+
+            textBoxMeasTempCursor1.Text = double.NaN.ToString();
+            textBoxMeasTempCursor2.Text = double.NaN.ToString();
+            textBoxMeasTempMin.Text = double.NaN.ToString();
+            textBoxMeasTempMax.Text = double.NaN.ToString();
+            textBoxMeasTempDelta.Text = double.NaN.ToString();
+            textBoxMeasTempAverage.Text = double.NaN.ToString();
+
+            textBoxMeasAccCursor1.Text = double.NaN.ToString();
+            textBoxMeasAccCursor2.Text = double.NaN.ToString();
+            textBoxMeasAccMin.Text = double.NaN.ToString();
+            textBoxMeasAccMax.Text = double.NaN.ToString();
+            textBoxMeasAccDelta.Text = double.NaN.ToString();
+            textBoxMeasAccAverage.Text = double.NaN.ToString();
+
+            textBoxMeasAccCursor1X.Text = double.NaN.ToString();
+            textBoxMeasAccCursor2X.Text = double.NaN.ToString();
+            textBoxMeasAccMinX.Text = double.NaN.ToString();
+            textBoxMeasAccMaxX.Text = double.NaN.ToString();
+            textBoxMeasAccDeltaX.Text = double.NaN.ToString();
+            textBoxMeasAccAverageX.Text = double.NaN.ToString();
+
+            textBoxMeasAccCursor1Y.Text = double.NaN.ToString();
+            textBoxMeasAccCursor2Y.Text = double.NaN.ToString();
+            textBoxMeasAccMinY.Text = double.NaN.ToString();
+            textBoxMeasAccMaxY.Text = double.NaN.ToString();
+            textBoxMeasAccDeltaY.Text = double.NaN.ToString();
+            textBoxMeasAccAverageY.Text = double.NaN.ToString();
+
+            textBoxMeasAccCursor1Z.Text = double.NaN.ToString();
+            textBoxMeasAccCursor2Z.Text = double.NaN.ToString();
+            textBoxMeasAccMinZ.Text = double.NaN.ToString();
+            textBoxMeasAccMaxZ.Text = double.NaN.ToString();
+            textBoxMeasAccDeltaZ.Text = double.NaN.ToString();
+            textBoxMeasAccAverageZ.Text = double.NaN.ToString();
+        }
+
+            // Methode zur linearen Interpolation für den Measuring Cursor um Y-Koordinate des Plots aus X-Koordinate des Messcursors zu bekommen
+            private double InterpolateY(double[] xData, double[] yData, double xValue)
+        {
+            for (int i = 1; i < xData.Length; i++)
+            {
+                if (xValue < xData[i])
+                {
+                    double slope = (yData[i] - yData[i - 1]) / (xData[i] - xData[i - 1]);
+                    double yInterpolated = yData[i - 1] + slope * (xValue - xData[i - 1]);
+                    return yInterpolated;
+                }
+            }
+            return double.NaN; // X-Wert liegt außerhalb des Bereichs
+        }
 
         //################################################################################################################################
         //                                                   EVENTHANDLER
@@ -169,13 +280,12 @@ namespace DataViewer_1._0._0._0
             if (measuringSpan.X1 < measuringSpan.X2)
             {
                 measuringSpan.X1 = e;
-                //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
             }
             else if (measuringSpan.X2 < measuringSpan.X1)
             {
                 measuringSpan.X2 = e;
-                //x2SpanPosTextBlock.Text = vLine1.X2.ToString();
             }
+            RefreshMeasuringTextBoxes();
         }
 
         private void measuringSpan_Edge2Dragged(object sender, double e)
@@ -190,6 +300,7 @@ namespace DataViewer_1._0._0._0
                 measuringSpan.X1 = e;
                 //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
             }
+            RefreshMeasuringTextBoxes();
         }
 
         //Eventhandler wenn der Cursor auf der Zeitachse verschoben wird
@@ -241,7 +352,7 @@ namespace DataViewer_1._0._0._0
                 WpfPlot1.Refresh();
             }
             //Textboxen mit Achsenlimits auktualisieren
-            RefreshTextBoxes();
+            RefreshAxisTextBoxes();
         }
 
         //------------------BUTTON EVENTS---------------------------------------
@@ -256,12 +367,15 @@ namespace DataViewer_1._0._0._0
             measuringSpan.Edge1Dragged += measuringSpan_Edge1Dragged;
             measuringSpan.Edge2Dragged += measuringSpan_Edge2Dragged;
 
+            RefreshMeasuringTextBoxes(); //Textboxen der Messungen initial aktualisieren wenn der Messcursor aktiviert wird
             WpfPlot1.Refresh();
         }
 
         private void toggleButtonMeasuringCursor_Unchecked(object sender, RoutedEventArgs e)
         {
             WpfPlot1.Plot.Remove(measuringSpan);
+
+            ClearMeasuringTextBoxes(); //Textboxen der Messungen leeren wenn der Messcursor deaktiviert wird
             WpfPlot1.Refresh();
         }
 
@@ -341,7 +455,7 @@ namespace DataViewer_1._0._0._0
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
                 //Textboxen mit Achsenlimits auktualisieren
-                RefreshTextBoxes();
+                RefreshAxisTextBoxes();
             }
         }
 
@@ -360,7 +474,6 @@ namespace DataViewer_1._0._0._0
                         {
                             WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits().YMax);
                             WpfPlot1.Refresh();
-                            RefreshTextBoxes();
                         }
                         else
                         {
@@ -381,7 +494,7 @@ namespace DataViewer_1._0._0._0
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
                 //Textboxen mit Achsenlimits auktualisieren
-                RefreshTextBoxes();
+                RefreshAxisTextBoxes();
             }
         }
 
@@ -420,7 +533,7 @@ namespace DataViewer_1._0._0._0
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
                 //Textboxen mit Achsenlimits auktualisieren
-                RefreshTextBoxes();
+                RefreshAxisTextBoxes();
             }
         }
 
@@ -459,7 +572,7 @@ namespace DataViewer_1._0._0._0
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
                 //Textboxen mit Achsenlimits auktualisieren
-                RefreshTextBoxes();
+                RefreshAxisTextBoxes();
             }
         }
 
@@ -498,7 +611,7 @@ namespace DataViewer_1._0._0._0
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
                 //Textboxen mit Achsenlimits auktualisieren
-                RefreshTextBoxes();
+                RefreshAxisTextBoxes();
             }
         }
 
@@ -511,11 +624,11 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    if (double.TryParse(textBoxAccMax.Text, out double testresult))
                     {
                         if (result < testresult)
                         {
-                            WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin, yAxisAcc.AxisIndex);
+                            WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax, yAxisAcc.AxisIndex);
                             WpfPlot1.Refresh();
                         }
                         else
@@ -537,7 +650,7 @@ namespace DataViewer_1._0._0._0
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
                 //Textboxen mit Achsenlimits auktualisieren
-                RefreshTextBoxes();
+                RefreshAxisTextBoxes();
             }
         }
 
