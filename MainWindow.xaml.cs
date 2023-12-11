@@ -46,8 +46,10 @@ namespace DataViewer_1._0._0._0
         bool buttonTempDownPressed = false;
         bool buttonAccUpPressed = false;
         bool buttonAccDownPressed = false;
-        bool timerStarted = false;
+
         DispatcherTimer timer;
+        const double passiveTime = 0.5;
+        const double activeTime = 0.05;
 
         public MainWindow()
         {
@@ -91,85 +93,6 @@ namespace DataViewer_1._0._0._0
             yAxisAcc.Color(pltAcc.Color);
 
 
-
-
-            /*  DAS WAR ALLES NUR TESTCODE
-             *  
-            double[] dataX = new double[] { 1, 2, 3, 4, 5 };
-            double[] dataY = new double[] { 1, 4, 9, 16, 25 };
-
-            (double[] xs, double[] ys) = DataGen.RandomWalk2D(new Random(0), 200);
-
-            var sp = WpfPlot1.Plot.AddScatter(xs, ys);
-            sp.YAxisIndex = WpfPlot1.Plot.LeftAxis.AxisIndex;
-            WpfPlot1.Plot.YAxis.Label("Altitude [m]", sp.Color, size: 12);
-            WpfPlot1.Plot.YAxis.Color(sp.Color);
-            sp.MarkerSize = 1;
-            //WpfPlot1.Plot.Style(ScottPlot.Style.Default);
-
-            (double[] xs2, double[] ys2) = DataGen.RandomWalk2D(new Random(0), 300);
-
-            var sp2 = WpfPlot1.Plot.AddScatter(xs2, ys2);
-            var yAxis3 = WpfPlot1.Plot.AddAxis(Edge.Right);
-            sp2.YAxisIndex = yAxis3.AxisIndex;
-            yAxis3.Label("Temperature [°C]", sp2.Color, size: 12);
-            yAxis3.Color(sp2.Color);
-            sp2.MarkerSize = 1;
-
-            (double[] xs3, double[] ys3) = DataGen.RandomWalk2D(new Random(0), 1000);
-
-            var sp3 = WpfPlot1.Plot.AddScatter(xs3, ys3);
-            var yAxis4 = WpfPlot1.Plot.AddAxis(Edge.Right);
-            sp3.YAxisIndex = yAxis4.AxisIndex;
-            yAxis4.Label("Acceleration [g]", sp3.Color, size: 12);
-            yAxis4.Color(sp3.Color);
-            sp3.MarkerSize = 1;
-
-
-            vLine1 = WpfPlot1.Plot.AddHorizontalSpan(20, 80);
-            vLine1.DragEnabled = true;
-
-            // place the marker at the first data point
-            var marker = WpfPlot1.Plot.AddMarkerDraggable(xs[0], ys[0], MarkerShape.filledDiamond, 15, Color.Magenta);
-            // constrain snapping to the array of data points
-            marker.DragSnap = new ScottPlot.SnapLogic.Nearest2D(xs, ys);
-
-            var snapDisabled = new ScottPlot.SnapLogic.NoSnap1D();
-            var snapPos = new ScottPlot.SnapLogic.Nearest1D(xs);
-            vLine1.DragSnap = new ScottPlot.SnapLogic.Independent2D(x: snapPos, y: snapDisabled);
-
-            vLine1.Edge1Dragged += (s, e) =>
-            {
-                if (vLine1.X1 < vLine1.X2)
-                {
-                    vLine1.X1 = e;
-                    //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
-                }
-                else if (vLine1.X2 < vLine1.X1)
-                {
-                    vLine1.X2 = e;
-                    //x2SpanPosTextBlock.Text = vLine1.X2.ToString();
-                }
-
-            };
-            vLine1.Edge2Dragged += (s, e) =>
-            {
-                if (vLine1.X1 < vLine1.X2)
-                {
-                    vLine1.X2 = e;
-                    //x2SpanPosTextBlock.Text = vLine1.X2.ToString();
-                }
-                else if (vLine1.X2 < vLine1.X1)
-                {
-                    vLine1.X1 = e;
-                    //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
-                }
-            };
- */
-
-
-
-
             /****************EventHandler registrieren******************/
 
             //Plot mit Maus verschieben
@@ -183,12 +106,36 @@ namespace DataViewer_1._0._0._0
             
         }
 
-        
+        //################################################################################################################################
+        //                                                   FUNKTIONEN
+        //################################################################################################################################
+
+        // Timer initialisieren
+        private void InitTimer()
+        {
+            timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(passiveTime);
+            timer.Tick += new EventHandler(Timer_Tick);
+        }
+
+
+        //Textboxen für Achsenlimits aktualisieren
+        private void RefreshTextBoxes()
+        {
+            //Textboxen für Achsenlimits aktualisieren
+            textBoxAltMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMax.ToString("F2");
+            textBoxAltMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMin.ToString("F2");
+            textBoxTempMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMax.ToString("F2");
+            textBoxTempMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMin.ToString("F2");
+            textBoxAccMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMax.ToString("F2");
+            textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");
+        }
 
 
 
-
-        //-----------------EVENTHANDLER-------------------------------------------
+        //################################################################################################################################
+        //                                                   EVENTHANDLER
+        //################################################################################################################################
 
         // EventHandler für die Verschiebung des Plots mit der Maus
         private void WpfPlot1_MouseMove(object sender, MouseEventArgs e)
@@ -245,10 +192,13 @@ namespace DataViewer_1._0._0._0
             }
         }
 
+        //Eventhandler wenn der Cursor auf der Zeitachse verschoben wird
         private void crosshairX_Dragged(object sender, EventArgs e)
         {
-            
+            //angelegt falls nötig
         }
+
+        //Eventhandler wenn der Cursor auf der Y-Achse verschoben wird
         private void crosshairAlt_Dragged(object sender, EventArgs e)
         {
             var draggedPixel = WpfPlot1.Plot.GetPixelY(crosshairAlt.Y);
@@ -256,50 +206,45 @@ namespace DataViewer_1._0._0._0
             crosshairAcc.Y = WpfPlot1.Plot.GetCoordinateY(draggedPixel, yAxisAcc.AxisIndex);
         }
 
-        private void InitTimer()
-        {
-            timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(0.1);
-            timer.Tick += new EventHandler(Timer_Tick);
-        }
-
+       // Eventhandler wenn der Timer auslöst  - aktuell für Buttons um die Achsen zu verschieben wenn man den Button gedrückt hält
         private void Timer_Tick(object sender, EventArgs e)
         {
-            timerStarted = true;
-
+            timer.Interval = TimeSpan.FromSeconds(activeTime);
             if (buttonAltUpPressed)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin - 1, WpfPlot1.Plot.GetAxisLimits().YMax - 1);
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin - (WpfPlot1.Plot.GetAxisLimits().YMax- WpfPlot1.Plot.GetAxisLimits().YMin)/50, WpfPlot1.Plot.GetAxisLimits().YMax - (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50);
                 WpfPlot1.Refresh();
             }
             else if(buttonAltDownPressed)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + 1, WpfPlot1.Plot.GetAxisLimits().YMax + 1);
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50, WpfPlot1.Plot.GetAxisLimits().YMax + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50);
                 WpfPlot1.Refresh();
             }
             else if (buttonTempUpPressed)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - 1, yAxisTemp.AxisIndex);
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, yAxisTemp.AxisIndex);
                 WpfPlot1.Refresh();
             }
             else if (buttonTempDownPressed)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + 1, yAxisTemp.AxisIndex);
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin + (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, yAxisTemp.AxisIndex);
                 WpfPlot1.Refresh();
             }
             else if (buttonAccUpPressed)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - 1, yAxisAcc.AxisIndex);
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, yAxisAcc.AxisIndex);
                 WpfPlot1.Refresh();
             }
             else if (buttonAccDownPressed)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + 1, yAxisAcc.AxisIndex);
+                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, yAxisAcc.AxisIndex);
                 WpfPlot1.Refresh();
             }
+            //Textboxen mit Achsenlimits auktualisieren
+            RefreshTextBoxes();
         }
 
-        //------------------BUTTON FUNKTIONEN---------------------------------------
+        //------------------BUTTON EVENTS---------------------------------------
 
         //Measuring Cursor enable / disable
         private void toggleButtonMeasuringCursor_Checked(object sender, RoutedEventArgs e)
@@ -370,15 +315,33 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin, result);
-                    WpfPlot1.Refresh();
+                    if (double.TryParse(textBoxAltMin.Text, out double testresult))
+                    {
+                        if(result > testresult)
+                        {
+                            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin, result);
+                            WpfPlot1.Refresh();
+                        }
+                        else
+                        {
+                            // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                            MessageBox.Show("Invalid input. Upper limit max must be higher than lower limit.");
+                        }
+
+                    }
+                    else
+                    {
+                        // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                        MessageBox.Show("Invalid input. Please enter a valid number.");
+                    }
                 }
                 else
                 {
                     // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
-                
+                //Textboxen mit Achsenlimits auktualisieren
+                RefreshTextBoxes();
             }
         }
 
@@ -391,15 +354,34 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits().YMax);
-                    WpfPlot1.Refresh();
+                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    {
+                        if (result < testresult)
+                        {
+                            WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits().YMax);
+                            WpfPlot1.Refresh();
+                            RefreshTextBoxes();
+                        }
+                        else
+                        {
+                            // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                            MessageBox.Show("Invalid input. Upper limit max must be higher than lower limit.");
+                        }
+
+                    }
+                    else
+                    {
+                        // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                        MessageBox.Show("Invalid input. Please enter a valid number.");
+                    }
                 }
                 else
                 {
                     // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
-
+                //Textboxen mit Achsenlimits auktualisieren
+                RefreshTextBoxes();
             }
         }
 
@@ -412,15 +394,33 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin, result, yAxisTemp.AxisIndex);
-                    WpfPlot1.Refresh();
+                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    {
+                        if (result > testresult)
+                        {
+                            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin, result, yAxisTemp.AxisIndex);
+                            WpfPlot1.Refresh();
+                        }
+                        else
+                        {
+                            // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                            MessageBox.Show("Invalid input. Upper limit max must be higher than lower limit.");
+                        }
+
+                    }
+                    else
+                    {
+                        // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                        MessageBox.Show("Invalid input. Please enter a valid number.");
+                    }
                 }
                 else
                 {
                     // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
-
+                //Textboxen mit Achsenlimits auktualisieren
+                RefreshTextBoxes();
             }
         }
 
@@ -433,15 +433,33 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax, yAxisTemp.AxisIndex);
-                    WpfPlot1.Refresh();
+                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    {
+                        if (result < testresult)
+                        {
+                            WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax, yAxisTemp.AxisIndex);
+                            WpfPlot1.Refresh();
+                        }
+                        else
+                        {
+                            // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                            MessageBox.Show("Invalid input. Upper limit max must be higher than lower limit.");
+                        }
+
+                    }
+                    else
+                    {
+                        // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                        MessageBox.Show("Invalid input. Please enter a valid number.");
+                    }
                 }
                 else
                 {
                     // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
-
+                //Textboxen mit Achsenlimits auktualisieren
+                RefreshTextBoxes();
             }
         }
 
@@ -454,15 +472,33 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin, result, yAxisAcc.AxisIndex);
-                    WpfPlot1.Refresh();
+                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    {
+                        if (result > testresult)
+                        {
+                            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin, result, yAxisAcc.AxisIndex);
+                            WpfPlot1.Refresh();
+                        }
+                        else
+                        {
+                            // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                            MessageBox.Show("Invalid input. Upper limit max must be higher than lower limit.");
+                        }
+
+                    }
+                    else
+                    {
+                        // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                        MessageBox.Show("Invalid input. Please enter a valid number.");
+                    }
                 }
                 else
                 {
                     // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
-
+                //Textboxen mit Achsenlimits auktualisieren
+                RefreshTextBoxes();
             }
         }
 
@@ -475,15 +511,33 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin, yAxisAcc.AxisIndex);
-                    WpfPlot1.Refresh();
+                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    {
+                        if (result < testresult)
+                        {
+                            WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin, yAxisAcc.AxisIndex);
+                            WpfPlot1.Refresh();
+                        }
+                        else
+                        {
+                            // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                            MessageBox.Show("Invalid input. Upper limit max must be higher than lower limit.");
+                        }
+
+                    }
+                    else
+                    {
+                        // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
+                        MessageBox.Show("Invalid input. Please enter a valid number.");
+                    }
                 }
                 else
                 {
                     // Wenn die Umwandlung fehlschlägt, können Sie hier eine Fehlermeldung anzeigen.
                     MessageBox.Show("Invalid input. Please enter a valid number.");
                 }
-
+                //Textboxen mit Achsenlimits auktualisieren
+                RefreshTextBoxes();
             }
         }
 
@@ -542,36 +596,42 @@ namespace DataViewer_1._0._0._0
         {
             buttonAltUpPressed = false;
             timer.Stop();
+            timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
         private void buttonLimitAltDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             buttonAltDownPressed = false;
             timer.Stop();
+            timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
         private void buttonLimitTempUp_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             buttonTempUpPressed = false;
             timer.Stop();
+            timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
         private void buttonLimitTempDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             buttonTempDownPressed = false;
             timer.Stop();
+            timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
         private void buttonLimitAccUp_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             buttonAccUpPressed = false;
             timer.Stop();
+            timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
         private void buttonLimitAccDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             buttonAccUpPressed = false;
             timer.Stop();
+            timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
         private void toggleButtonCrosshair_Unchecked(object sender, RoutedEventArgs e)

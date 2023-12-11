@@ -174,14 +174,16 @@
 
                 <Border Grid.Row="2" BorderBrush="Transparent" BorderThickness="0.4">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <GroupBox Height="Auto" Header="Altitude Limits">
+                        <GroupBox Height="Auto" Header="Altitude Axis">
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Text="max" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxAltMax" KeyDown="textBoxAltMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Text="min" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxAltMin" KeyDown="textBoxAltMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
                                         <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
@@ -206,16 +208,18 @@
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Height="Auto" Header="Temperature Limits">
+                        <GroupBox Height="Auto" Header="Temperature Axis">
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Text="max" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxTempMax" KeyDown="textBoxTempMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Text="min" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxTempMin" KeyDown="textBoxTempMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
@@ -238,16 +242,18 @@
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Height="Auto" Header="Acceleration Limits">
+                        <GroupBox Height="Auto" Header="Acceleration Axis">
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Vertical">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Text="max" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxAccMax" KeyDown="textBoxAccMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Text="min" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxAccMin" KeyDown="textBoxAccMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
