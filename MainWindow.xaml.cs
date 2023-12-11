@@ -68,6 +68,9 @@ namespace DataViewer_1._0._0._0
         //Intervall für inkrementieren wenn Button Automatik Aktiv
         const double activeTime = 0.05;
 
+        //Indexe für Array für Berechnung mit Messcursor für z.b. Min/Max Werte und Durchschnitt und so
+        int indexCursor1, indexCursor2;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -238,10 +241,52 @@ namespace DataViewer_1._0._0._0
                 {
                     double slope = (yData[i] - yData[i - 1]) / (xData[i] - xData[i - 1]);
                     double yInterpolated = yData[i - 1] + slope * (xValue - xData[i - 1]);
+
                     return yInterpolated;
                 }
             }
             return double.NaN; // X-Wert liegt außerhalb des Bereichs
+        }
+
+        // Methode zur Findung der X-Koordinaten des Messcursors 1 und 2
+        private int FindIndex(double[] xData, double xValue)
+        {
+            for (int i = 1; i < xData.Length; i++)
+            {
+                if (xValue < xData[i])
+                {
+                    return i;
+                }
+            }
+            return 0; // X-Wert liegt außerhalb des Bereichs
+        }
+
+
+        private void FindMinMax(double[] array, int start, int end)
+        {
+            if (start < 0 || end > array.Length || start >= end)
+            {
+                Console.WriteLine("Ungültige Indizes");
+                return;
+            }
+
+            double min = array[start];
+            double max = array[start];
+
+            for (int i = start; i < end; i++)
+            {
+                if (array[i] < min)
+                {
+                    min = array[i];
+                }
+                if (array[i] > max)
+                {
+                    max = array[i];
+                }
+            }
+
+            Console.WriteLine($"Minimaler Wert: {min}");
+            Console.WriteLine($"Maximaler Wert: {max}");
         }
 
         //################################################################################################################################
@@ -285,6 +330,9 @@ namespace DataViewer_1._0._0._0
             {
                 measuringSpan.X2 = e;
             }
+            //Finde den X-Wert des Cursors
+            indexCursor1 = FindIndex(xh, measuringSpan.X1);
+
             RefreshMeasuringTextBoxes();
         }
 
@@ -300,6 +348,9 @@ namespace DataViewer_1._0._0._0
                 measuringSpan.X1 = e;
                 //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
             }
+            //Finde den X-Wert des Cursors
+            indexCursor2 = FindIndex(xh, measuringSpan.X2);
+
             RefreshMeasuringTextBoxes();
         }
 
@@ -366,6 +417,8 @@ namespace DataViewer_1._0._0._0
             // Registriere einen EventHandler für das Dragged-Ereignis
             measuringSpan.Edge1Dragged += measuringSpan_Edge1Dragged;
             measuringSpan.Edge2Dragged += measuringSpan_Edge2Dragged;
+
+            FindMinMax(yh, indexCursor1, indexCursor2);
 
             RefreshMeasuringTextBoxes(); //Textboxen der Messungen initial aktualisieren wenn der Messcursor aktiviert wird
             WpfPlot1.Refresh();
