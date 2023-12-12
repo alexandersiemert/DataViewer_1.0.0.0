@@ -147,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Icons\Icon.ico" />
+    <Resource Include="Icons\Icon.png" />
     <Resource Include="Icon.ico" />
     <Content Include="Icons\folder-open-regular.svg" />
     <Resource Include="Pictures\up-arrow.png" />

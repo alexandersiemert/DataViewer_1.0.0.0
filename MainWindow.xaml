@@ -7,7 +7,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="SIEMERT DataViewer 1.0.0.0" Height="450" Width="800" MinHeight="450" MinWidth="800">
+        Title="SIEMERT DataViewer 1.0.0.0" Height="450" Width="800" MinHeight="450" MinWidth="800" Icon="/Icons/Icon.png">
 
 
     <Grid>

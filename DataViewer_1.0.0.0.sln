@@ -5,6 +5,8 @@ VisualStudioVersion = 17.3.32804.467
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataViewer_1.0.0.0", "DataViewer_1.0.0.0.csproj", "{631AEE92-F358-4F5C-984C-934F617691C7}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup_SIEMERT_DataViewer_1.0.0.0", "..\Setup_SIEMERT_DataViewer_1.0.0.0\Setup_SIEMERT_DataViewer_1.0.0.0.vdproj", "{777AA192-7C3F-49A5-B482-981EA2DAAD80}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,8 @@ Global
 		{631AEE92-F358-4F5C-984C-934F617691C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{631AEE92-F358-4F5C-984C-934F617691C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{631AEE92-F358-4F5C-984C-934F617691C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{777AA192-7C3F-49A5-B482-981EA2DAAD80}.Debug|Any CPU.ActiveCfg = Debug
+		{777AA192-7C3F-49A5-B482-981EA2DAAD80}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
