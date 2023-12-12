@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -70,6 +71,22 @@ namespace DataViewer_1._0._0._0
 
         //Indexe für Array für Berechnung mit Messcursor für z.b. Min/Max Werte und Durchschnitt und so
         int indexCursor1, indexCursor2;
+
+        //Klasse für Min/Max Werte
+        public class minMax
+        {
+            public double min { get; set; }
+            public double max { get; set; }
+        }
+
+        minMax minMaxAlt = new minMax();
+        minMax minMaxTemp = new minMax();
+        minMax minMaxAcc = new minMax();
+        minMax minMaxAccX = new minMax();
+        minMax minMaxAccY = new minMax();
+        minMax minMaxAccZ = new minMax();
+
+
 
         public MainWindow()
         {
@@ -255,6 +272,7 @@ namespace DataViewer_1._0._0._0
             {
                 if (xValue < xData[i])
                 {
+                    Debug.WriteLine(i);
                     return i;
                 }
             }
@@ -262,31 +280,34 @@ namespace DataViewer_1._0._0._0
         }
 
 
-        private void FindMinMax(double[] array, int start, int end)
+        private minMax FindMinMax(minMax minMax, double[] data, int start, int end)
         {
-            if (start < 0 || end > array.Length || start >= end)
+            if (start < 0 || end > data.Length || start >= end)
             {
-                Console.WriteLine("Ungültige Indizes");
-                return;
+                Debug.WriteLine("Invalid indices");
+                minMax.min = double.NaN;
+                minMax.max = double.NaN;
+                return minMax;
             }
 
-            double min = array[start];
-            double max = array[start];
+            minMax.min = data[start];
+            minMax.max = data[start];
 
             for (int i = start; i < end; i++)
             {
-                if (array[i] < min)
+                if (data[i] < minMax.min)
                 {
-                    min = array[i];
+                    minMax.min = data[i];
                 }
-                if (array[i] > max)
+                if (data[i] > minMax.max)
                 {
-                    max = array[i];
+                    minMax.max = data[i];
                 }
+                
             }
-
-            Console.WriteLine($"Minimaler Wert: {min}");
-            Console.WriteLine($"Maximaler Wert: {max}");
+            Debug.WriteLine(minMax.min);
+            Debug.WriteLine(minMax.max);
+            return minMax;
         }
 
         //################################################################################################################################
@@ -333,6 +354,28 @@ namespace DataViewer_1._0._0._0
             //Finde den X-Wert des Cursors
             indexCursor1 = FindIndex(xh, measuringSpan.X1);
 
+            //Finde Min/Max Werte für Höhe
+            minMaxAlt = FindMinMax(minMaxAlt, yh, indexCursor1, indexCursor2);
+            textBoxMeasAltMin.Text = minMaxAlt.min.ToString("F2");
+            textBoxMeasAltMax.Text = minMaxAlt.max.ToString("F2");
+
+            //Finde Min/Max Werte für Temperatur
+            minMaxTemp = FindMinMax(minMaxTemp, yt, indexCursor1, indexCursor2);
+            textBoxMeasTempMin.Text = minMaxTemp.min.ToString("F2");
+            textBoxMeasTempMax.Text = minMaxTemp.max.ToString("F2");
+
+            //Finde Min/Max Werte für Beschleunigung
+            minMaxAcc = FindMinMax(minMaxAcc, ya, indexCursor1, indexCursor2);
+            textBoxMeasAccMin.Text = minMaxAcc.min.ToString("F2");
+            textBoxMeasAccMax.Text = minMaxAcc.max.ToString("F2");
+
+            /*
+             * 
+             * HIER NOCH XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             * 
+             */
+
+
             RefreshMeasuringTextBoxes();
         }
 
@@ -350,6 +393,27 @@ namespace DataViewer_1._0._0._0
             }
             //Finde den X-Wert des Cursors
             indexCursor2 = FindIndex(xh, measuringSpan.X2);
+
+            //Finde Min/Max Werte für Höhe
+            minMaxAlt = FindMinMax(minMaxAlt, yh, indexCursor1, indexCursor2);
+            textBoxMeasAltMin.Text = minMaxAlt.min.ToString("F2");
+            textBoxMeasAltMax.Text = minMaxAlt.max.ToString("F2");
+
+            //Finde Min/Max Werte für Temperatur
+            minMaxTemp = FindMinMax(minMaxTemp, yt, indexCursor1, indexCursor2);
+            textBoxMeasTempMin.Text = minMaxTemp.min.ToString("F2");
+            textBoxMeasTempMax.Text = minMaxTemp.max.ToString("F2");
+
+            //Finde Min/Max Werte für Beschleunigung
+            minMaxAcc = FindMinMax(minMaxAcc, ya, indexCursor1, indexCursor2);
+            textBoxMeasAccMin.Text = minMaxAcc.min.ToString("F2");
+            textBoxMeasAccMax.Text = minMaxAcc.max.ToString("F2");
+
+            /*
+             * 
+             * HIER NOCH MIN/MAX XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             * 
+             */
 
             RefreshMeasuringTextBoxes();
         }
@@ -418,7 +482,30 @@ namespace DataViewer_1._0._0._0
             measuringSpan.Edge1Dragged += measuringSpan_Edge1Dragged;
             measuringSpan.Edge2Dragged += measuringSpan_Edge2Dragged;
 
-            FindMinMax(yh, indexCursor1, indexCursor2);
+            //Finde den X-Wert des Cursors 1 und 2
+            indexCursor1 = FindIndex(xh, measuringSpan.X1);
+            indexCursor2 = FindIndex(xh, measuringSpan.X2);
+
+            //Finde Min/Max Werte für Höhe
+            minMaxAlt = FindMinMax(minMaxAlt,yh,indexCursor1,indexCursor2);
+            textBoxMeasAltMin.Text = minMaxAlt.min.ToString("F2");
+            textBoxMeasAltMax.Text = minMaxAlt.max.ToString("F2");
+
+            //Finde Min/Max Werte für Temperatur
+            minMaxTemp = FindMinMax(minMaxTemp, yt, indexCursor1, indexCursor2);
+            textBoxMeasTempMin.Text = minMaxTemp.min.ToString("F2");
+            textBoxMeasTempMax.Text = minMaxTemp.max.ToString("F2");
+
+            //Finde Min/Max Werte für Beschleunigung
+            minMaxAcc = FindMinMax(minMaxAcc, ya, indexCursor1, indexCursor2);
+            textBoxMeasAccMin.Text = minMaxAcc.min.ToString("F2");
+            textBoxMeasAccMax.Text = minMaxAcc.max.ToString("F2");
+
+            /*
+             * 
+             * HIER NOCH XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             * 
+             */
 
             RefreshMeasuringTextBoxes(); //Textboxen der Messungen initial aktualisieren wenn der Messcursor aktiviert wird
             WpfPlot1.Refresh();
