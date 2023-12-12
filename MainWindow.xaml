@@ -164,9 +164,12 @@
                     <RowDefinition Height="70"/>
                 </Grid.RowDefinitions>
 
-                <Border BorderBrush="Black" BorderThickness="0.4">
+                <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Platzhalter"/>
+                        <fa:ImageAwesome Icon="Crosshairs" Margin="5,3,0,3" Rotation="90"/>
+                        <TextBlock Text="Crosshair" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Altitude" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxCrossAlt" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
                     </StackPanel>
                 </Border>
 
@@ -282,7 +285,7 @@
             </Grid>
 
 
-            <Border Grid.Column="3" BorderBrush="Black" BorderThickness="0.4" Margin="0,-1,0,-1">
+            <Border Grid.Column="3" BorderBrush="Black" BorderThickness="0.4" Margin="0,-0.4,0,-0.4">
 
                 <Grid>
                     <Grid.RowDefinitions>
