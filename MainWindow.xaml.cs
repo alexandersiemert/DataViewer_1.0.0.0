@@ -44,9 +44,11 @@ namespace DataViewer_1._0._0._0
 
         //XY-Datenarray für Beschleunigung
         double[] xa, ya; //Betrag 3-Achsen
+        /* FREISCHALTEN WENN ES SOWEIT IST ##########################################################################################################################
         double[] xax, yax; //Beschleunigung X-Achse
         double[] xay, yay; //Beschleunigung Y-Achse
         double[] xaz, yaz; //Beschleunigung Z-Achse
+        */
 
         HSpan measuringSpan;
 
@@ -78,14 +80,15 @@ namespace DataViewer_1._0._0._0
             public double min { get; set; }
             public double max { get; set; }
         }
-
+        //Variablen mit Min/Max Werten
         minMax minMaxAlt = new minMax();
         minMax minMaxTemp = new minMax();
         minMax minMaxAcc = new minMax();
+        /* FREISCHALTEN WENN ES SOWEIT IST ###############################################################################################################################
         minMax minMaxAccX = new minMax();
         minMax minMaxAccY = new minMax();
         minMax minMaxAccZ = new minMax();
-
+        */
 
 
         public MainWindow()
@@ -170,6 +173,35 @@ namespace DataViewer_1._0._0._0
             textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");   
         }
 
+        //Textboxen für Crosshair aktualisieren
+        private void RefreshCrosshairTextBoxes()
+        {
+            //Textboxen für Crosshair aktualisieren
+            textBoxCrossAlt.Text = InterpolateY(xh, yh, crosshairX.X).ToString("F2");
+            textBoxCrossTemp.Text = InterpolateY(xt, yt, crosshairX.X).ToString("F2");
+            textBoxCrossAcc.Text = InterpolateY(xa, ya, crosshairX.X).ToString("F2");
+            /* FREISCHALTEN WENN ES SOWEIT IST #########################################################################################################################################
+            textBoxCrossAccX.Text = InterpolateY(xax, yax, crosshairX.X).ToString("F2");
+            textBoxCrossAccY.Text = InterpolateY(xay, yay, crosshairX.X).ToString("F2");
+            textBoxCrossAccZ.Text = InterpolateY(xaz, yaz, crosshairX.X).ToString("F2");
+            */
+        }
+
+        //Textboxen für Crosshair leeren
+        private void ClearCrosshairTextBoxes()
+        {
+            //Textboxen für Crosshair leeren
+            textBoxCrossAlt.Text = double.NaN.ToString();
+            textBoxCrossTemp.Text = double.NaN.ToString();
+            textBoxCrossAcc.Text = double.NaN.ToString();
+            /* FREISCHALTEN WENN ES SOWEIT IST ###########################################################################################################################################
+            textBoxCrossAccX.Text = double.NaN.ToString();
+            textBoxCrossAccY.Text = double.NaN.ToString();
+            textBoxCrossAccZ.Text = double.NaN.ToString();
+            */
+        }
+
+
         //Textboxen für Messungen aktualisieren
         private void RefreshMeasuringTextBoxes()
         {
@@ -186,7 +218,7 @@ namespace DataViewer_1._0._0._0
             textBoxMeasAccCursor2.Text = InterpolateY(xa, ya, measuringSpan.X2).ToString("F2");
 
             /*
-             * ################## FREISCHALTEN WENN ES SOWEIT IST ################################################################################################
+             * ################## FREISCHALTEN WENN ES SOWEIT IST #######################################################################################################################
              * 
             //Textboxen für Messungen aktualisieren
             textBoxMeasAccCursor1X.Text = InterpolateY(xax, yax, measuringSpan.X1).ToString("F2");
@@ -279,7 +311,7 @@ namespace DataViewer_1._0._0._0
             return 0; // X-Wert liegt außerhalb des Bereichs
         }
 
-
+        // Methode zur Findung der Min/Max Werte im gegebenen X-Achsenbereich den der Measuring Cursor abdeckt
         private minMax FindMinMax(minMax minMax, double[] data, int start, int end)
         {
             if (start < 0 || end > data.Length || start >= end)
@@ -371,7 +403,7 @@ namespace DataViewer_1._0._0._0
 
             /*
              * 
-             * HIER NOCH XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             * HIER NOCH XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!###################################################
              * 
              */
 
@@ -411,17 +443,18 @@ namespace DataViewer_1._0._0._0
 
             /*
              * 
-             * HIER NOCH MIN/MAX XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             * HIER NOCH MIN/MAX XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!###############################################
              * 
              */
 
             RefreshMeasuringTextBoxes();
         }
 
-        //Eventhandler wenn der Cursor auf der Zeitachse verschoben wird
+        //Eventhandler wenn der X-Achsen Crosshair auf der Zeitachse verschoben wird
         private void crosshairX_Dragged(object sender, EventArgs e)
         {
-            //angelegt falls nötig
+            //Während der Verschiebeung des X-Achsen Crosshairs laufend die Textboxen mit den aktuellen Y-Werten an der X-Position füllen
+            RefreshCrosshairTextBoxes();
         }
 
         //Eventhandler wenn der Cursor auf der Y-Achse verschoben wird
@@ -503,7 +536,7 @@ namespace DataViewer_1._0._0._0
 
             /*
              * 
-             * HIER NOCH XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             * HIER NOCH XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!##########################################################
              * 
              */
 
@@ -519,7 +552,7 @@ namespace DataViewer_1._0._0._0
             WpfPlot1.Refresh();
         }
 
-        //Crosshair enable / disable
+        //Crosshair enable
         private void toggleButtonCrosshair_Checked(object sender, RoutedEventArgs e)
         {
             crosshairX = WpfPlot1.Plot.AddVerticalLine(WpfPlot1.Plot.GetAxisLimits().XMin + (WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 2, label: "Crosshair X-Axis");
@@ -553,9 +586,27 @@ namespace DataViewer_1._0._0._0
             crosshairX.Dragged += crosshairX_Dragged;
             crosshairAlt.Dragged += crosshairAlt_Dragged;
 
+            //Textboxen für Cursorwerte initial refreshen
+            RefreshCrosshairTextBoxes();
+
             //Plot refreshen
             WpfPlot1.Refresh();
         }
+
+        //Crosshair disable
+        private void toggleButtonCrosshair_Unchecked(object sender, RoutedEventArgs e)
+        {
+            //Crosshairs entfernen
+            WpfPlot1.Plot.Remove(crosshairX);
+            WpfPlot1.Plot.Remove(crosshairAlt);
+            WpfPlot1.Plot.Remove(crosshairTemp);
+            WpfPlot1.Plot.Remove(crosshairAcc);
+            //Textboxen für Cursorwerte leeren (NaN)
+            ClearCrosshairTextBoxes();
+            //Plot refreshen
+            WpfPlot1.Refresh();
+        }
+
 
         //---------------------------- Achsenlimit Textfelder ---------------------------------------
 
@@ -887,15 +938,7 @@ namespace DataViewer_1._0._0._0
             timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
-        private void toggleButtonCrosshair_Unchecked(object sender, RoutedEventArgs e)
-        {
-            WpfPlot1.Plot.Remove(crosshairX);
-            WpfPlot1.Plot.Remove(crosshairAlt);
-            WpfPlot1.Plot.Remove(crosshairTemp);
-            WpfPlot1.Plot.Remove(crosshairAcc);
-            WpfPlot1.Refresh();
-        }
-
+        
         private void toggleButtonMarker_Checked(object sender, RoutedEventArgs e)
         {
             // place the marker at the first data point

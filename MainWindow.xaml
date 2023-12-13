@@ -7,7 +7,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="SIEMERT DataViewer 1.0.0.0" Height="450" Width="800" MinHeight="450" MinWidth="800" Icon="/Icons/Icon.png">
+        Title="SIEMERT DataViewer 1.0.0.0" Height="600" Width="900" MinHeight="450" MinWidth="800" Icon="/Icons/Icon.png">
 
 
     <Grid>
@@ -168,8 +168,19 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <fa:ImageAwesome Icon="Crosshairs" Margin="5,3,0,3" Rotation="90"/>
                         <TextBlock Text="Crosshair" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Altitude" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBlock Text="Alt" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
                         <TextBox x:Name="textBoxCrossAlt" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
+                        <TextBlock Text="Temp" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxCrossTemp" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
+                        <TextBlock Text="Acc" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxCrossAcc" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
+                        <TextBlock Text="Acc-X" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxCrossAccX" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
+                        <TextBlock Text="Acc-Y" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxCrossAccY" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
+                        <TextBlock Text="Acc-Z" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxCrossAccZ" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
+                        
                     </StackPanel>
                 </Border>
 
