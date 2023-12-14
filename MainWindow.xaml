@@ -135,6 +135,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20"/>
                     <RowDefinition/>
+                    <RowDefinition Height="250"/>
                 </Grid.RowDefinitions>
 
                 <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF">
@@ -153,6 +154,14 @@
                         <TreeViewItem Header="Test"/>
                     </TreeViewItem>
                 </TreeView>
+
+                <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF" VerticalAlignment="Top" Height="20" Grid.Row="2">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:ImageAwesome Icon="InfoCircle" Margin="5,3,0,3"/>
+                        <TextBlock Text="Device Info" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                </Border>
             </Grid>
 
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch"/>
