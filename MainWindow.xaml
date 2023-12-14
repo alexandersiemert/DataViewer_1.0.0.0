@@ -135,6 +135,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20"/>
                     <RowDefinition/>
+                    <RowDefinition Height="20"/>
                     <RowDefinition Height="250"/>
                 </Grid.RowDefinitions>
 
@@ -160,8 +161,49 @@
                         <fa:ImageAwesome Icon="InfoCircle" Margin="5,3,0,3"/>
                         <TextBlock Text="Device Info" Margin="8,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
-
                 </Border>
+                
+                <GroupBox Height="Auto" Header="Altitude" Grid.Row="3">
+                        <StackPanel Orientation="Vertical">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
+                                <TextBox x:Name="textBoxInfo1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
+                                <TextBox x:Name="textBoxInfo2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
+                                <TextBox x:Name="textBoxInfo3" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
+                                <TextBox x:Name="textBoxInfo4" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
+                                <TextBox x:Name="textBoxInfo5" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
+                                <TextBox x:Name="textBoxInfo6" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Speed" Width="60" FontWeight="Bold"/>
+                                <TextBox x:Name="textBoxInfo7" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                                <TextBlock Text="m/sec" Margin="5,0,0,0" FontWeight="Bold"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                
             </Grid>
 
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch"/>
