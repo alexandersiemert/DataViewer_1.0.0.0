@@ -90,6 +90,9 @@ namespace DataViewer_1._0._0._0
         minMax minMaxAccZ = new minMax();
         */
 
+        //Variablen für COM-Port Sachen
+        List<string> validPorts = new List<string>();
+
 
         public MainWindow()
         {
@@ -901,6 +904,24 @@ namespace DataViewer_1._0._0._0
             buttonAltUpPressed = false;
             timer.Stop();
             timer.Interval = TimeSpan.FromSeconds(passiveTime);
+        }
+
+        private void buttonRefreshDeviceList_Click(object sender, RoutedEventArgs e)
+        {
+            // Evtl. vorhandene Items löschen
+            deviceListTreeView.Items.Clear();
+            //Suche COM-Ports mit SI-TL
+            validPorts = ComPortChecker.FindValidPorts();
+            if (validPorts != null)
+            {
+                foreach(string validPort in validPorts)
+                {
+                    TreeViewItem mainItem = new TreeViewItem();
+                    mainItem.Tag = validPort;
+                    mainItem.Header = "SI-TL1 No. XXXXX " + "(" + validPort + ")";
+                    deviceListTreeView.Items.Add(mainItem);
+                }
+            }
         }
 
         private void buttonLimitAltDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)

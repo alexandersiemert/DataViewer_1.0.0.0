@@ -125,7 +125,7 @@
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition MinWidth="100" MaxWidth="200" Width="150"/>
+                <ColumnDefinition MinWidth="150" MaxWidth="200" Width="150"/>
                 <ColumnDefinition Width="3"/>
                 <ColumnDefinition/>
                 <ColumnDefinition Width="170"/>
@@ -139,21 +139,27 @@
                     <RowDefinition Height="250"/>
                 </Grid.RowDefinitions>
 
-                <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF">
-                    <StackPanel Orientation="Horizontal">
-                        <fa:ImageAwesome Icon="CodeFork" Margin="5,3,0,3" Rotation="90"/>
-                        <TextBlock Text="Device List" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
+                <Border BorderThickness="0.2" BorderBrush="#272539">
+                    <Grid Background="#99C5FF">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
+                        <!-- Element links ausrichten -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Stretch">
+                            <fa:ImageAwesome Icon="CodeFork" Margin="5,3,0,3" Rotation="90" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Device List" Margin="8,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </StackPanel>
+
+                        <!-- Element ganz rechts ausrichten -->
+                        <Button x:Name="buttonRefreshDeviceList" Grid.Column="2" Content="Refresh" Click="buttonRefreshDeviceList_Click" HorizontalAlignment="Right" Margin="0,0,5,0" Height="18" Width="50"/>
+                    </Grid>
                 </Border>
 
                 <TreeView x:Name="deviceListTreeView" Grid.Row="1">
-                    <TreeViewItem Header="SI-TL1 No. 0001">
-                        <TreeViewItem Header="Test"/>
-                    </TreeViewItem>
-                    <TreeViewItem Header="SI-TL1 No. 0002">
-                        <TreeViewItem Header="Test"/>
-                    </TreeViewItem>
+                    
                 </TreeView>
 
                 <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF" VerticalAlignment="Top" Height="20" Grid.Row="2">
