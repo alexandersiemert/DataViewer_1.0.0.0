@@ -168,48 +168,27 @@
                         <TextBlock Text="Device Info" Margin="8,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-                
-                <GroupBox Height="Auto" Header="Altitude" Grid.Row="3">
-                        <StackPanel Orientation="Vertical">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                <TextBox x:Name="textBoxInfo1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                <TextBox x:Name="textBoxInfo2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                <TextBox x:Name="textBoxInfo3" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                <TextBox x:Name="textBoxInfo4" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                <TextBox x:Name="textBoxInfo5" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                <TextBox x:Name="textBoxInfo6" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Speed" Width="60" FontWeight="Bold"/>
-                                <TextBox x:Name="textBoxInfo7" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                <TextBlock Text="m/sec" Margin="5,0,0,0" FontWeight="Bold"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </GroupBox>
 
-                
+
+                <StackPanel Grid.Row="3" Orientation="Vertical">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Model" Width="Auto" FontWeight="Bold" HorizontalAlignment="Left"/>
+                        <TextBox x:Name="textBoxModel" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Left">
+                        <TextBlock Text="Serial No." Width="Auto" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxSerialNumber" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Left">
+                        <TextBlock Text="Date of production" Width="Auto" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxProductionDate" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Left">
+                        <TextBlock Text="Checksum" Width="Auto" FontWeight="Bold"/>
+                        <TextBox x:Name="textBoxChecksum" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
+                    </StackPanel>
+                </StackPanel>
+
             </Grid>
 
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch"/>

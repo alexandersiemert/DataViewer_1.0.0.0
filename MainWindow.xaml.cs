@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -93,6 +94,8 @@ namespace DataViewer_1._0._0._0
         //Variablen für COM-Port Sachen
         List<string> validPorts = new List<string>();
 
+        //Serial Port Manager 
+        SerialPortManager serialPortManager;
 
         public MainWindow()
         {
@@ -916,10 +919,13 @@ namespace DataViewer_1._0._0._0
             {
                 foreach(string validPort in validPorts)
                 {
-                    TreeViewItem mainItem = new TreeViewItem();
-                    mainItem.Tag = validPort;
-                    mainItem.Header = "SI-TL1 No. XXXXX " + "(" + validPort + ")";
-                    deviceListTreeView.Items.Add(mainItem);
+                    // Datenlogger in Dictionary aufnehmen
+                    DataLoggerManager.AddLogger(new DataLogger(), validPort);
+                    // Erstelle Port für den gefundenen Logger
+                    serialPortManager = new SerialPortManager(validPort);
+                    serialPortManager.DataReceived += OnDataReceived;
+                    serialPortManager.OpenPort();
+                    serialPortManager.SendCommand("I");
                 }
             }
         }
@@ -983,6 +989,79 @@ namespace DataViewer_1._0._0._0
         {
             WpfPlot1.Plot.Legend(false);
             WpfPlot1.Refresh();
+        }
+
+        /*############################   COM PORT EVENTS        ###################################################*/
+
+        //Evenhandler für DataReceived
+        private void OnDataReceived(string[] data)
+        {
+            serialPortManager.ClosePort();
+
+            Dispatcher.Invoke(() =>
+            {
+                char echoCommand = data[0][0];
+                switch (echoCommand)
+                {
+                    case 'I': // Header auslesen
+                        DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].comPort = serialPortManager.GetPortName();
+                        DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].checkSum = data[0].Substring(3,2) + data[0].Substring(1, 2);
+                        DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber = int.Parse(data[0].Substring(49, 4), NumberStyles.HexNumber).ToString();
+
+                        switch (data[0].Substring(53, 2))
+                        {
+                            case "20": // Kennung 20 bedeutet Modell SI-TL1
+                                DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id = "SI-TL1";
+                                break;
+                            default:
+                                // Umgang mit unbekannter ID
+                                break;
+                        }
+
+                        DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].productionDate = data[0].Substring(81, 2) + "." + data[0].Substring(83, 2) + "." + data[0].Substring(85, 4);
+
+                        //###################################TESTCODE################################################################################################
+                        //###################################TESTCODE################################################################################################
+                        //###################################TESTCODE################################################################################################
+                        //###################################TESTCODE################################################################################################
+                        //###################################TESTCODE################################################################################################
+
+                        textBoxModel.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id;
+                        textBoxSerialNumber.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber;
+                        textBoxProductionDate.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].productionDate;
+                        textBoxChecksum.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].checkSum;
+
+                        //###################################TESTCODE################################################################################################
+                        //###################################TESTCODE################################################################################################
+                        //###################################TESTCODE################################################################################################
+                        //###################################TESTCODE################################################################################################
+                        //###################################TESTCODE################################################################################################
+
+
+                        break;
+                    case 'S': // Letzte Aufnahme auslesen
+                    case 'G': // Gesamten Speicher auslesen
+                        
+                        break;
+                    default:
+                        // Umgang mit unbekanntem Echo-Befehl
+                        break;
+                }
+
+                
+
+
+            });
+        }
+
+        //Evenhandler wenn Fenster geschlossen wird
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            // Beim Schließen der Anwendung den COM-Port schließen
+            if (serialPortManager.IsOpen())
+            {
+                serialPortManager.ClosePort();
+            }
         }
 
     }

@@ -20,11 +20,14 @@ namespace DataViewer_1._0._0._0
         //String für das Abspeichern des Empfangspuffers
         private string receivedData = "";
 
+        //Variable für Anzahl der zu erwartenden Datenpakete
+        private int expectedPacketCount=0;
+
         //Timer für Timeout bei Datenempfang
         private System.Timers.Timer dataReceiveTimer;
 
         //Verlinkung zum DataReceived Event der Instanz des SerialPorts im Main Code mit Übergabe der complete Message
-        public event Action<string> DataReceived;
+        public event Action<string[]> DataReceived;
  
         //Initialisiere SerialPort
         public SerialPortManager(string portName)
@@ -84,7 +87,7 @@ namespace DataViewer_1._0._0._0
             }        
         }
 
-        //Event wenn Daten empfangen wurden
+        //Event wenn Daten vollständig empfangen wurden
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
@@ -95,21 +98,48 @@ namespace DataViewer_1._0._0._0
                 StopDataReception();
                 // Timeout wieder starten für nächsten Datenblock
                 StartDataReception();
+
+                // Bestimmen des Echo-Befehls und Setzen der erwarteten Paketzahl
+                if (receivedData.Length > 0 && expectedPacketCount == 0)
+                {
+                    char echoCommand = receivedData[0];
+                    switch (echoCommand)
+                    {
+                        case 'I':
+                            expectedPacketCount = 2;
+                            break;
+                        case 'S':
+                        case 'G':
+                            expectedPacketCount = 4;
+                            break;
+                        default:
+                            // Umgang mit unbekanntem Echo-Befehl
+                            break;
+                    }
+                }
+
                 // Überprüfen, ob die Daten mit CR LF enden
                 if (receivedData.EndsWith("\r\n"))
                 {
-                    // Stoppe Timeout Timer bei komplettem Datenempfang
-                    StopDataReception();
-                    // Speichere das Datenpaket ohne CR LF am Ende ab
-                    string completeMessage = receivedData.Substring(0, receivedData.Length - "\r\n".Length);
-                    Debug.WriteLine(completeMessage);
-                    // Zurücksetzen des empfangenen Datenstrings
-                    receivedData = "";
-                    // Verlinke das komplette Datenpaket an das Data Received Event der jeweiligen Instanz des SerialPorts
-                    DataReceived?.Invoke(completeMessage);
+                    var packets = receivedData.ToString().Split(new[] { "\r\n" }, StringSplitOptions.None);
+                    foreach (var packet in packets)
+                    {
+                        Debug.WriteLine(packet);
+                    }
+                    if (packets.Length >= expectedPacketCount) // -1, weil das letzte Element leer sein könnte
+                    {
+                        // Stoppe Timeout Timer bei komplettem Datenempfang
+                        StopDataReception();
+                        // Zurücksetzen des empfangenen Datenstrings
+                        receivedData = "";
+                        // Zurücksetzen für den nächsten Empfang
+                        expectedPacketCount = 0;
+                        // Verlinke das komplette Datenpaket an das Data Received Event der jeweiligen Instanz des SerialPorts
+                        DataReceived?.Invoke(packets);
+                    }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show("An error has occurred: " + serialPort.PortName + ": " + ex.Message, "COM-Port Error", MessageBoxButton.OKCancel, MessageBoxImage.Error);
             }

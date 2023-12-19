@@ -102,7 +102,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ComPortChecker.cs" />
+    <Compile Include="DataLogger.cs" />
+    <Compile Include="DataLoggerManager.cs" />
     <Compile Include="SerialPortManager.cs" />
+    <Compile Include="TreeViewManager.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

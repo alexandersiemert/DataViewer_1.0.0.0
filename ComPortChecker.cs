@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
+using System.Windows.Threading;
 
 namespace DataViewer_1._0._0._0
 {
@@ -36,8 +38,6 @@ namespace DataViewer_1._0._0._0
                         {
                             Debug.WriteLine($"Aktiver COM-Port: {portName}");
                             responsivePorts.Add(portName);
-
-
                         }
                     }
                     finally
