@@ -7,7 +7,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="SIEMERT DataViewer 1.0.0.0" Height="600" Width="900" MinHeight="450" MinWidth="800" Icon="/Icons/Icon.png">
+        Title="SIEMERT DataViewer 1.0.0" Height="600" Width="900" MinHeight="450" MinWidth="800" Icon="/Icons/Icon.png">
 
 
     <Grid>
@@ -140,7 +140,7 @@
                 </Grid.RowDefinitions>
 
                 <Border BorderThickness="0.2" BorderBrush="#272539">
-                    <Grid Background="#99C5FF">
+                    <Grid Background="#FFCCD8E6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -154,7 +154,13 @@
                         </StackPanel>
 
                         <!-- Element ganz rechts ausrichten -->
-                        <Button x:Name="buttonRefreshDeviceList" Grid.Column="2" Content="Refresh" Click="buttonRefreshDeviceList_Click" HorizontalAlignment="Right" Margin="0,0,5,0" Height="18" Width="50"/>
+                        <Button x:Name="buttonRefreshDeviceList" Grid.Column="2" Content="Refresh" Click="buttonRefreshDeviceList_Click" HorizontalAlignment="Right" Margin="0,0,5,0" Height="18" Width="50">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
                     </Grid>
                 </Border>
 
@@ -162,7 +168,7 @@
                     
                 </TreeView>
 
-                <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF" VerticalAlignment="Top" Height="20" Grid.Row="2">
+                <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6" VerticalAlignment="Top" Height="20" Grid.Row="2">
                     <StackPanel Orientation="Horizontal">
                         <fa:ImageAwesome Icon="InfoCircle" Margin="5,3,0,3"/>
                         <TextBlock Text="Device Info" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -200,7 +206,7 @@
                     <RowDefinition Height="70"/>
                 </Grid.RowDefinitions>
 
-                <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF">
+                <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <fa:ImageAwesome Icon="Crosshairs" Margin="5,3,0,3" Rotation="90"/>
                         <TextBlock Text="Crosshair" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -340,7 +346,7 @@
                         <RowDefinition/>
                     </Grid.RowDefinitions>
 
-                    <Border BorderBrush="Black" BorderThickness="0.4" Background="#99C5FF">
+                    <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
                         <StackPanel Orientation="Horizontal">
                             <fa:ImageAwesome Icon="Tachometer" Margin="5,3,0,3" Rotation="90"/>
                             <TextBlock Text="Measuring Data" Margin="8,0,0,0" VerticalAlignment="Center"/>

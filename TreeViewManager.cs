@@ -17,13 +17,22 @@ namespace DataViewer_1._0._0._0
             myTreeView = treeView;
         }
 
-        public static void AddTreeViewItem(string comPortName)
+        public static void AddTreeViewItem(string comPortName, string header)
         {
             if (!treeViewItems.ContainsKey(comPortName))
             {
-                TreeViewItem newItem = new TreeViewItem { Header = comPortName };
+                TreeViewItem newItem = new TreeViewItem { Header = header};
                 myTreeView.Items.Add(newItem);
                 treeViewItems[comPortName] = newItem;
+            }
+        }
+
+        public static void AddSubItem(string parentComPortName, string subItemName)
+        {
+            if (treeViewItems.TryGetValue(parentComPortName, out TreeViewItem parentItem))
+            {
+                TreeViewItem subItem = new TreeViewItem { Header = subItemName };
+                parentItem.Items.Add(subItem);
             }
         }
 
@@ -40,6 +49,12 @@ namespace DataViewer_1._0._0._0
                 myTreeView.Items.Remove(item);
                 treeViewItems.Remove(comPortName);
             }
+        }
+
+        public static void ClearTreeView()
+        {
+            myTreeView.Items.Clear();
+            treeViewItems.Clear();
         }
     }
 

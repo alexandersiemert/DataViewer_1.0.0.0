@@ -65,6 +65,8 @@ namespace DataViewer_1._0._0._0
         bool buttonAccUpPressed = false;
         bool buttonAccDownPressed = false;
 
+        bool buttonRefreshPressed = false;
+
         //Timer für Achsen Limit Button
         DispatcherTimer timer;
         //Zeit bis Button in Automatik geht
@@ -97,12 +99,17 @@ namespace DataViewer_1._0._0._0
         //Serial Port Manager 
         SerialPortManager serialPortManager;
 
+        
+
         public MainWindow()
         {
             InitializeComponent();
 
             //Timer initialisieren
             InitTimer();
+
+            //TreeView initialisieren für DeviceList
+            TreeViewManager.Initialize(deviceListTreeView);
 
             //Testdaten für Entwicklung erzeugen
             (xh, yh) = DataGen.RandomWalk2D(new Random(0), 10000); //Testdaten Höhe
@@ -704,7 +711,7 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    if (double.TryParse(textBoxAltMin.Text, out double testresult))
                     {
                         if (result > testresult)
                         {
@@ -911,8 +918,12 @@ namespace DataViewer_1._0._0._0
 
         private void buttonRefreshDeviceList_Click(object sender, RoutedEventArgs e)
         {
-            // Evtl. vorhandene Items löschen
-            deviceListTreeView.Items.Clear();
+            //Status is refreshing
+            buttonRefreshPressed = true;
+            // DeviceListe leeren
+            TreeViewManager.ClearTreeView();
+            // DataLogger Dictionary Einträge löschen
+            DataLoggerManager.ClearLoggers();
             //Suche COM-Ports mit SI-TL
             validPorts = ComPortChecker.FindValidPorts();
             if (validPorts != null)
@@ -927,6 +938,7 @@ namespace DataViewer_1._0._0._0
                     serialPortManager.OpenPort();
                     serialPortManager.SendCommand("I");
                 }
+                
             }
         }
 
@@ -1004,39 +1016,46 @@ namespace DataViewer_1._0._0._0
                 switch (echoCommand)
                 {
                     case 'I': // Header auslesen
-                        DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].comPort = serialPortManager.GetPortName();
-                        DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].checkSum = data[0].Substring(3,2) + data[0].Substring(1, 2);
-                        DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber = int.Parse(data[0].Substring(49, 4), NumberStyles.HexNumber).ToString();
-
-                        switch (data[0].Substring(53, 2))
+                        if (buttonRefreshPressed) //Ausführen wenn DeviceList refreshed werden soll
                         {
-                            case "20": // Kennung 20 bedeutet Modell SI-TL1
-                                DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id = "SI-TL1";
-                                break;
-                            default:
-                                // Umgang mit unbekannter ID
-                                break;
+                            buttonRefreshPressed = false;
+
+
+                            DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].comPort = serialPortManager.GetPortName();
+                            DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].checkSum = data[0].Substring(3, 2) + data[0].Substring(1, 2);
+                            DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber = int.Parse(data[0].Substring(49, 4), NumberStyles.HexNumber).ToString();
+
+                            switch (data[0].Substring(53, 2))
+                            {
+                                case "20": // Kennung 20 bedeutet Modell SI-TL1
+                                    DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id = "SI-TL1";
+                                    break;
+                                default:
+                                    // Umgang mit unbekannter ID
+                                    break;
+                            }
+
+                            DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].productionDate = data[0].Substring(81, 2) + "." + data[0].Substring(83, 2) + "." + data[0].Substring(85, 4);
+
+                            TreeViewManager.AddTreeViewItem(serialPortManager.GetPortName(), DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id + " No. " + DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber + " (" + serialPortManager.GetPortName() + ")");
+
+                            //###################################TESTCODE################################################################################################
+                            //###################################TESTCODE################################################################################################
+                            //###################################TESTCODE################################################################################################
+                            //###################################TESTCODE################################################################################################
+                            //###################################TESTCODE################################################################################################
+
+                            textBoxModel.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id;
+                            textBoxSerialNumber.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber;
+                            textBoxProductionDate.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].productionDate;
+                            textBoxChecksum.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].checkSum;
+
+                            //###################################TESTCODE################################################################################################
+                            //###################################TESTCODE################################################################################################
+                            //###################################TESTCODE################################################################################################
+                            //###################################TESTCODE################################################################################################
+                            //###################################TESTCODE################################################################################################
                         }
-
-                        DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].productionDate = data[0].Substring(81, 2) + "." + data[0].Substring(83, 2) + "." + data[0].Substring(85, 4);
-
-                        //###################################TESTCODE################################################################################################
-                        //###################################TESTCODE################################################################################################
-                        //###################################TESTCODE################################################################################################
-                        //###################################TESTCODE################################################################################################
-                        //###################################TESTCODE################################################################################################
-
-                        textBoxModel.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id;
-                        textBoxSerialNumber.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber;
-                        textBoxProductionDate.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].productionDate;
-                        textBoxChecksum.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].checkSum;
-
-                        //###################################TESTCODE################################################################################################
-                        //###################################TESTCODE################################################################################################
-                        //###################################TESTCODE################################################################################################
-                        //###################################TESTCODE################################################################################################
-                        //###################################TESTCODE################################################################################################
-
 
                         break;
                     case 'S': // Letzte Aufnahme auslesen
