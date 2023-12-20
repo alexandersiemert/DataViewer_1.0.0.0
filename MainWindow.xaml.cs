@@ -97,9 +97,33 @@ namespace DataViewer_1._0._0._0
         List<string> validPorts = new List<string>();
 
         //Serial Port Manager 
-        SerialPortManager serialPortManager;
+        public static SerialPortManager serialPortManager;
 
-        
+        //Klassen für Messwerte
+        public class Messreihe
+        {
+            public DateTime Startzeit { get; set; }
+            public double StartTemperatur { get; set; }
+            public double StartDruck { get; set; }
+            public List<Messdaten> Messungen { get; set; } = new List<Messdaten>();
+            public string Status { get; set; }
+            public string Spannung { get; set; }
+            public DateTime Endzeit { get; set; }
+            public double EndTemperatur { get; set; }
+            public double EndDruck { get; set; }
+        }
+
+        public class Messdaten
+        {
+            public double Druck { get; set; }
+            public double BeschleunigungX { get; set; }
+            public double BeschleunigungY { get; set; }
+            public double BeschleunigungZ { get; set; }
+            public double Temperatur { get; set; } // Optional
+        }
+
+        //Variablen für Messreihen 
+        List<Messreihe> measurementSeries = new List<Messreihe>();
 
         public MainWindow()
         {
@@ -112,9 +136,9 @@ namespace DataViewer_1._0._0._0
             TreeViewManager.Initialize(deviceListTreeView);
 
             //Testdaten für Entwicklung erzeugen
-            (xh, yh) = DataGen.RandomWalk2D(new Random(0), 10000); //Testdaten Höhe
-            (xt, yt) = DataGen.RandomWalk2D(new Random(1), 10000); //Testdaten Temperatur
-            (xa, ya) = DataGen.RandomWalk2D(new Random(2), 10000); //Testdaten Beschleunigung
+            (xh, yh) = DataGen.RandomWalk2D(new Random(4), 10000); //Testdaten Höhe
+            (xt, yt) = DataGen.RandomWalk2D(new Random(5), 10000); //Testdaten Temperatur
+            (xa, ya) = DataGen.RandomWalk2D(new Random(6), 10000); //Testdaten Beschleunigung
 
             //Plot Titel festlegen
             WpfPlot1.Plot.Title("SI-TL1");
@@ -191,8 +215,8 @@ namespace DataViewer_1._0._0._0
         {
             //Textboxen für Crosshair aktualisieren
             textBoxCrossAlt.Text = InterpolateY(xh, yh, crosshairX.X).ToString("F2");
-            textBoxCrossTemp.Text = InterpolateY(xt, yt, crosshairX.X).ToString("F2");
-            textBoxCrossAcc.Text = InterpolateY(xa, ya, crosshairX.X).ToString("F2");
+            textBoxCrossTemp.Text = InterpolateY(xh, yt, crosshairX.X).ToString("F2");
+            textBoxCrossAcc.Text = InterpolateY(xh, ya, crosshairX.X).ToString("F2");
             /* FREISCHALTEN WENN ES SOWEIT IST #########################################################################################################################################
             textBoxCrossAccX.Text = InterpolateY(xax, yax, crosshairX.X).ToString("F2");
             textBoxCrossAccY.Text = InterpolateY(xay, yay, crosshairX.X).ToString("F2");
@@ -223,12 +247,12 @@ namespace DataViewer_1._0._0._0
             textBoxMeasAltCursor2.Text = InterpolateY(xh, yh, measuringSpan.X2).ToString("F2");
 
             //Textboxen für Messungen aktualisieren
-            textBoxMeasTempCursor1.Text = InterpolateY(xt, yt, measuringSpan.X1).ToString("F2");
-            textBoxMeasTempCursor2.Text = InterpolateY(xt, yt, measuringSpan.X2).ToString("F2");
+            textBoxMeasTempCursor1.Text = InterpolateY(xh, yt, measuringSpan.X1).ToString("F2");
+            textBoxMeasTempCursor2.Text = InterpolateY(xh, yt, measuringSpan.X2).ToString("F2");
 
             //Textboxen für Messungen aktualisieren
-            textBoxMeasAccCursor1.Text = InterpolateY(xa, ya, measuringSpan.X1).ToString("F2");
-            textBoxMeasAccCursor2.Text = InterpolateY(xa, ya, measuringSpan.X2).ToString("F2");
+            textBoxMeasAccCursor1.Text = InterpolateY(xh, ya, measuringSpan.X1).ToString("F2");
+            textBoxMeasAccCursor2.Text = InterpolateY(xh, ya, measuringSpan.X2).ToString("F2");
 
             /*
              * ################## FREISCHALTEN WENN ES SOWEIT IST #######################################################################################################################
@@ -299,6 +323,11 @@ namespace DataViewer_1._0._0._0
         {
             for (int i = 1; i < xData.Length; i++)
             {
+                if (xValue < 0 || xData.Length != yData.Length || xData.Length == 0)
+                {
+                    return double.NaN; // Frühzeitige Rückkehr bei negativem xValue oder ungültigen Eingabedaten
+                }
+
                 if (xValue < xData[i])
                 {
                     double slope = (yData[i] - yData[i - 1]) / (xData[i] - xData[i - 1]);
@@ -354,6 +383,107 @@ namespace DataViewer_1._0._0._0
             Debug.WriteLine(minMax.max);
             return minMax;
         }
+
+        private List<Messreihe> DekodiereDatenpaket(string datenpaket)
+        {
+            List<Messreihe> messreihen = new List<Messreihe>();
+
+            int splitStartIndex = datenpaket.IndexOf("AAAA");
+
+            // Trennung der einzelnen Messreihen an der Anfangskodierung
+            string[] einzelneReihen = datenpaket.Split(new[] { "AAAA" }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var reihe in einzelneReihen)
+            {
+                if (string.IsNullOrEmpty(reihe) || splitStartIndex > 0 )
+                {
+                    continue; // Leere oder ungültige Reihe überspringen
+                }
+
+                
+                var messreihe = new Messreihe();
+                // Anfangsdatenfolge
+                string anfangsdaten = reihe.Substring(0, 24); // Länge der Anfangsdaten
+                messreihe.Startzeit = ParseDatumUndZeit(anfangsdaten.Substring(2, 14));
+                messreihe.StartTemperatur = (HexZuDouble(anfangsdaten.Substring(16, 4))-500)/10;
+                messreihe.StartDruck = HexZuDouble(anfangsdaten.Substring(20, 4))/10;
+
+                // Extraktion und Verarbeitung der Messdaten
+                int messdatenStartIndex = 24;
+                int messdatenEndIndex = reihe.IndexOf("FFFF");
+                string messdaten = reihe.Substring(messdatenStartIndex, messdatenEndIndex - messdatenStartIndex);// Exklusive Abschlussdaten
+
+                //Verarbeitung Messdaten
+                double temperatur = messreihe.StartTemperatur; // Starttemperatur aus der Anfangsdatenfolge
+
+                for (int i = 0; i < messdaten.Length; i += 16)
+                {
+                    if (i > 0 && i % (16 * 240) == 0)  // Temperaturdaten sind vorhanden
+                    {
+                        temperatur = HexZuDouble(messdaten.Substring(i, 4));
+                        i += 4; // Verschiebung des Index um die Länge der Temperaturdaten
+                    }
+
+                    var daten = new Messdaten
+                    {
+                        Druck = HexZuDouble(messdaten.Substring(i, 4)),
+                        BeschleunigungX = HexZuDouble(messdaten.Substring(i + 4, 4)),
+                        BeschleunigungY = HexZuDouble(messdaten.Substring(i + 8, 4)),
+                        BeschleunigungZ = HexZuDouble(messdaten.Substring(i + 12, 4)),
+                        Temperatur = temperatur
+                    };
+                    messreihe.Messungen.Add(daten);
+                }
+
+                // Abschlussdatenfolge
+                string abschlussdaten = reihe.Substring(messdatenEndIndex + 4);
+                messreihe.Status = abschlussdaten.Substring(0, 4);
+                messreihe.Spannung = abschlussdaten.Substring(4, 4);
+                messreihe.Endzeit = ParseDatumUndZeit(abschlussdaten.Substring(10, 14));
+                messreihe.EndTemperatur = HexZuDouble(abschlussdaten.Substring(24, 4));
+                messreihe.EndDruck = HexZuDouble(abschlussdaten.Substring(28, 4));
+
+                messreihen.Add(messreihe);
+             
+            }
+
+            return messreihen;
+        }
+
+        private DateTime ParseDatumUndZeit(string hexDatumZeit)
+        {
+            // Stellen Sie sicher, dass die Länge von hexDatumZeit korrekt ist
+            if (hexDatumZeit.Length != 14)
+            {
+                throw new ArgumentException("Ungültige Länge für Datum und Zeit.");
+            }
+
+            int sekunden = HexZuInt(hexDatumZeit.Substring(0, 2));
+            int minuten = HexZuInt(hexDatumZeit.Substring(2, 2));
+            int stunden = HexZuInt(hexDatumZeit.Substring(4, 2));
+            int tag = int.Parse(hexDatumZeit.Substring(6, 2));
+            int monat = int.Parse(hexDatumZeit.Substring(8, 2));
+            int jahr = int.Parse(hexDatumZeit.Substring(10, 4));
+
+            // Validierung der Datumswerte
+            if (jahr < 1 || jahr > 9999 || monat < 1 || monat > 12 || tag < 1 || tag > DateTime.DaysInMonth(jahr, monat))
+            {
+                return new DateTime(1900, 1, 1, stunden, minuten, sekunden);
+            }
+            return new DateTime(jahr, monat, tag, stunden, minuten, sekunden);
+        }
+
+        private int HexZuInt(string hex)
+        {
+            return int.Parse(hex, NumberStyles.HexNumber);
+        }
+
+        private double HexZuDouble(string hex)
+        {
+            long intValue = Convert.ToInt64(hex, 16);
+            return (double)intValue;
+        }
+
 
         //################################################################################################################################
         //                                                   EVENTHANDLER
@@ -1060,7 +1190,7 @@ namespace DataViewer_1._0._0._0
                         break;
                     case 'S': // Letzte Aufnahme auslesen
                     case 'G': // Gesamten Speicher auslesen
-                        
+                        measurementSeries = DekodiereDatenpaket(data[3]);
                         break;
                     default:
                         // Umgang mit unbekanntem Echo-Befehl
