@@ -415,14 +415,28 @@ namespace DataViewer_1._0._0._0
 
                 //Verarbeitung Messdaten
                 double temperatur = messreihe.StartTemperatur; // Starttemperatur aus der Anfangsdatenfolge
+                int tempCounter = 0;
+                bool isTempMeasured = false;
 
                 for (int i = 0; i < messdaten.Length; i += 16)
                 {
-                    if (i > 0 && i % (16 * 240) == 0)  // Temperaturdaten sind vorhanden
+                    if (i == 3824)  // Erste Temperaturmessung nach Anfangskodierung
                     {
+                        isTempMeasured = true;
+                        Debug.WriteLine("TEMPERATUR");
                         temperatur = HexZuDouble(messdaten.Substring(i, 4));
-                        i += 4; // Verschiebung des Index um die Länge der Temperaturdaten
+                        //i += 4; // Verschiebung des Index um die Länge der Temperaturdaten
+                        //modulator += 4;
                     }
+                   if (tempCounter >=239)
+                    {
+                        tempCounter = 0;
+                        isTempMeasured = true;
+                        Debug.WriteLine("TEMPERATUR");
+                        temperatur = HexZuDouble(messdaten.Substring(i, 4));
+                        
+                    }
+
 
                     var daten = new Messdaten
                     {
@@ -432,7 +446,12 @@ namespace DataViewer_1._0._0._0
                         BeschleunigungZ = HexZuDouble(messdaten.Substring(i + 12, 4)),
                         Temperatur = temperatur
                     };
+
+                    Debug.WriteLine(i.ToString() + "  " +  messdaten.Substring(i,16));
                     messreihe.Messungen.Add(daten);
+                    tempCounter++;
+
+                    if(isTempMeasured) { i += 4;isTempMeasured = false; }
                 }
 
                 // Abschlussdatenfolge
