@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -117,6 +118,7 @@ namespace DataViewer_1._0._0._0
         {
             public DateTime Zeit { get; set; }
             public double Druck { get; set; }
+            public double Hoehe { get; set; }
             public double BeschleunigungX { get; set; }
             public double BeschleunigungY { get; set; }
             public double BeschleunigungZ { get; set; }
@@ -438,9 +440,10 @@ namespace DataViewer_1._0._0._0
                     {
                         Zeit = messreihe.Startzeit.AddMilliseconds(250*timeCounter),
                         Druck = HexZuDouble(messdaten.Substring(i, 4))/10,
-                        BeschleunigungX = HexZuDouble(messdaten.Substring(i + 4, 4)),
-                        BeschleunigungY = HexZuDouble(messdaten.Substring(i + 8, 4)),
-                        BeschleunigungZ = HexZuDouble(messdaten.Substring(i + 12, 4)),
+                        Hoehe = Math.Round((288.15/0.0065)*(1-((HexZuDouble(messdaten.Substring(i, 4)) / 10) /1013.25))*0.190294957,2),
+                        BeschleunigungX = CalculateAccelerationFromHex(messdaten.Substring(i + 4, 4)),
+                        BeschleunigungY = CalculateAccelerationFromHex(messdaten.Substring(i + 8, 4)),
+                        BeschleunigungZ = CalculateAccelerationFromHex(messdaten.Substring(i + 12, 4)),
                         Temperatur = temperatur
                     };
 
@@ -496,6 +499,31 @@ namespace DataViewer_1._0._0._0
         {
             long intValue = Convert.ToInt64(hex, 16);
             return (double)intValue;
+        }
+
+        private double CalculateAccelerationFromHex(string hexData)
+        {
+            double acceleration;
+
+            if (hexData.Length > 4)
+            {
+                throw new ArgumentException("Der Hexadezimal-String darf maximal vier Zeichen lang sein.");
+            }
+
+            // Konvertiere Hexadezimal-String in Integer (10-Bit Zweierkomplement)
+            int rawValue = Convert.ToInt32(hexData, 16);
+
+            
+            if (rawValue <= 32767) // 
+            {
+                acceleration = rawValue / 2048.0;
+                return Math.Round(acceleration, 3);
+            }
+            else
+            {
+                acceleration = (rawValue - 65535.0) / 2048.0;
+                return Math.Round(acceleration, 3);
+            }
         }
 
 
