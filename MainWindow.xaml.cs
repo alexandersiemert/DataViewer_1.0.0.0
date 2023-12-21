@@ -415,43 +415,34 @@ namespace DataViewer_1._0._0._0
 
                 //Verarbeitung Messdaten
                 double temperatur = messreihe.StartTemperatur; // Starttemperatur aus der Anfangsdatenfolge
-                int tempCounter = 0;
-                bool isTempMeasured = false;
+                int tempCounter = 1;
+               
 
                 for (int i = 0; i < messdaten.Length; i += 16)
                 {
-                    if (i == 3824)  // Erste Temperaturmessung nach Anfangskodierung
-                    {
-                        isTempMeasured = true;
-                        Debug.WriteLine("TEMPERATUR");
-                        temperatur = HexZuDouble(messdaten.Substring(i, 4));
-                        //i += 4; // Verschiebung des Index um die Länge der Temperaturdaten
-                        //modulator += 4;
-                    }
-                   if (tempCounter >=239)
+                    Debug.WriteLine(tempCounter.ToString() + "  " +  i.ToString() + "  " + messdaten.Substring(i, 16));
+
+                    if (tempCounter >=240)
                     {
                         tempCounter = 0;
-                        isTempMeasured = true;
-                        Debug.WriteLine("TEMPERATUR");
-                        temperatur = HexZuDouble(messdaten.Substring(i, 4));
                         
+                        Debug.WriteLine("TEMPERATUR");
+                        temperatur = (HexZuDouble(messdaten.Substring(i, 4)) - 500)/ 10;
+                        i += 4;
                     }
 
 
                     var daten = new Messdaten
                     {
-                        Druck = HexZuDouble(messdaten.Substring(i, 4)),
+                        Druck = HexZuDouble(messdaten.Substring(i, 4))/10,
                         BeschleunigungX = HexZuDouble(messdaten.Substring(i + 4, 4)),
                         BeschleunigungY = HexZuDouble(messdaten.Substring(i + 8, 4)),
                         BeschleunigungZ = HexZuDouble(messdaten.Substring(i + 12, 4)),
                         Temperatur = temperatur
                     };
-
-                    Debug.WriteLine(i.ToString() + "  " +  messdaten.Substring(i,16));
+                    
                     messreihe.Messungen.Add(daten);
                     tempCounter++;
-
-                    if(isTempMeasured) { i += 4;isTempMeasured = false; }
                 }
 
                 // Abschlussdatenfolge
