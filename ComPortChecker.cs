@@ -28,7 +28,7 @@ namespace DataViewer_1._0._0._0
                         port.DataBits = 8;     // Datenbits auf 8 setzen
                         port.Parity = Parity.None; // Keine Parität
                         port.StopBits = StopBits.One; // 1 Stopbit
-
+                        port.Close();
                         port.Open();
                         port.Write("*"); // Send '*' to the COM port
                         System.Threading.Thread.Sleep(100); // Wait for the response (adjust as needed)

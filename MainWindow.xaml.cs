@@ -192,6 +192,85 @@ namespace DataViewer_1._0._0._0
         //                                                   FUNKTIONEN
         //################################################################################################################################
 
+        // Daten plotten
+        private void PlotData(List<Messreihe> _messreihe, int index)
+        {
+            WpfPlot1.Plot.Clear();
+
+            //Plot Titel festlegen
+            WpfPlot1.Plot.Title(_messreihe[index].Startzeit.ToString());
+
+
+            List<DateTime> timeList = new List<DateTime>();
+            List<double> pressureList = new List<double>();
+            List<double> heightList = new List<double>();
+            List<double> accXList = new List<double>();
+            List<double> accYList = new List<double>();
+            List<double> accZList = new List<double>();
+            List<double> tempList = new List<double>();
+
+
+            foreach (Messdaten messdaten in _messreihe[index].Messungen)
+            {
+
+                timeList.Add(messdaten.Zeit);
+                pressureList.Add(messdaten.Druck);
+                heightList.Add(messdaten.Hoehe);
+                accXList.Add(messdaten.BeschleunigungX);
+                accYList.Add(messdaten.BeschleunigungY);
+                accZList.Add(messdaten.BeschleunigungZ);
+                tempList.Add(messdaten.Temperatur);
+
+            }
+
+            // Konvertieren der Liste in ein Array
+            DateTime[] dateTimeArray = timeList.ToArray();
+            double[] timeArray = new double[timeList.Count];
+
+            for(int i=0;i<dateTimeArray.Length;i++)
+            {
+                timeArray[i] = dateTimeArray[i].ToOADate();
+            }
+
+            double[] pressureArray = pressureList.ToArray();
+            double[] heightArray = heightList.ToArray();
+            double[] accXArray = accXList.ToArray();
+            double[] accYArray = accYList.ToArray();
+            double[] accZArray = accZList.ToArray();
+            double[] tempArray = tempList.ToArray();
+
+            //Aktiviere DateTime Format für die X-Achse
+            WpfPlot1.Plot.XAxis.DateTimeFormat(true);
+
+            //Daten für Höhe zum Plot WpfPlot1 (in XAML definiert) hinzufügen
+            pltAlt = WpfPlot1.Plot.AddScatter(timeArray, heightArray, label: "Altitude");
+            pltAlt.YAxisIndex = WpfPlot1.Plot.LeftAxis.AxisIndex;
+            WpfPlot1.Plot.YAxis.Label("Altitude [m]");
+            pltAlt.MarkerSize = 1;
+            pltAlt.Color = Color.Black;
+            WpfPlot1.Plot.YAxis.Color(pltAlt.Color);
+
+            //Daten für Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzufügen
+            pltTemp = WpfPlot1.Plot.AddScatter(timeArray, tempArray, label: "Temperature");
+            //yAxisTemp = WpfPlot1.Plot.AddAxis(Edge.Right);
+            pltTemp.YAxisIndex = yAxisTemp.AxisIndex;
+            yAxisTemp.Label("Temperature [°C]");
+            pltTemp.MarkerSize = 1;
+            pltTemp.Color = Color.Red;
+            yAxisTemp.Color(pltTemp.Color);
+
+            //Daten für Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzufügen
+            pltAcc = WpfPlot1.Plot.AddScatter(timeArray, accXArray, label: "3-Axis Acceleration");
+            //yAxisAcc = WpfPlot1.Plot.AddAxis(Edge.Right);
+            pltAcc.YAxisIndex = yAxisAcc.AxisIndex;
+            yAxisAcc.Label("Acceleration [g]");
+            pltAcc.MarkerSize = 1;
+            pltAcc.Color = Color.Green;
+            yAxisAcc.Color(pltAcc.Color);
+
+            WpfPlot1.Refresh();
+        }
+        
         // Timer initialisieren
         private void InitTimer()
         {
@@ -883,7 +962,7 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    if (double.TryParse(textBoxAltMin.Text, out double testresult))
+                    if (double.TryParse(textBoxTempMin.Text, out double testresult))
                     {
                         if (result > testresult)
                         {
@@ -922,7 +1001,7 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    if (double.TryParse(textBoxTempMax.Text, out double testresult))
                     {
                         if (result < testresult)
                         {
@@ -961,7 +1040,7 @@ namespace DataViewer_1._0._0._0
                 {
                     // result enthält jetzt den Double-Wert aus dem TextBox.
                     // Verwenden Sie result für Ihre Berechnungen oder Anzeige.
-                    if (double.TryParse(textBoxAltMax.Text, out double testresult))
+                    if (double.TryParse(textBoxAccMin.Text, out double testresult))
                     {
                         if (result > testresult)
                         {
@@ -1233,6 +1312,7 @@ namespace DataViewer_1._0._0._0
                     case 'S': // Letzte Aufnahme auslesen
                     case 'G': // Gesamten Speicher auslesen
                         measurementSeries = DekodiereDatenpaket(data[3]);
+                        PlotData(measurementSeries, 1);
                         break;
                     default:
                         // Umgang mit unbekanntem Echo-Befehl
