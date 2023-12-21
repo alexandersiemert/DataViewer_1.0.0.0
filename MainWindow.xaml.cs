@@ -115,6 +115,7 @@ namespace DataViewer_1._0._0._0
 
         public class Messdaten
         {
+            public DateTime Zeit { get; set; }
             public double Druck { get; set; }
             public double BeschleunigungX { get; set; }
             public double BeschleunigungY { get; set; }
@@ -416,6 +417,7 @@ namespace DataViewer_1._0._0._0
                 //Verarbeitung Messdaten
                 double temperatur = messreihe.StartTemperatur; // Starttemperatur aus der Anfangsdatenfolge
                 int tempCounter = 1;
+                int timeCounter = 0;
                
 
                 for (int i = 0; i < messdaten.Length; i += 16)
@@ -434,15 +436,17 @@ namespace DataViewer_1._0._0._0
 
                     var daten = new Messdaten
                     {
+                        Zeit = messreihe.Startzeit.AddMilliseconds(250*timeCounter),
                         Druck = HexZuDouble(messdaten.Substring(i, 4))/10,
                         BeschleunigungX = HexZuDouble(messdaten.Substring(i + 4, 4)),
                         BeschleunigungY = HexZuDouble(messdaten.Substring(i + 8, 4)),
                         BeschleunigungZ = HexZuDouble(messdaten.Substring(i + 12, 4)),
                         Temperatur = temperatur
                     };
-                    
+
                     messreihe.Messungen.Add(daten);
                     tempCounter++;
+                    timeCounter++;
                 }
 
                 // Abschlussdatenfolge
