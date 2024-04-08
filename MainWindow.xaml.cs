@@ -239,6 +239,16 @@ namespace DataViewer_1._0._0._0
             double[] accZArray = accZList.ToArray();
             double[] tempArray = tempList.ToArray();
 
+            // Schreiben der Werte in den public main Bereich um die Arrays außerhalb dieser Methode verfügbar zu machen (z.B. für Cursor Berechnungen)
+            yh = heightArray;
+            xh = timeArray;
+
+            ya = accXArray;
+            xa = timeArray;
+
+            yt = tempArray;
+            xt = timeArray;
+
             //Aktiviere DateTime Format für die X-Achse
             WpfPlot1.Plot.XAxis.DateTimeFormat(true);
 
@@ -297,8 +307,8 @@ namespace DataViewer_1._0._0._0
         {
             //Textboxen für Crosshair aktualisieren
             textBoxCrossAlt.Text = InterpolateY(xh, yh, crosshairX.X).ToString("F2");
-            textBoxCrossTemp.Text = InterpolateY(xh, yt, crosshairX.X).ToString("F2");
-            textBoxCrossAcc.Text = InterpolateY(xh, ya, crosshairX.X).ToString("F2");
+            textBoxCrossTemp.Text = InterpolateY(xt, yt, crosshairX.X).ToString("F2");
+            textBoxCrossAcc.Text = InterpolateY(xa, ya, crosshairX.X).ToString("F2");
             /* FREISCHALTEN WENN ES SOWEIT IST #########################################################################################################################################
             textBoxCrossAccX.Text = InterpolateY(xax, yax, crosshairX.X).ToString("F2");
             textBoxCrossAccY.Text = InterpolateY(xay, yay, crosshairX.X).ToString("F2");
@@ -1116,7 +1126,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonAltUpPressed = true;
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin-1, WpfPlot1.Plot.GetAxisLimits().YMax-1);
+            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin-1, WpfPlot1.Plot.GetAxisLimits().YMax-1);
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin - (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50, WpfPlot1.Plot.GetAxisLimits().YMax - (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50);
             WpfPlot1.Refresh();
         }
 
@@ -1124,7 +1135,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonAltDownPressed = true;
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + 1, WpfPlot1.Plot.GetAxisLimits().YMax + 1);
+            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + 1, WpfPlot1.Plot.GetAxisLimits().YMax + 1);
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50, WpfPlot1.Plot.GetAxisLimits().YMax + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50);
             WpfPlot1.Refresh();
         }
 
@@ -1132,7 +1144,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonTempUpPressed = true;
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - 1,yAxisTemp.AxisIndex);
+            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - 1,yAxisTemp.AxisIndex);
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, yAxisTemp.AxisIndex);
             WpfPlot1.Refresh();
         }
 
@@ -1140,7 +1153,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonTempDownPressed = true;
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0,yAxisTemp.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + 1, yAxisTemp.AxisIndex);
+            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0,yAxisTemp.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + 1, yAxisTemp.AxisIndex);
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin + (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, yAxisTemp.AxisIndex);
             WpfPlot1.Refresh();
         }
 
@@ -1148,7 +1162,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonAccUpPressed = true;
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - 1, yAxisAcc.AxisIndex);
+            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - 1, yAxisAcc.AxisIndex);
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, yAxisAcc.AxisIndex);
             WpfPlot1.Refresh();
         }
 
@@ -1156,7 +1171,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonAccDownPressed = true;
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + 1, yAxisAcc.AxisIndex);
+            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + 1, yAxisAcc.AxisIndex);
+            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, yAxisAcc.AxisIndex);
             WpfPlot1.Refresh();
         }
 
