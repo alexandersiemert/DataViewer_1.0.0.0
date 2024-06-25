@@ -165,7 +165,6 @@
                 </Border>
 
                 <TreeView x:Name="deviceListTreeView" Grid.Row="1">
-                    
                 </TreeView>
 
                 <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6" VerticalAlignment="Top" Height="20" Grid.Row="2">

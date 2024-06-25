@@ -109,6 +109,8 @@ namespace DataViewer_1._0._0._0
                             expectedPacketCount = 2;
                             break;
                         case 'S':
+                            expectedPacketCount = 4;
+                            break;
                         case 'G':
                             expectedPacketCount = 4;
                             break;

@@ -180,6 +180,9 @@ namespace DataViewer_1._0._0._0
             //Plot zoomen
             WpfPlot1.MouseWheel += WpfPlot1_MouseWheel;
 
+            // Daten Plotten aus anderen Klassen heraus
+            TreeViewManager.TriggerPlotData += TriggerPlotData;
+
             //Textboxen für Messungen leeren, weil da stehen sonst Fragezeichen drin und war zu faul das zu ändern :-D
             ClearMeasuringTextBoxes();
 
@@ -476,8 +479,15 @@ namespace DataViewer_1._0._0._0
             return minMax;
         }
 
-        private List<Messreihe> DekodiereDatenpaket(string datenpaket)
+        private List<Messreihe> DekodiereDatenpaket(string datenpaket, string portName)
         {
+            //Prüfe ob überhaupt der Beginn einer Aufnahme da ist mittels Anfangskodierung AAAA. Wenn nicht, ist keine gültige Aufnahme in den Daten vorhanden
+            if (datenpaket.IndexOf("AAAA") == -1)
+            {
+                //Breche die Dekodierung ab und gebe null zurück
+                return null;
+            }
+
             List<Messreihe> messreihen = new List<Messreihe>();
 
             int splitStartIndex = datenpaket.IndexOf("AAAA");
@@ -553,6 +563,12 @@ namespace DataViewer_1._0._0._0
              
             }
 
+            //Messreihen im TreeView dem Datenlogger als Subitem hinzufügen
+            foreach (var _messreihe in messreihen)
+            {
+                TreeViewManager.AddSubItem(portName, _messreihe.Startzeit.ToString());
+            }
+
             return messreihen;
         }
 
@@ -613,6 +629,17 @@ namespace DataViewer_1._0._0._0
                 acceleration = (rawValue - 65535.0) / 2048.0;
                 return Math.Round(acceleration, 3);
             }
+        }
+
+        //################################################################################################################################
+        //                                                   AUSLÖSEMETHODEN FÜR EVENTS
+        //################################################################################################################################
+
+
+        // Methode zum Auslösen des Events zum Plotten von Datenn aus anderen Klassen heraus
+        public void TriggerPlotData(int index)
+        {
+            PlotData(measurementSeries,index);
         }
 
 
@@ -1336,9 +1363,26 @@ namespace DataViewer_1._0._0._0
 
                         break;
                     case 'S': // Letzte Aufnahme auslesen
+                        
+                        measurementSeries = DekodiereDatenpaket(data[3], DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].comPort);
+
+                        //Prüfe ob Daten enthalten sind (keine Daten => measurementSeries = null)
+                        if (measurementSeries!=null)
+                        {
+                            PlotData(measurementSeries, 0); //Plotte Daten 
+                        }
+                        else
+                        {
+                            // Wenn im Datenpaket keine verwertbaren Daten vorhanden sind, wird das hier abgefangen
+                            MessageBox.Show("No data!");
+                        }
+
+                        break;
+
                     case 'G': // Gesamten Speicher auslesen
-                        measurementSeries = DekodiereDatenpaket(data[3]);
-                        PlotData(measurementSeries, 1);
+                        measurementSeries = DekodiereDatenpaket(data[3], DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].comPort);
+                        
+                        PlotData(measurementSeries, 0);
                         break;
                     default:
                         // Umgang mit unbekanntem Echo-Befehl
