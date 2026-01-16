@@ -53,7 +53,8 @@ namespace DataViewer_1._0._0._0
 
         InteractiveVerticalLine crosshairX;
         InteractiveHorizontalLine crosshairAlt;
-        HorizontalLine crosshairTemp, crosshairAcc;
+        HorizontalLine crosshairTemp, crosshairAcc, crosshairAltLabel;
+        VerticalLine crosshairXLabel;
 
         InteractiveMarker marker;
         double? lastMeasuringX1;
@@ -537,6 +538,18 @@ namespace DataViewer_1._0._0._0
             if (crosshairAcc != null)
             {
                 crosshairAcc.LabelText = crosshairAcc.Y.ToString("F2");
+            }
+
+            if (crosshairXLabel != null)
+            {
+                crosshairXLabel.X = crosshairX.X;
+                crosshairXLabel.LabelText = FormatXAxisLabel(crosshairX.X);
+            }
+
+            if (crosshairAltLabel != null)
+            {
+                crosshairAltLabel.Y = crosshairAlt.Y;
+                crosshairAltLabel.LabelText = crosshairAlt.Y.ToString("F2");
             }
         }
 
@@ -1391,6 +1404,18 @@ namespace DataViewer_1._0._0._0
             crosshairAcc.LabelBackgroundColor = Colors.Green;
             crosshairAcc.IsDraggable = false;
 
+            crosshairXLabel = WpfPlot1.Plot.Add.VerticalLine(xCenter, color: Colors.Transparent);
+            crosshairXLabel.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            crosshairXLabel.LabelBackgroundColor = Colors.Black;
+            crosshairXLabel.LabelFontColor = Colors.White;
+            crosshairXLabel.IsDraggable = false;
+
+            crosshairAltLabel = WpfPlot1.Plot.Add.HorizontalLine(yCenter, color: Colors.Transparent);
+            crosshairAltLabel.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            crosshairAltLabel.LabelBackgroundColor = Colors.Black;
+            crosshairAltLabel.LabelFontColor = Colors.White;
+            crosshairAltLabel.IsDraggable = false;
+
             UpdateCrosshairState();
             WpfPlot1.Refresh();
         }
@@ -1421,6 +1446,18 @@ namespace DataViewer_1._0._0._0
             {
                 WpfPlot1.Plot.Remove(crosshairAcc);
                 crosshairAcc = null;
+            }
+
+            if (crosshairXLabel != null)
+            {
+                WpfPlot1.Plot.Remove(crosshairXLabel);
+                crosshairXLabel = null;
+            }
+
+            if (crosshairAltLabel != null)
+            {
+                WpfPlot1.Plot.Remove(crosshairAltLabel);
+                crosshairAltLabel = null;
             }
 
             ClearCrosshairTextBoxes();
