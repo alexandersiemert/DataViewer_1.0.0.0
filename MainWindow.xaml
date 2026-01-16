@@ -1,4 +1,4 @@
-﻿<Window x:Class="DataViewer_1._0._0._0.MainWindow"
+<Window x:Class="DataViewer_1._0._0._0.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -54,6 +54,8 @@
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="Calculator" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
+                        <MenuItem x:Name="menuItemUnitsMetric" Header="Metric (m, &#176;C)" IsCheckable="True" Click="menuItemUnitsMetric_Click"/>
+                        <MenuItem x:Name="menuItemUnitsImperial" Header="Imperial (ft, &#176;F)" IsCheckable="True" Click="menuItemUnitsImperial_Click"/>
                     </MenuItem>
                     <MenuItem Header="Connection">
                         <MenuItem.Icon>
@@ -235,12 +237,12 @@
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <TextBlock Text="max" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxAltMax" KeyDown="textBoxAltMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockAltAxisMaxUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <TextBlock Text="min" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxAltMin" KeyDown="textBoxAltMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockAltAxisMinUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
@@ -269,12 +271,12 @@
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <TextBlock Text="max" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxTempMax" KeyDown="textBoxTempMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockTempAxisMaxUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <TextBlock Text="min" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxTempMin" KeyDown="textBoxTempMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockTempAxisMinUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
@@ -359,37 +361,37 @@
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasAltCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasAltCursor1Unit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasAltCursor2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasAltCursor2Unit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasAltMin" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasAltMinUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasAltMax" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasAltMaxUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasAltDelta" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasAltDeltaUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasAltAverage" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasAltAverageUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Speed" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasAltSpeed" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="m/sec" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasAltSpeedUnit" Text="m/sec" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
                             </GroupBox>
@@ -399,32 +401,32 @@
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasTempCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasTempCursor1Unit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasTempCursor2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasTempCursor2Unit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasTempMin" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasTempMinUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasTempMax" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasTempMaxUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasTempDelta" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasTempDeltaUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasTempAverage" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="°C" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <TextBlock x:Name="textBlockMeasTempAverageUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
                                     </StackPanel>
                                 </StackPanel>
                             </GroupBox>
@@ -575,3 +577,22 @@
 
     </Grid>
 </Window>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

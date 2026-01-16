@@ -24,6 +24,7 @@ namespace DataViewer_1._0._0._0
 
         private static Dictionary<string, TreeViewItem> treeViewItems = new Dictionary<string, TreeViewItem>();
         private static TreeView myTreeView;
+        private static TreeViewItem activePlotItem;
 
         public static void Initialize(TreeView treeView)
         {
@@ -73,6 +74,7 @@ namespace DataViewer_1._0._0._0
                 TreeViewItem subItem = new TreeViewItem { Header = subItemName };
                 subItem.Tag = new { ItemType = "SubItem", Name = subItemName, PortName = parentComPortName };
                 subItem.ContextMenu = CreateSubItemContextMenu();
+                subItem.MouseDoubleClick += OnTreeViewSubItemMouseDoubleClick;
                 // Event-Handler hinzufügen
                 //subItem.MouseRightButtonDown += OnTreeViewSubItemMouseRightButtonClick;
                 //subItem.MouseLeftButtonDown += OnTreeViewItemMouseLeftButtonClick;
@@ -90,6 +92,12 @@ namespace DataViewer_1._0._0._0
         {
             if (treeViewItems.TryGetValue(comPortName, out TreeViewItem item))
             {
+                if (activePlotItem != null && (item == activePlotItem || item.Items.Contains(activePlotItem)))
+                {
+                    activePlotItem.FontWeight = FontWeights.Normal;
+                    activePlotItem = null;
+                }
+
                 myTreeView.Items.Remove(item);
                 treeViewItems.Remove(comPortName);
             }
@@ -99,6 +107,48 @@ namespace DataViewer_1._0._0._0
         {
             myTreeView.Items.Clear();
             treeViewItems.Clear();
+            activePlotItem = null;
+        }
+
+        public static void SelectSubItem(string portName, int index)
+        {
+            if (string.IsNullOrWhiteSpace(portName))
+            {
+                return;
+            }
+
+            if (!treeViewItems.TryGetValue(portName, out TreeViewItem parentItem))
+            {
+                return;
+            }
+
+            if (index < 0 || index >= parentItem.Items.Count)
+            {
+                return;
+            }
+
+            if (parentItem.Items[index] is TreeViewItem subItem)
+            {
+                parentItem.IsExpanded = true;
+                subItem.IsSelected = true;
+                subItem.BringIntoView();
+                SetActivePlotItem(subItem);
+            }
+        }
+
+        private static void SetActivePlotItem(TreeViewItem item)
+        {
+            if (activePlotItem != null)
+            {
+                activePlotItem.FontWeight = FontWeights.Normal;
+            }
+
+            activePlotItem = item;
+
+            if (activePlotItem != null)
+            {
+                activePlotItem.FontWeight = FontWeights.Bold;
+            }
         }
 
         private static ContextMenu CreateItemContextMenu(string comPortName)
@@ -212,6 +262,50 @@ namespace DataViewer_1._0._0._0
                     }
                 }
             }
+        }
+
+        private static void OnTreeViewSubItemMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left)
+            {
+                return;
+            }
+
+            if (!(sender is TreeViewItem subItem))
+            {
+                return;
+            }
+
+            TreeViewItem parentItem = LogicalTreeHelper.GetParent(subItem) as TreeViewItem;
+            if (parentItem == null)
+            {
+                return;
+            }
+
+            string portName = null;
+            if (subItem.Tag != null)
+            {
+                dynamic tag = subItem.Tag;
+                portName = tag.PortName;
+            }
+
+            if (string.IsNullOrWhiteSpace(portName) && parentItem.Tag != null)
+            {
+                dynamic parentTag = parentItem.Tag;
+                portName = parentTag.PortName ?? parentTag.Name;
+            }
+
+            int index = parentItem.Items.IndexOf(subItem);
+            if (index < 0)
+            {
+                return;
+            }
+
+            subItem.IsSelected = true;
+            subItem.BringIntoView();
+            SetActivePlotItem(subItem);
+            TriggerPlotData?.Invoke(portName, index);
+            e.Handled = true;
         }
 
         

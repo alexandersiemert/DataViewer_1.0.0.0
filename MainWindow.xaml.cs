@@ -31,15 +31,23 @@ namespace DataViewer_1._0._0._0
     /// </summary>
     public partial class MainWindow : Window
     {
+        enum UnitMode
+        {
+            Metric,
+            Imperial
+        }
+
         Scatter pltAlt, pltTemp, pltAcc;
 
         ScottPlot.AxisPanels.RightAxis yAxisTemp, yAxisAcc;
 
         //XY-Datenarray für Höhe
         double[] xh, yh;
+        double[] yhRaw;
 
         //XY-Datenarray für Temperatur
         double[] xt, yt;
+        double[] ytRaw;
 
         //XY-Datenarray für Beschleunigung
         double[] xa, ya; //Betrag 3-Achsen
@@ -53,7 +61,8 @@ namespace DataViewer_1._0._0._0
 
         InteractiveVerticalLine crosshairX;
         InteractiveHorizontalLine crosshairAlt;
-        HorizontalLine crosshairTemp, crosshairAcc;
+        HorizontalLine crosshairTemp, crosshairAcc, crosshairAltLabel;
+        VerticalLine crosshairXLabel;
 
         InteractiveMarker marker;
         double? lastMeasuringX1;
@@ -68,6 +77,10 @@ namespace DataViewer_1._0._0._0
         const int HoverUpdateIntervalMs = 33;
         long lastHoverUpdateMs;
         readonly Stopwatch hoverStopwatch = Stopwatch.StartNew();
+
+        const double FeetPerMeter = 3.28083989501312;
+        const double CelsiusToFahrenheitScale = 9.0 / 5.0;
+        UnitMode currentUnitMode = UnitMode.Metric;
 
         bool buttonAltUpPressed = false;
         bool buttonAltDownPressed = false;
@@ -145,49 +158,34 @@ namespace DataViewer_1._0._0._0
             //Timer initialisieren
             InitTimer();
 
+            UpdateUnitMenuChecks();
+            UpdateUnitTextBlocks();
+
             //TreeView initialisieren für DeviceList
             TreeViewManager.Initialize(deviceListTreeView);
             TreeViewManager.RequestCommand += HandlePortCommand;
 
             //Testdaten für Entwicklung erzeugen
-            (xh, yh) = GenerateRandomWalk(10000, 4); //Testdaten Höhe
-            (xt, yt) = GenerateRandomWalk(10000, 5); //Testdaten Temperatur
+            (xh, yhRaw) = GenerateRandomWalk(10000, 4); //Testdaten Höhe
+            (xt, ytRaw) = GenerateRandomWalk(10000, 5); //Testdaten Temperatur
             (xa, ya) = GenerateRandomWalk(10000, 6); //Testdaten Beschleunigung
+            ApplyUnitsToDisplayData();
 
             //Plot Titel festlegen
             WpfPlot1.Plot.Title("SI-TL1");
 
             //Daten für Höhe zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltAlt = WpfPlot1.Plot.Add.Scatter(xh, yh);
-            pltAlt.LegendText = "Altitude";
-            pltAlt.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
-            WpfPlot1.Plot.YLabel("Altitude [m]");
-            pltAlt.MarkerSize = 0;
-            pltAlt.Color = Colors.Black;
-            if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
-            {
-                leftAxis.LabelFontColor = pltAlt.Color;
-            }
+            pltAlt = AddAltitudeScatter(xh, yh);
 
             //Daten für Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzufügen
             yAxisTemp = WpfPlot1.Plot.Axes.AddRightAxis();
-            pltTemp = WpfPlot1.Plot.Add.Scatter(xh, yt);
-            pltTemp.LegendText = "Temperature";
-            pltTemp.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
-            yAxisTemp.LabelText = "Temperature [\u00b0C]";
-            pltTemp.MarkerSize = 0;
-            pltTemp.Color = Colors.Red;
-            yAxisTemp.LabelFontColor = pltTemp.Color;
+            pltTemp = AddTemperatureScatter(xh, yt);
 
             //Daten für Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzufügen
             yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
-            pltAcc = WpfPlot1.Plot.Add.Scatter(xh, ya);
-            pltAcc.LegendText = "3-Axis Acceleration";
-            pltAcc.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
-            yAxisAcc.LabelText = "Acceleration [g]";
-            pltAcc.MarkerSize = 0;
-            pltAcc.Color = Colors.Green;
-            yAxisAcc.LabelFontColor = pltAcc.Color;
+            pltAcc = AddAccelerationScatter(xh, ya);
+
+            UpdateAxisLabelText();
 
             ConfigurePlotInteractions();
 
@@ -238,15 +236,29 @@ namespace DataViewer_1._0._0._0
             return series != null;
         }
 
-        private void ExportSeriesToCsv(Messreihe series, string filePath)
+        private void ExportSeriesToCsv(Messreihe series, string filePath, UnitMode exportUnits)
         {
             if (series == null)
             {
                 throw new ArgumentNullException(nameof(series));
             }
 
+            CultureInfo culture = CultureInfo.CurrentCulture;
+            string separator = culture.TextInfo.ListSeparator;
             StringBuilder csv = new StringBuilder();
-            csv.AppendLine("Timestamp;Pressure_hPa;Altitude_m;Temperature_C;AccX_g;AccY_g;AccZ_g;AccAbs_g");
+            string altitudeHeader = exportUnits == UnitMode.Metric ? "Altitude_m" : "Altitude_ft";
+            string temperatureHeader = exportUnits == UnitMode.Metric ? "Temperature_C" : "Temperature_F";
+            csv.AppendLine(string.Join(separator, new[]
+            {
+                "Timestamp",
+                "Pressure_hPa",
+                altitudeHeader,
+                temperatureHeader,
+                "AccX_g",
+                "AccY_g",
+                "AccZ_g",
+                "AccAbs_g"
+            }));
 
             foreach (Messdaten data in series.Messungen)
             {
@@ -255,21 +267,24 @@ namespace DataViewer_1._0._0._0
                     (data.BeschleunigungY * data.BeschleunigungY) +
                     (data.BeschleunigungZ * data.BeschleunigungZ));
 
+                double altitude = ConvertAltitude(data.Hoehe, UnitMode.Metric, exportUnits);
+                double temperature = ConvertTemperature(data.Temperatur, UnitMode.Metric, exportUnits);
+
                 csv.Append(data.Zeit.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.Druck.ToString("F2", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.Hoehe.ToString("F2", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.Temperatur.ToString("F2", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.BeschleunigungX.ToString("F3", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.BeschleunigungY.ToString("F3", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.BeschleunigungZ.ToString("F3", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.AppendLine(accAbs.ToString("F3", CultureInfo.InvariantCulture));
+                csv.Append(separator);
+                csv.Append(data.Druck.ToString("F2", culture));
+                csv.Append(separator);
+                csv.Append(altitude.ToString("F2", culture));
+                csv.Append(separator);
+                csv.Append(temperature.ToString("F2", culture));
+                csv.Append(separator);
+                csv.Append(data.BeschleunigungX.ToString("F3", culture));
+                csv.Append(separator);
+                csv.Append(data.BeschleunigungY.ToString("F3", culture));
+                csv.Append(separator);
+                csv.Append(data.BeschleunigungZ.ToString("F3", culture));
+                csv.Append(separator);
+                csv.AppendLine(accAbs.ToString("F3", culture));
             }
 
             File.WriteAllText(filePath, csv.ToString(), Encoding.UTF8);
@@ -289,6 +304,14 @@ namespace DataViewer_1._0._0._0
             }
 
             WpfPlot1.Plot.Clear();
+            WpfPlot1.Plot.Axes.Remove(ScottPlot.Edge.Right);
+            yAxisTemp = null;
+            yAxisAcc = null;
+            hoverMarker = null;
+            hoverLabel = null;
+            hoverSeries = null;
+            hoverX = null;
+            hoverY = null;
             yAxisTemp = WpfPlot1.Plot.Axes.AddRightAxis();
             yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
 
@@ -337,52 +360,267 @@ namespace DataViewer_1._0._0._0
             }
 
             // Schreiben der Werte in den public main Bereich um die Arrays au?erhalb dieser Methode verf?gbar zu machen (z.B. f?r Cursor Berechnungen)
-            yh = heightArray;
+            yhRaw = heightArray;
+            ytRaw = tempArray;
+            ApplyUnitsToDisplayData();
+
             xh = timeArray;
-
-            ya = accAbsArray;
             xa = timeArray;
-
-            yt = tempArray;
             xt = timeArray;
+            ya = accAbsArray;
 
             //Aktiviere DateTime Format f?r die X-Achse
             WpfPlot1.Plot.Axes.DateTimeTicksBottom();
             isDateTimeXAxis = true;
 
             //Daten f?r H?he zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
-            pltAlt = WpfPlot1.Plot.Add.Scatter(timeArray, heightArray);
-            pltAlt.LegendText = "Altitude";
-            pltAlt.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
-            WpfPlot1.Plot.YLabel("Altitude [m]");
-            pltAlt.MarkerSize = 0;
-            pltAlt.Color = Colors.Black;
-            if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
-            {
-                leftAxis.LabelFontColor = pltAlt.Color;
-            }
+            pltAlt = AddAltitudeScatter(timeArray, yh);
 
             //Daten f?r Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
-            pltTemp = WpfPlot1.Plot.Add.Scatter(timeArray, tempArray);
-            pltTemp.LegendText = "Temperature";
-            pltTemp.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
-            yAxisTemp.LabelText = "Temperature [\u00b0C]";
-            pltTemp.MarkerSize = 0;
-            pltTemp.Color = Colors.Red;
-            yAxisTemp.LabelFontColor = pltTemp.Color;
+            pltTemp = AddTemperatureScatter(timeArray, yt);
 
             //Daten f?r Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
-            pltAcc = WpfPlot1.Plot.Add.Scatter(timeArray, accAbsArray);
-            pltAcc.LegendText = "3-Axis Acceleration";
-            pltAcc.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
-            yAxisAcc.LabelText = "Acceleration [g]";
-            pltAcc.MarkerSize = 0;
-            pltAcc.Color = Colors.Green;
-            yAxisAcc.LabelFontColor = pltAcc.Color;
+            pltAcc = AddAccelerationScatter(timeArray, ya);
+
+            WpfPlot1.Plot.Axes.AutoScale();
+
+            UpdateAxisLabelText();
 
             WpfPlot1.Plot.Legend.IsVisible = false;
 
+            RefreshAxisTextBoxes();
             WpfPlot1.Refresh();
+        }
+
+        private Scatter AddAltitudeScatter(double[] xs, double[] ys)
+        {
+            Scatter scatter = WpfPlot1.Plot.Add.Scatter(xs, ys);
+            scatter.LegendText = "Altitude";
+            scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            scatter.MarkerSize = 0;
+            scatter.Color = Colors.Black;
+            if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
+            {
+                leftAxis.LabelFontColor = scatter.Color;
+            }
+
+            return scatter;
+        }
+
+        private Scatter AddTemperatureScatter(double[] xs, double[] ys)
+        {
+            if (yAxisTemp == null)
+            {
+                yAxisTemp = WpfPlot1.Plot.Axes.AddRightAxis();
+            }
+
+            Scatter scatter = WpfPlot1.Plot.Add.Scatter(xs, ys);
+            scatter.LegendText = "Temperature";
+            scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
+            scatter.MarkerSize = 0;
+            scatter.Color = Colors.Red;
+            yAxisTemp.LabelFontColor = scatter.Color;
+            return scatter;
+        }
+
+        private Scatter AddAccelerationScatter(double[] xs, double[] ys)
+        {
+            if (yAxisAcc == null)
+            {
+                yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
+            }
+
+            Scatter scatter = WpfPlot1.Plot.Add.Scatter(xs, ys);
+            scatter.LegendText = "3-Axis Acceleration";
+            scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
+            scatter.MarkerSize = 0;
+            scatter.Color = Colors.Green;
+            yAxisAcc.LabelFontColor = scatter.Color;
+            return scatter;
+        }
+
+        private void UpdateAxisLabelText()
+        {
+            WpfPlot1.Plot.YLabel($"Altitude [{GetAltitudeUnitLabel()}]");
+
+            if (yAxisTemp != null)
+            {
+                yAxisTemp.LabelText = $"Temperature [{GetTemperatureUnitLabel()}]";
+            }
+
+            if (yAxisAcc != null)
+            {
+                yAxisAcc.LabelText = "Acceleration [g]";
+            }
+        }
+
+        private void RebuildScatterPlots()
+        {
+            if (pltAlt != null)
+            {
+                WpfPlot1.Plot.Remove(pltAlt);
+                pltAlt = null;
+            }
+
+            if (pltTemp != null)
+            {
+                WpfPlot1.Plot.Remove(pltTemp);
+                pltTemp = null;
+            }
+
+            if (pltAcc != null)
+            {
+                WpfPlot1.Plot.Remove(pltAcc);
+                pltAcc = null;
+            }
+
+            if (xh == null || yh == null || yt == null || ya == null)
+            {
+                return;
+            }
+
+            pltAlt = AddAltitudeScatter(xh, yh);
+            pltTemp = AddTemperatureScatter(xh, yt);
+            pltAcc = AddAccelerationScatter(xh, ya);
+            UpdateAxisLabelText();
+        }
+
+        private void UpdateUnitTextBlocks()
+        {
+            string altUnit = GetAltitudeUnitLabel();
+            string tempUnit = GetTemperatureUnitLabel();
+            string speedUnit = GetAltitudeSpeedUnitLabel();
+
+            if (textBlockAltAxisMaxUnit != null) textBlockAltAxisMaxUnit.Text = altUnit;
+            if (textBlockAltAxisMinUnit != null) textBlockAltAxisMinUnit.Text = altUnit;
+            if (textBlockTempAxisMaxUnit != null) textBlockTempAxisMaxUnit.Text = tempUnit;
+            if (textBlockTempAxisMinUnit != null) textBlockTempAxisMinUnit.Text = tempUnit;
+
+            if (textBlockMeasAltCursor1Unit != null) textBlockMeasAltCursor1Unit.Text = altUnit;
+            if (textBlockMeasAltCursor2Unit != null) textBlockMeasAltCursor2Unit.Text = altUnit;
+            if (textBlockMeasAltMinUnit != null) textBlockMeasAltMinUnit.Text = altUnit;
+            if (textBlockMeasAltMaxUnit != null) textBlockMeasAltMaxUnit.Text = altUnit;
+            if (textBlockMeasAltDeltaUnit != null) textBlockMeasAltDeltaUnit.Text = altUnit;
+            if (textBlockMeasAltAverageUnit != null) textBlockMeasAltAverageUnit.Text = altUnit;
+            if (textBlockMeasAltSpeedUnit != null) textBlockMeasAltSpeedUnit.Text = speedUnit;
+
+            if (textBlockMeasTempCursor1Unit != null) textBlockMeasTempCursor1Unit.Text = tempUnit;
+            if (textBlockMeasTempCursor2Unit != null) textBlockMeasTempCursor2Unit.Text = tempUnit;
+            if (textBlockMeasTempMinUnit != null) textBlockMeasTempMinUnit.Text = tempUnit;
+            if (textBlockMeasTempMaxUnit != null) textBlockMeasTempMaxUnit.Text = tempUnit;
+            if (textBlockMeasTempDeltaUnit != null) textBlockMeasTempDeltaUnit.Text = tempUnit;
+            if (textBlockMeasTempAverageUnit != null) textBlockMeasTempAverageUnit.Text = tempUnit;
+        }
+
+        private void UpdateUnitMenuChecks()
+        {
+            if (menuItemUnitsMetric != null) menuItemUnitsMetric.IsChecked = currentUnitMode == UnitMode.Metric;
+            if (menuItemUnitsImperial != null) menuItemUnitsImperial.IsChecked = currentUnitMode == UnitMode.Imperial;
+        }
+
+        private void ConvertAxisLimits(UnitMode from, UnitMode to)
+        {
+            if (WpfPlot1?.Plot == null)
+            {
+                return;
+            }
+
+            var altLimits = GetAxisLimits(WpfPlot1.Plot.Axes.Left);
+            WpfPlot1.Plot.Axes.SetLimitsY(
+                ConvertAltitude(altLimits.Bottom, from, to),
+                ConvertAltitude(altLimits.Top, from, to),
+                WpfPlot1.Plot.Axes.Left);
+
+            if (yAxisTemp != null)
+            {
+                var tempLimits = GetAxisLimits(yAxisTemp);
+                WpfPlot1.Plot.Axes.SetLimitsY(
+                    ConvertTemperature(tempLimits.Bottom, from, to),
+                    ConvertTemperature(tempLimits.Top, from, to),
+                    yAxisTemp);
+            }
+        }
+
+        private void ConvertCrosshair(UnitMode from, UnitMode to)
+        {
+            if (crosshairAlt != null)
+            {
+                crosshairAlt.Y = ConvertAltitude(crosshairAlt.Y, from, to);
+            }
+        }
+
+        private void SetUnitMode(UnitMode mode)
+        {
+            if (currentUnitMode == mode)
+            {
+                UpdateUnitMenuChecks();
+                UpdateUnitTextBlocks();
+                UpdateAxisLabelText();
+                return;
+            }
+
+            UnitMode previousMode = currentUnitMode;
+            currentUnitMode = mode;
+
+            UpdateUnitMenuChecks();
+            UpdateUnitTextBlocks();
+            UpdateAxisLabelText();
+            ConvertAxisLimits(previousMode, currentUnitMode);
+            ConvertCrosshair(previousMode, currentUnitMode);
+            ApplyUnitsToDisplayData();
+            RebuildScatterPlots();
+            UpdateCrosshairState();
+            UpdateMeasuringCursor();
+            HideHover();
+            RefreshAxisTextBoxes();
+            RefreshCrosshairTextBoxes();
+            RefreshMeasuringTextBoxes();
+            WpfPlot1.Refresh();
+        }
+
+        private bool TryGetExportUnitMode(out UnitMode exportUnits)
+        {
+            string currentLabel = currentUnitMode == UnitMode.Metric ? "Metric (m, \u00b0C)" : "Imperial (ft, \u00b0F)";
+            string otherLabel = currentUnitMode == UnitMode.Metric ? "Imperial (ft, \u00b0F)" : "Metric (m, \u00b0C)";
+            MessageBoxResult result = MessageBox.Show(
+                $"Export in {currentLabel}?\nYes = {currentLabel}\nNo = {otherLabel}",
+                "Export Units",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question,
+                MessageBoxResult.Yes);
+
+            if (result == MessageBoxResult.Cancel)
+            {
+                exportUnits = currentUnitMode;
+                return false;
+            }
+
+            exportUnits = result == MessageBoxResult.Yes
+                ? currentUnitMode
+                : (currentUnitMode == UnitMode.Metric ? UnitMode.Imperial : UnitMode.Metric);
+            return true;
+        }
+
+        private static string SanitizeFileName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "Unknown";
+            }
+
+            char[] invalid = System.IO.Path.GetInvalidFileNameChars();
+            StringBuilder cleaned = new StringBuilder(value.Length);
+            foreach (char c in value)
+            {
+                if (invalid.Contains(c))
+                {
+                    continue;
+                }
+
+                cleaned.Append(char.IsWhiteSpace(c) ? '_' : c);
+            }
+
+            return cleaned.Length == 0 ? "Unknown" : cleaned.ToString();
         }
 
         // Timer initialisieren
@@ -538,6 +776,18 @@ namespace DataViewer_1._0._0._0
             {
                 crosshairAcc.LabelText = crosshairAcc.Y.ToString("F2");
             }
+
+            if (crosshairXLabel != null)
+            {
+                crosshairXLabel.X = crosshairX.X;
+                crosshairXLabel.LabelText = FormatXAxisLabel(crosshairX.X);
+            }
+
+            if (crosshairAltLabel != null)
+            {
+                crosshairAltLabel.Y = crosshairAlt.Y;
+                crosshairAltLabel.LabelText = crosshairAlt.Y.ToString("F2");
+            }
         }
 
         private bool IsDateTimeXAxis()
@@ -566,14 +816,113 @@ namespace DataViewer_1._0._0._0
             return x.ToString("F2");
         }
 
-        private static string GetSeriesUnit(string seriesName)
+        private string GetAltitudeUnitLabel()
+        {
+            return currentUnitMode == UnitMode.Metric ? "m" : "ft";
+        }
+
+        private string GetTemperatureUnitLabel()
+        {
+            return currentUnitMode == UnitMode.Metric ? "\u00b0C" : "\u00b0F";
+        }
+
+        private string GetAltitudeSpeedUnitLabel()
+        {
+            return currentUnitMode == UnitMode.Metric ? "m/sec" : "ft/sec";
+        }
+
+        private double ConvertAltitude(double value, UnitMode from, UnitMode to)
+        {
+            if (from == to)
+            {
+                return value;
+            }
+
+            return from == UnitMode.Metric
+                ? value * FeetPerMeter
+                : value / FeetPerMeter;
+        }
+
+        private double ConvertTemperature(double value, UnitMode from, UnitMode to)
+        {
+            if (from == to)
+            {
+                return value;
+            }
+
+            return from == UnitMode.Metric
+                ? (value * CelsiusToFahrenheitScale) + 32
+                : (value - 32) / CelsiusToFahrenheitScale;
+        }
+
+        private double ConvertTemperatureDelta(double value, UnitMode from, UnitMode to)
+        {
+            if (from == to)
+            {
+                return value;
+            }
+
+            return from == UnitMode.Metric
+                ? value * CelsiusToFahrenheitScale
+                : value / CelsiusToFahrenheitScale;
+        }
+
+        private double[] ConvertAltitudeArray(double[] values)
+        {
+            if (values == null)
+            {
+                return null;
+            }
+
+            if (currentUnitMode == UnitMode.Metric)
+            {
+                return values;
+            }
+
+            double[] converted = new double[values.Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                converted[i] = values[i] * FeetPerMeter;
+            }
+
+            return converted;
+        }
+
+        private double[] ConvertTemperatureArray(double[] values)
+        {
+            if (values == null)
+            {
+                return null;
+            }
+
+            if (currentUnitMode == UnitMode.Metric)
+            {
+                return values;
+            }
+
+            double[] converted = new double[values.Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                converted[i] = (values[i] * CelsiusToFahrenheitScale) + 32;
+            }
+
+            return converted;
+        }
+
+        private void ApplyUnitsToDisplayData()
+        {
+            yh = ConvertAltitudeArray(yhRaw);
+            yt = ConvertTemperatureArray(ytRaw);
+        }
+
+        private string GetSeriesUnit(string seriesName)
         {
             switch (seriesName)
             {
                 case "Altitude":
-                    return "m";
+                    return GetAltitudeUnitLabel();
                 case "Temperature":
-                    return "\u00b0C";
+                    return GetTemperatureUnitLabel();
                 case "3-Axis Acceleration":
                     return "g";
                 default:
@@ -615,6 +964,12 @@ namespace DataViewer_1._0._0._0
         //Textboxen für Messungen aktualisieren
         private void RefreshMeasuringTextBoxes()
         {
+            if (measuringSpan == null || xh == null || yh == null || yt == null || ya == null)
+            {
+                ClearMeasuringTextBoxes();
+                return;
+            }
+
             //Textboxen für Messungen aktualisieren
             textBoxMeasAltCursor1.Text = InterpolateY(xh, yh, measuringSpan.X1).ToString("F2");
             textBoxMeasAltCursor2.Text = InterpolateY(xh, yh, measuringSpan.X2).ToString("F2");
@@ -762,6 +1117,16 @@ namespace DataViewer_1._0._0._0
                 hoverLabel.OffsetX = 8;
                 hoverLabel.OffsetY = -8;
                 hoverLabel.IsVisible = false;
+            }
+
+            if (hoverMarker != null)
+            {
+                WpfPlot1.Plot.MoveToFront(hoverMarker);
+            }
+
+            if (hoverLabel != null)
+            {
+                WpfPlot1.Plot.MoveToFront(hoverLabel);
             }
         }
 
@@ -1194,6 +1559,7 @@ namespace DataViewer_1._0._0._0
             currentSeriesIndex = index;
             PlotData(series, index);
             UpdateDeviceInfo(portName);
+            TreeViewManager.SelectSubItem(portName, index);
         }
 
 
@@ -1294,6 +1660,16 @@ namespace DataViewer_1._0._0._0
 
         //------------------BUTTON EVENTS---------------------------------------
 
+        private void menuItemUnitsMetric_Click(object sender, RoutedEventArgs e)
+        {
+            SetUnitMode(UnitMode.Metric);
+        }
+
+        private void menuItemUnitsImperial_Click(object sender, RoutedEventArgs e)
+        {
+            SetUnitMode(UnitMode.Imperial);
+        }
+
         private void menuItemExportCsv_Click(object sender, RoutedEventArgs e)
         {
             if (!TryGetCurrentSeries(out Messreihe series, out string portName, out _))
@@ -1302,10 +1678,19 @@ namespace DataViewer_1._0._0._0
                 return;
             }
 
+            if (!TryGetExportUnitMode(out UnitMode exportUnits))
+            {
+                return;
+            }
+
+            DataLogger logger = DataLoggerManager.GetLogger(portName);
+            string model = SanitizeFileName(logger?.id ?? "UnknownModel");
+            string serialNumber = SanitizeFileName(logger?.serialNumber ?? "UnknownSerial");
+            string fileName = $"{model}_{serialNumber}_{series.Startzeit:yyyyMMdd_HHmmss}.csv";
             SaveFileDialog dialog = new SaveFileDialog
             {
                 Filter = "CSV (*.csv)|*.csv",
-                FileName = $"{portName}_{series.Startzeit:yyyyMMdd_HHmmss}.csv"
+                FileName = fileName
             };
 
             if (dialog.ShowDialog() != true)
@@ -1315,7 +1700,7 @@ namespace DataViewer_1._0._0._0
 
             try
             {
-                ExportSeriesToCsv(series, dialog.FileName);
+                ExportSeriesToCsv(series, dialog.FileName, exportUnits);
                 MessageBox.Show("Export complete.");
             }
             catch (Exception ex)
@@ -1391,6 +1776,18 @@ namespace DataViewer_1._0._0._0
             crosshairAcc.LabelBackgroundColor = Colors.Green;
             crosshairAcc.IsDraggable = false;
 
+            crosshairXLabel = WpfPlot1.Plot.Add.VerticalLine(xCenter, color: Colors.Transparent);
+            crosshairXLabel.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            crosshairXLabel.LabelBackgroundColor = Colors.Black;
+            crosshairXLabel.LabelFontColor = Colors.White;
+            crosshairXLabel.IsDraggable = false;
+
+            crosshairAltLabel = WpfPlot1.Plot.Add.HorizontalLine(yCenter, color: Colors.Transparent);
+            crosshairAltLabel.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            crosshairAltLabel.LabelBackgroundColor = Colors.Black;
+            crosshairAltLabel.LabelFontColor = Colors.White;
+            crosshairAltLabel.IsDraggable = false;
+
             UpdateCrosshairState();
             WpfPlot1.Refresh();
         }
@@ -1421,6 +1818,18 @@ namespace DataViewer_1._0._0._0
             {
                 WpfPlot1.Plot.Remove(crosshairAcc);
                 crosshairAcc = null;
+            }
+
+            if (crosshairXLabel != null)
+            {
+                WpfPlot1.Plot.Remove(crosshairXLabel);
+                crosshairXLabel = null;
+            }
+
+            if (crosshairAltLabel != null)
+            {
+                WpfPlot1.Plot.Remove(crosshairAltLabel);
+                crosshairAltLabel = null;
             }
 
             ClearCrosshairTextBoxes();
@@ -1923,6 +2332,7 @@ namespace DataViewer_1._0._0._0
                             currentPortName = portName;
                             currentSeriesIndex = 0;
                             PlotData(series, 0); //Plotte Daten
+                            TreeViewManager.SelectSubItem(portName, 0);
                         }
                         else
                         {
