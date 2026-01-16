@@ -40,9 +40,16 @@ namespace DataViewer_1._0._0._0
                             responsivePorts.Add(portName);
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"COM-Port {portName} error: {ex.Message}");
+                    }
                     finally
                     {
-                        port.Close();
+                        if (port.IsOpen)
+                        {
+                            port.Close();
+                        }
                     }
                 }
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Globalization;
 using System.Linq;
 using System.Security.Policy;
@@ -14,18 +15,14 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Markup;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using ScottPlot;
-using ScottPlot.Drawing.Colormaps;
-using ScottPlot.Plottable;
-using ScottPlot.Renderable;
-using ScottPlot.Styles;
-using static ScottPlot.Plottable.PopulationPlot;
-using Color = System.Drawing.Color;
+using ScottPlot.Plottables;
+using ScottPlot.Plottables.Interactive;
+using Microsoft.Win32;
 
 namespace DataViewer_1._0._0._0
 {
@@ -34,9 +31,9 @@ namespace DataViewer_1._0._0._0
     /// </summary>
     public partial class MainWindow : Window
     {
-        ScatterPlot pltAlt, pltTemp, pltAcc;
+        Scatter pltAlt, pltTemp, pltAcc;
 
-        Axis yAxisTemp, yAxisAcc;
+        ScottPlot.AxisPanels.RightAxis yAxisTemp, yAxisAcc;
 
         //XY-Datenarray für Höhe
         double[] xh, yh;
@@ -52,12 +49,22 @@ namespace DataViewer_1._0._0._0
         double[] xaz, yaz; //Beschleunigung Z-Achse
         */
 
-        HSpan measuringSpan;
+        InteractiveHorizontalSpan measuringSpan;
 
-        VLine crosshairX;
-        HLine crosshairAlt, crosshairTemp, crosshairAcc;
+        InteractiveVerticalLine crosshairX;
+        InteractiveHorizontalLine crosshairAlt;
+        HorizontalLine crosshairTemp, crosshairAcc;
 
-        DraggableMarkerPlot marker;
+        InteractiveMarker marker;
+        double? lastMeasuringX1;
+        double? lastMeasuringX2;
+        bool isDateTimeXAxis = false;
+        Marker hoverMarker;
+        ScottPlot.Plottables.Text hoverLabel;
+        string hoverSeries;
+        double? hoverX;
+        double? hoverY;
+        const float HoverSnapDistance = 15f;
 
         bool buttonAltUpPressed = false;
         bool buttonAltDownPressed = false;
@@ -65,8 +72,10 @@ namespace DataViewer_1._0._0._0
         bool buttonTempDownPressed = false;
         bool buttonAccUpPressed = false;
         bool buttonAccDownPressed = false;
-
-        bool buttonRefreshPressed = false;
+        private readonly Dictionary<string, SerialPortManager> serialPortManagers = new Dictionary<string, SerialPortManager>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, List<Messreihe>> measurementSeriesByPort = new Dictionary<string, List<Messreihe>>(StringComparer.OrdinalIgnoreCase);
+        private string currentPortName;
+        private int currentSeriesIndex = -1;
 
         //Timer für Achsen Limit Button
         DispatcherTimer timer;
@@ -98,7 +107,6 @@ namespace DataViewer_1._0._0._0
         List<string> validPorts = new List<string>();
 
         //Serial Port Manager 
-        public static SerialPortManager serialPortManager;
 
         //Klassen für Messwerte
         public class Messreihe
@@ -126,7 +134,6 @@ namespace DataViewer_1._0._0._0
         }
 
         //Variablen für Messreihen 
-        List<Messreihe> measurementSeries = new List<Messreihe>();
 
         public MainWindow()
         {
@@ -137,58 +144,132 @@ namespace DataViewer_1._0._0._0
 
             //TreeView initialisieren für DeviceList
             TreeViewManager.Initialize(deviceListTreeView);
+            TreeViewManager.RequestCommand += HandlePortCommand;
 
             //Testdaten für Entwicklung erzeugen
-            (xh, yh) = DataGen.RandomWalk2D(new Random(4), 10000); //Testdaten Höhe
-            (xt, yt) = DataGen.RandomWalk2D(new Random(5), 10000); //Testdaten Temperatur
-            (xa, ya) = DataGen.RandomWalk2D(new Random(6), 10000); //Testdaten Beschleunigung
+            (xh, yh) = GenerateRandomWalk(10000, 4); //Testdaten Höhe
+            (xt, yt) = GenerateRandomWalk(10000, 5); //Testdaten Temperatur
+            (xa, ya) = GenerateRandomWalk(10000, 6); //Testdaten Beschleunigung
 
             //Plot Titel festlegen
             WpfPlot1.Plot.Title("SI-TL1");
 
             //Daten für Höhe zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltAlt = WpfPlot1.Plot.AddScatter(xh, yh, label: "Altitude");
-            pltAlt.YAxisIndex = WpfPlot1.Plot.LeftAxis.AxisIndex;
-            WpfPlot1.Plot.YAxis.Label("Altitude [m]");
+            pltAlt = WpfPlot1.Plot.Add.Scatter(xh, yh);
+            pltAlt.LegendText = "Altitude";
+            pltAlt.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            WpfPlot1.Plot.YLabel("Altitude [m]");
             pltAlt.MarkerSize = 1;
-            pltAlt.Color = Color.Black;
-            WpfPlot1.Plot.YAxis.Color(pltAlt.Color);
+            pltAlt.Color = Colors.Black;
+            if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
+            {
+                leftAxis.LabelFontColor = pltAlt.Color;
+            }
 
             //Daten für Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltTemp = WpfPlot1.Plot.AddScatter(xh, yt, label: "Temperature");
-            yAxisTemp = WpfPlot1.Plot.AddAxis(Edge.Right);
-            pltTemp.YAxisIndex = yAxisTemp.AxisIndex;
-            yAxisTemp.Label("Temperature [°C]");
+            yAxisTemp = WpfPlot1.Plot.Axes.AddRightAxis();
+            pltTemp = WpfPlot1.Plot.Add.Scatter(xh, yt);
+            pltTemp.LegendText = "Temperature";
+            pltTemp.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
+            yAxisTemp.LabelText = "Temperature [\u00b0C]";
             pltTemp.MarkerSize = 1;
-            pltTemp.Color = Color.Red;
-            yAxisTemp.Color(pltTemp.Color);
+            pltTemp.Color = Colors.Red;
+            yAxisTemp.LabelFontColor = pltTemp.Color;
 
             //Daten für Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltAcc = WpfPlot1.Plot.AddScatter(xh, ya, label: "3-Axis Acceleration");
-            yAxisAcc = WpfPlot1.Plot.AddAxis(Edge.Right);
-            pltAcc.YAxisIndex = yAxisAcc.AxisIndex;
-            yAxisAcc.Label("Acceleration [g]");
+            yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
+            pltAcc = WpfPlot1.Plot.Add.Scatter(xh, ya);
+            pltAcc.LegendText = "3-Axis Acceleration";
+            pltAcc.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
+            yAxisAcc.LabelText = "Acceleration [g]";
             pltAcc.MarkerSize = 1;
-            pltAcc.Color = Color.Green;
-            yAxisAcc.Color(pltAcc.Color);
+            pltAcc.Color = Colors.Green;
+            yAxisAcc.LabelFontColor = pltAcc.Color;
+
+            ConfigurePlotInteractions();
+
+            WpfPlot1.Plot.Legend.IsVisible = false;
 
 
             /****************EventHandler registrieren******************/
 
             //Plot mit Maus verschieben
             WpfPlot1.MouseMove += WpfPlot1_MouseMove;
+            WpfPlot1.MouseLeave += WpfPlot1_MouseLeave;
             //Plot zoomen
             WpfPlot1.MouseWheel += WpfPlot1_MouseWheel;
 
             // Daten Plotten aus anderen Klassen heraus
             TreeViewManager.TriggerPlotData += TriggerPlotData;
 
-            //Textboxen für Messungen leeren, weil da stehen sonst Fragezeichen drin und war zu faul das zu ändern :-D
+
+            //Textboxen f?r Messungen leeren, weil da stehen sonst Fragezeichen drin und war zu faul das zu ?ndern :-D
             ClearMeasuringTextBoxes();
 
             //Plot neu zeichnen
             WpfPlot1.Refresh();
-            
+        }
+
+        private bool TryGetCurrentSeries(out Messreihe series, out string portName, out int seriesIndex)
+        {
+            series = null;
+            portName = currentPortName;
+            seriesIndex = currentSeriesIndex;
+
+            if (string.IsNullOrWhiteSpace(portName) || seriesIndex < 0)
+            {
+                return false;
+            }
+
+            if (!measurementSeriesByPort.TryGetValue(portName, out List<Messreihe> seriesList) || seriesList == null)
+            {
+                return false;
+            }
+
+            if (seriesIndex >= seriesList.Count)
+            {
+                return false;
+            }
+
+            series = seriesList[seriesIndex];
+            return series != null;
+        }
+
+        private void ExportSeriesToCsv(Messreihe series, string filePath)
+        {
+            if (series == null)
+            {
+                throw new ArgumentNullException(nameof(series));
+            }
+
+            StringBuilder csv = new StringBuilder();
+            csv.AppendLine("Timestamp;Pressure_hPa;Altitude_m;Temperature_C;AccX_g;AccY_g;AccZ_g;AccAbs_g");
+
+            foreach (Messdaten data in series.Messungen)
+            {
+                double accAbs = Math.Sqrt(
+                    (data.BeschleunigungX * data.BeschleunigungX) +
+                    (data.BeschleunigungY * data.BeschleunigungY) +
+                    (data.BeschleunigungZ * data.BeschleunigungZ));
+
+                csv.Append(data.Zeit.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture));
+                csv.Append(';');
+                csv.Append(data.Druck.ToString("F2", CultureInfo.InvariantCulture));
+                csv.Append(';');
+                csv.Append(data.Hoehe.ToString("F2", CultureInfo.InvariantCulture));
+                csv.Append(';');
+                csv.Append(data.Temperatur.ToString("F2", CultureInfo.InvariantCulture));
+                csv.Append(';');
+                csv.Append(data.BeschleunigungX.ToString("F3", CultureInfo.InvariantCulture));
+                csv.Append(';');
+                csv.Append(data.BeschleunigungY.ToString("F3", CultureInfo.InvariantCulture));
+                csv.Append(';');
+                csv.Append(data.BeschleunigungZ.ToString("F3", CultureInfo.InvariantCulture));
+                csv.Append(';');
+                csv.AppendLine(accAbs.ToString("F3", CultureInfo.InvariantCulture));
+            }
+
+            File.WriteAllText(filePath, csv.ToString(), Encoding.UTF8);
         }
 
         //################################################################################################################################
@@ -198,11 +279,18 @@ namespace DataViewer_1._0._0._0
         // Daten plotten
         private void PlotData(List<Messreihe> _messreihe, int index)
         {
+            if (_messreihe == null || _messreihe.Count == 0 || index < 0 || index >= _messreihe.Count)
+            {
+                MessageBox.Show("No data to plot.");
+                return;
+            }
+
             WpfPlot1.Plot.Clear();
+            yAxisTemp = WpfPlot1.Plot.Axes.AddRightAxis();
+            yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
 
             //Plot Titel festlegen
             WpfPlot1.Plot.Title(_messreihe[index].Startzeit.ToString());
-
 
             List<DateTime> timeList = new List<DateTime>();
             List<double> pressureList = new List<double>();
@@ -212,10 +300,8 @@ namespace DataViewer_1._0._0._0
             List<double> accZList = new List<double>();
             List<double> tempList = new List<double>();
 
-
             foreach (Messdaten messdaten in _messreihe[index].Messungen)
             {
-
                 timeList.Add(messdaten.Zeit);
                 pressureList.Add(messdaten.Druck);
                 heightList.Add(messdaten.Hoehe);
@@ -223,14 +309,13 @@ namespace DataViewer_1._0._0._0
                 accYList.Add(messdaten.BeschleunigungY);
                 accZList.Add(messdaten.BeschleunigungZ);
                 tempList.Add(messdaten.Temperatur);
-
             }
 
             // Konvertieren der Liste in ein Array
             DateTime[] dateTimeArray = timeList.ToArray();
             double[] timeArray = new double[timeList.Count];
 
-            for(int i=0;i<dateTimeArray.Length;i++)
+            for (int i = 0; i < dateTimeArray.Length; i++)
             {
                 timeArray[i] = dateTimeArray[i].ToOADate();
             }
@@ -241,49 +326,62 @@ namespace DataViewer_1._0._0._0
             double[] accYArray = accYList.ToArray();
             double[] accZArray = accZList.ToArray();
             double[] tempArray = tempList.ToArray();
+            double[] accAbsArray = new double[accXArray.Length];
 
-            // Schreiben der Werte in den public main Bereich um die Arrays außerhalb dieser Methode verfügbar zu machen (z.B. für Cursor Berechnungen)
+            for (int i = 0; i < accAbsArray.Length; i++)
+            {
+                accAbsArray[i] = Math.Sqrt((accXArray[i] * accXArray[i]) + (accYArray[i] * accYArray[i]) + (accZArray[i] * accZArray[i]));
+            }
+
+            // Schreiben der Werte in den public main Bereich um die Arrays au?erhalb dieser Methode verf?gbar zu machen (z.B. f?r Cursor Berechnungen)
             yh = heightArray;
             xh = timeArray;
 
-            ya = accXArray;
+            ya = accAbsArray;
             xa = timeArray;
 
             yt = tempArray;
             xt = timeArray;
 
-            //Aktiviere DateTime Format für die X-Achse
-            WpfPlot1.Plot.XAxis.DateTimeFormat(true);
+            //Aktiviere DateTime Format f?r die X-Achse
+            WpfPlot1.Plot.Axes.DateTimeTicksBottom();
+            isDateTimeXAxis = true;
 
-            //Daten für Höhe zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltAlt = WpfPlot1.Plot.AddScatter(timeArray, heightArray, label: "Altitude");
-            pltAlt.YAxisIndex = WpfPlot1.Plot.LeftAxis.AxisIndex;
-            WpfPlot1.Plot.YAxis.Label("Altitude [m]");
+            //Daten f?r H?he zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
+            pltAlt = WpfPlot1.Plot.Add.Scatter(timeArray, heightArray);
+            pltAlt.LegendText = "Altitude";
+            pltAlt.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            WpfPlot1.Plot.YLabel("Altitude [m]");
             pltAlt.MarkerSize = 1;
-            pltAlt.Color = Color.Black;
-            WpfPlot1.Plot.YAxis.Color(pltAlt.Color);
+            pltAlt.Color = Colors.Black;
+            if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
+            {
+                leftAxis.LabelFontColor = pltAlt.Color;
+            }
 
-            //Daten für Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltTemp = WpfPlot1.Plot.AddScatter(timeArray, tempArray, label: "Temperature");
-            //yAxisTemp = WpfPlot1.Plot.AddAxis(Edge.Right);
-            pltTemp.YAxisIndex = yAxisTemp.AxisIndex;
-            yAxisTemp.Label("Temperature [°C]");
+            //Daten f?r Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
+            pltTemp = WpfPlot1.Plot.Add.Scatter(timeArray, tempArray);
+            pltTemp.LegendText = "Temperature";
+            pltTemp.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
+            yAxisTemp.LabelText = "Temperature [\u00b0C]";
             pltTemp.MarkerSize = 1;
-            pltTemp.Color = Color.Red;
-            yAxisTemp.Color(pltTemp.Color);
+            pltTemp.Color = Colors.Red;
+            yAxisTemp.LabelFontColor = pltTemp.Color;
 
-            //Daten für Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltAcc = WpfPlot1.Plot.AddScatter(timeArray, accXArray, label: "3-Axis Acceleration");
-            //yAxisAcc = WpfPlot1.Plot.AddAxis(Edge.Right);
-            pltAcc.YAxisIndex = yAxisAcc.AxisIndex;
-            yAxisAcc.Label("Acceleration [g]");
+            //Daten f?r Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
+            pltAcc = WpfPlot1.Plot.Add.Scatter(timeArray, accAbsArray);
+            pltAcc.LegendText = "3-Axis Acceleration";
+            pltAcc.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
+            yAxisAcc.LabelText = "Acceleration [g]";
             pltAcc.MarkerSize = 1;
-            pltAcc.Color = Color.Green;
-            yAxisAcc.Color(pltAcc.Color);
+            pltAcc.Color = Colors.Green;
+            yAxisAcc.LabelFontColor = pltAcc.Color;
+
+            WpfPlot1.Plot.Legend.IsVisible = false;
 
             WpfPlot1.Refresh();
         }
-        
+
         // Timer initialisieren
         private void InitTimer()
         {
@@ -292,23 +390,89 @@ namespace DataViewer_1._0._0._0
             timer.Tick += new EventHandler(Timer_Tick);
         }
 
-
-        //Textboxen für Achsenlimits aktualisieren
-        private void RefreshAxisTextBoxes()
+        private static (double[] xs, double[] ys) GenerateRandomWalk(int count, int seed)
         {
-            //Textboxen für Achsenlimits aktualisieren
-            textBoxAltMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMax.ToString("F2");
-            textBoxAltMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMin.ToString("F2");
-            textBoxTempMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMax.ToString("F2");
-            textBoxTempMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMin.ToString("F2");
-            textBoxAccMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMax.ToString("F2");
-            textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");   
+            double[] xs = new double[count];
+            double[] ys = new double[count];
+            Random random = new Random(seed);
+
+            for (int i = 1; i < count; i++)
+            {
+                xs[i] = i;
+                ys[i] = ys[i - 1] + (random.NextDouble() - 0.5);
+            }
+
+            return (xs, ys);
         }
 
-        //Textboxen für Crosshair aktualisieren
+        private void ConfigurePlotInteractions()
+        {
+            var input = WpfPlot1.UserInputProcessor;
+            input.IsEnabled = true;
+
+            var responses = input.UserActionResponses;
+            for (int i = responses.Count - 1; i >= 0; i--)
+            {
+                if (responses[i] is ScottPlot.Interactivity.UserActionResponses.MouseInteractWithPlottables)
+                {
+                    responses.RemoveAt(i);
+                }
+            }
+
+            var plottableInteraction = new ScottPlot.Interactivity.UserActionResponses.MouseInteractWithPlottables(
+                ScottPlot.Interactivity.StandardMouseButtons.Left);
+            responses.Insert(0, plottableInteraction);
+
+            var primaryField = typeof(ScottPlot.Interactivity.UserInputProcessor)
+                .GetField("PrimaryResponse", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            primaryField?.SetValue(input, plottableInteraction);
+        }
+
+        private ScottPlot.AxisLimits GetAxisLimits(ScottPlot.IYAxis axis)
+        {
+            return WpfPlot1.Plot.Axes.GetLimits(WpfPlot1.Plot.Axes.Bottom, axis);
+        }
+
+        private void ShiftAxis(ScottPlot.IYAxis axis, double fraction)
+        {
+            var limits = GetAxisLimits(axis);
+            double span = limits.Top - limits.Bottom;
+            double delta = span * fraction;
+            WpfPlot1.Plot.Axes.SetLimitsY(limits.Bottom + delta, limits.Top + delta, axis);
+        }
+
+        //Textboxen f?r Achsenlimits aktualisieren
+        private void RefreshAxisTextBoxes()
+        {
+            //Textboxen f?r Achsenlimits aktualisieren
+            var altLimits = GetAxisLimits(WpfPlot1.Plot.Axes.Left);
+            textBoxAltMax.Text = altLimits.Top.ToString("F2");
+            textBoxAltMin.Text = altLimits.Bottom.ToString("F2");
+
+            if (yAxisTemp != null)
+            {
+                var tempLimits = GetAxisLimits(yAxisTemp);
+                textBoxTempMax.Text = tempLimits.Top.ToString("F2");
+                textBoxTempMin.Text = tempLimits.Bottom.ToString("F2");
+            }
+
+            if (yAxisAcc != null)
+            {
+                var accLimits = GetAxisLimits(yAxisAcc);
+                textBoxAccMax.Text = accLimits.Top.ToString("F2");
+                textBoxAccMin.Text = accLimits.Bottom.ToString("F2");
+            }
+        }
+
+        //Textboxen f?r Crosshair aktualisieren
         private void RefreshCrosshairTextBoxes()
         {
-            //Textboxen für Crosshair aktualisieren
+            if (crosshairX == null)
+            {
+                return;
+            }
+
+            //Textboxen f?r Crosshair aktualisieren
             textBoxCrossAlt.Text = InterpolateY(xh, yh, crosshairX.X).ToString("F2");
             textBoxCrossTemp.Text = InterpolateY(xt, yt, crosshairX.X).ToString("F2");
             textBoxCrossAcc.Text = InterpolateY(xa, ya, crosshairX.X).ToString("F2");
@@ -322,7 +486,6 @@ namespace DataViewer_1._0._0._0
         //Textboxen für Crosshair leeren
         private void ClearCrosshairTextBoxes()
         {
-            //Textboxen für Crosshair leeren
             textBoxCrossAlt.Text = double.NaN.ToString();
             textBoxCrossTemp.Text = double.NaN.ToString();
             textBoxCrossAcc.Text = double.NaN.ToString();
@@ -332,6 +495,118 @@ namespace DataViewer_1._0._0._0
             textBoxCrossAccZ.Text = double.NaN.ToString();
             */
         }
+
+        private void UpdateCrosshairState()
+        {
+            if (crosshairX == null || crosshairAlt == null)
+            {
+                return;
+            }
+
+            SyncCrosshairAxes();
+            RefreshCrosshairTextBoxes();
+            UpdateCrosshairLabels();
+        }
+
+        private void SyncCrosshairAxes()
+        {
+            if (crosshairTemp == null || crosshairAcc == null || yAxisTemp == null || yAxisAcc == null)
+            {
+                return;
+            }
+
+            ScottPlot.Pixel pixel = WpfPlot1.Plot.GetPixel(
+                new ScottPlot.Coordinates(crosshairX.X, crosshairAlt.Y),
+                WpfPlot1.Plot.Axes.Bottom,
+                WpfPlot1.Plot.Axes.Left);
+
+            crosshairTemp.Y = WpfPlot1.Plot.GetCoordinates(pixel, WpfPlot1.Plot.Axes.Bottom, yAxisTemp).Y;
+            crosshairAcc.Y = WpfPlot1.Plot.GetCoordinates(pixel, WpfPlot1.Plot.Axes.Bottom, yAxisAcc).Y;
+        }
+
+        private void UpdateCrosshairLabels()
+        {
+            if (crosshairTemp != null)
+            {
+                crosshairTemp.LabelText = crosshairTemp.Y.ToString("F2");
+            }
+
+            if (crosshairAcc != null)
+            {
+                crosshairAcc.LabelText = crosshairAcc.Y.ToString("F2");
+            }
+        }
+
+        private bool IsDateTimeXAxis()
+        {
+            if (isDateTimeXAxis)
+            {
+                return true;
+            }
+
+            var tickGenerator = WpfPlot1?.Plot?.Axes?.Bottom?.TickGenerator;
+            if (tickGenerator == null)
+            {
+                return false;
+            }
+
+            return tickGenerator.GetType().Name.IndexOf("DateTime", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private string FormatXAxisLabel(double x)
+        {
+            if (IsDateTimeXAxis())
+            {
+                return DateTime.FromOADate(x).ToString("G");
+            }
+
+            return x.ToString("F2");
+        }
+
+        private static string GetSeriesUnit(string seriesName)
+        {
+            switch (seriesName)
+            {
+                case "Altitude":
+                    return "m";
+                case "Temperature":
+                    return "\u00b0C";
+                case "3-Axis Acceleration":
+                    return "g";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private string FormatHoverLabel(string seriesName, double x, double y)
+        {
+            string unit = GetSeriesUnit(seriesName);
+            string yLabel = string.IsNullOrEmpty(unit)
+                ? y.ToString("F2")
+                : $"{y:F2} {unit}";
+
+            return $"{seriesName}\nValue: {yLabel}\nTime: {FormatXAxisLabel(x)}";
+        }
+
+        private void UpdateHoverLabelPlacement(ScottPlot.Pixel anchorPixel)
+        {
+            if (hoverLabel == null)
+            {
+                return;
+            }
+
+            double width = WpfPlot1.ActualWidth;
+            if (width <= 0)
+            {
+                return;
+            }
+
+            const double edgePadding = 120;
+            bool nearRightEdge = anchorPixel.X > (width - edgePadding);
+            hoverLabel.Alignment = nearRightEdge ? Alignment.UpperRight : Alignment.UpperLeft;
+            hoverLabel.OffsetX = nearRightEdge ? -8 : 8;
+        }
+
 
 
         //Textboxen für Messungen aktualisieren
@@ -413,16 +688,243 @@ namespace DataViewer_1._0._0._0
             textBoxMeasAccAverageZ.Text = double.NaN.ToString();
         }
 
+        private void UpdateMeasuringState()
+        {
+            if (measuringSpan == null)
+            {
+                return;
+            }
+
+            if (lastMeasuringX1.HasValue && lastMeasuringX2.HasValue &&
+                measuringSpan.X1 == lastMeasuringX1.Value && measuringSpan.X2 == lastMeasuringX2.Value)
+            {
+                return;
+            }
+
+            lastMeasuringX1 = measuringSpan.X1;
+            lastMeasuringX2 = measuringSpan.X2;
+
+            UpdateMeasuringCursor();
+        }
+
+        private void UpdateMeasuringCursor()
+        {
+            if (measuringSpan == null)
+            {
+                return;
+            }
+
+            if (measuringSpan.X1 > measuringSpan.X2)
+            {
+                double temp = measuringSpan.X1;
+                measuringSpan.X1 = measuringSpan.X2;
+                measuringSpan.X2 = temp;
+            }
+
+            indexCursor1 = FindIndex(xh, measuringSpan.X1);
+            indexCursor2 = FindIndex(xh, measuringSpan.X2);
+
+            minMaxAlt = FindMinMax(minMaxAlt, yh, indexCursor1, indexCursor2);
+            textBoxMeasAltMin.Text = minMaxAlt.min.ToString("F2");
+            textBoxMeasAltMax.Text = minMaxAlt.max.ToString("F2");
+
+            minMaxTemp = FindMinMax(minMaxTemp, yt, indexCursor1, indexCursor2);
+            textBoxMeasTempMin.Text = minMaxTemp.min.ToString("F2");
+            textBoxMeasTempMax.Text = minMaxTemp.max.ToString("F2");
+
+            minMaxAcc = FindMinMax(minMaxAcc, ya, indexCursor1, indexCursor2);
+            textBoxMeasAccMin.Text = minMaxAcc.min.ToString("F2");
+            textBoxMeasAccMax.Text = minMaxAcc.max.ToString("F2");
+
+            RefreshMeasuringTextBoxes();
+        }
+
+        private void EnsureHoverPlottables()
+        {
+            if (hoverMarker == null)
+            {
+                hoverMarker = WpfPlot1.Plot.Add.Marker(0, 0, MarkerShape.OpenCircle, 8);
+                hoverMarker.MarkerLineWidth = 2;
+                hoverMarker.IsVisible = false;
+            }
+
+            if (hoverLabel == null)
+            {
+                hoverLabel = WpfPlot1.Plot.Add.Text(string.Empty, 0, 0);
+                hoverLabel.Alignment = Alignment.UpperLeft;
+                hoverLabel.LabelBackgroundColor = Colors.White;
+                hoverLabel.LabelBorderColor = Colors.DimGray;
+                hoverLabel.LabelBorderWidth = 1;
+                hoverLabel.LabelFontSize = 12;
+                hoverLabel.OffsetX = 8;
+                hoverLabel.OffsetY = -8;
+                hoverLabel.IsVisible = false;
+            }
+        }
+
+        private void HideHover()
+        {
+            if (hoverMarker != null)
+            {
+                hoverMarker.IsVisible = false;
+            }
+
+            if (hoverLabel != null)
+            {
+                hoverLabel.IsVisible = false;
+            }
+
+            hoverSeries = null;
+            hoverX = null;
+            hoverY = null;
+        }
+
+        private void UpdateHoverPoint(MouseEventArgs e)
+        {
+            if (WpfPlot1.Plot.LastRender.Equals(default(ScottPlot.RenderDetails)))
+            {
+                return;
+            }
+
+            EnsureHoverPlottables();
+
+            ScottPlot.Pixel mousePixel = WpfPlot1.GetPlotPixelPosition(e);
+            ScottPlot.DataPoint bestPoint = default;
+            ScottPlot.IAxes bestAxes = null;
+            ScottPlot.Color bestColor = Colors.Transparent;
+            string bestSeries = null;
+            double bestDistance = double.PositiveInfinity;
+
+            TryUpdateBestCandidate(pltAlt, "Altitude", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
+            TryUpdateBestCandidate(pltTemp, "Temperature", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
+            TryUpdateBestCandidate(pltAcc, "3-Axis Acceleration", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
+
+            if (bestAxes == null)
+            {
+                if (hoverMarker?.IsVisible == true || hoverLabel?.IsVisible == true)
+                {
+                    HideHover();
+                    WpfPlot1.Refresh();
+                }
+                return;
+            }
+
+            hoverMarker.Axes = bestAxes;
+            hoverMarker.X = bestPoint.X;
+            hoverMarker.Y = bestPoint.Y;
+            hoverMarker.MarkerLineColor = bestColor;
+            hoverMarker.MarkerFillColor = bestColor;
+            hoverMarker.IsVisible = true;
+
+            hoverLabel.Axes = bestAxes;
+            hoverLabel.Location = new ScottPlot.Coordinates(bestPoint.X, bestPoint.Y);
+            hoverLabel.LabelText = FormatHoverLabel(bestSeries, bestPoint.X, bestPoint.Y);
+            ScottPlot.Pixel anchorPixel = WpfPlot1.Plot.GetPixel(hoverLabel.Location, bestAxes.XAxis, bestAxes.YAxis);
+            UpdateHoverLabelPlacement(anchorPixel);
+            hoverLabel.IsVisible = true;
+
+            bool changed = hoverSeries != bestSeries || hoverX != bestPoint.X || hoverY != bestPoint.Y;
+            hoverSeries = bestSeries;
+            hoverX = bestPoint.X;
+            hoverY = bestPoint.Y;
+
+            if (changed)
+            {
+                WpfPlot1.Refresh();
+            }
+        }
+
+        private void TryUpdateBestCandidate(Scatter scatter, string seriesName, ScottPlot.Pixel mousePixel,
+            ref ScottPlot.DataPoint bestPoint, ref ScottPlot.IAxes bestAxes, ref ScottPlot.Color bestColor,
+            ref string bestSeries, ref double bestDistance)
+        {
+            if (scatter == null || !scatter.IsVisible)
+            {
+                return;
+            }
+
+            ScottPlot.IAxes axes = scatter.Axes;
+            if (axes == null)
+            {
+                return;
+            }
+
+            ScottPlot.Coordinates mouseCoords = WpfPlot1.Plot.GetCoordinates(mousePixel, axes.XAxis, axes.YAxis);
+            ScottPlot.DataPoint nearest = scatter.GetNearest(mouseCoords, WpfPlot1.Plot.LastRender, HoverSnapDistance);
+            if (!nearest.IsReal)
+            {
+                return;
+            }
+
+            ScottPlot.Pixel nearestPixel = WpfPlot1.Plot.GetPixel(nearest.Coordinates, axes.XAxis, axes.YAxis);
+            double dx = nearestPixel.X - mousePixel.X;
+            double dy = nearestPixel.Y - mousePixel.Y;
+            double distance = Math.Sqrt((dx * dx) + (dy * dy));
+            if (distance > HoverSnapDistance || distance >= bestDistance)
+            {
+                return;
+            }
+
+            bestPoint = nearest;
+            bestAxes = axes;
+            bestColor = scatter.Color;
+            bestSeries = seriesName;
+            bestDistance = distance;
+        }
+
+
+        private void ClearSerialPortManagers()
+        {
+            foreach (SerialPortManager manager in serialPortManagers.Values)
+            {
+                manager.DataReceived -= OnDataReceived;
+                manager.Dispose();
+            }
+            serialPortManagers.Clear();
+        }
+
+        private void HandlePortCommand(string portName, string command)
+        {
+            if (string.IsNullOrWhiteSpace(portName))
+            {
+                MessageBox.Show("Invalid device selection.");
+                return;
+            }
+
+            if (!serialPortManagers.TryGetValue(portName, out SerialPortManager manager))
+            {
+                MessageBox.Show("Device not found: " + portName);
+                return;
+            }
+
+            manager.OpenPort();
+            manager.SendCommand(command);
+        }
+
+        private void UpdateDeviceInfo(string portName)
+        {
+            DataLogger logger = DataLoggerManager.GetLogger(portName);
+            if (logger == null)
+            {
+                return;
+            }
+
+            textBoxModel.Text = logger.id ?? "-";
+            textBoxSerialNumber.Text = logger.serialNumber ?? "-";
+            textBoxProductionDate.Text = logger.productionDate ?? "-";
+            textBoxChecksum.Text = logger.checkSum ?? "-";
+        }
+
             // Methode zur linearen Interpolation für den Measuring Cursor um Y-Koordinate des Plots aus X-Koordinate des Messcursors zu bekommen
             private double InterpolateY(double[] xData, double[] yData, double xValue)
         {
+            if (xValue < 0 || xData == null || yData == null || xData.Length == 0 || xData.Length != yData.Length)
+            {
+                return double.NaN; // Fr?hzeitige R?ckkehr bei negativem xValue oder ung?ltigen Eingabedaten
+            }
+
             for (int i = 1; i < xData.Length; i++)
             {
-                if (xValue < 0 || xData.Length != yData.Length || xData.Length == 0)
-                {
-                    return double.NaN; // Frühzeitige Rückkehr bei negativem xValue oder ungültigen Eingabedaten
-                }
-
                 if (xValue < xData[i])
                 {
                     double slope = (yData[i] - yData[i - 1]) / (xData[i] - xData[i - 1]);
@@ -431,7 +933,7 @@ namespace DataViewer_1._0._0._0
                     return yInterpolated;
                 }
             }
-            return double.NaN; // X-Wert liegt außerhalb des Bereichs
+            return double.NaN; // X-Wert liegt au?erhalb des Bereichs
         }
 
         // Methode zur Findung der X-Koordinaten des Messcursors 1 und 2
@@ -481,65 +983,83 @@ namespace DataViewer_1._0._0._0
 
         private List<Messreihe> DekodiereDatenpaket(string datenpaket, string portName)
         {
-            //Prüfe ob überhaupt der Beginn einer Aufnahme da ist mittels Anfangskodierung AAAA. Wenn nicht, ist keine gültige Aufnahme in den Daten vorhanden
-            if (datenpaket.IndexOf("AAAA") == -1)
+            if (string.IsNullOrEmpty(datenpaket))
             {
-                //Breche die Dekodierung ab und gebe null zurück
                 return null;
+            }
+
+            //Pr?fe ob ?berhaupt der Beginn einer Aufnahme da ist mittels Anfangskodierung AAAA. Wenn nicht, ist keine g?ltige Aufnahme in den Daten vorhanden
+            int splitStartIndex = datenpaket.IndexOf("AAAA", StringComparison.Ordinal);
+            if (splitStartIndex < 0)
+            {
+                //Breche die Dekodierung ab und gebe null zur?ck
+                return null;
+            }
+
+            if (splitStartIndex > 0)
+            {
+                datenpaket = datenpaket.Substring(splitStartIndex);
             }
 
             List<Messreihe> messreihen = new List<Messreihe>();
 
-            int splitStartIndex = datenpaket.IndexOf("AAAA");
-
             // Trennung der einzelnen Messreihen an der Anfangskodierung
             string[] einzelneReihen = datenpaket.Split(new[] { "AAAA" }, StringSplitOptions.RemoveEmptyEntries);
 
-            foreach (var reihe in einzelneReihen)
+            foreach (string reihe in einzelneReihen)
             {
-                if (string.IsNullOrEmpty(reihe) || splitStartIndex > 0 )
+                if (string.IsNullOrEmpty(reihe) || reihe.Length < 24)
                 {
-                    continue; // Leere oder ungültige Reihe überspringen
+                    continue; // Leere oder ung?ltige Reihe ?berspringen
                 }
 
-                
                 var messreihe = new Messreihe();
                 // Anfangsdatenfolge
-                string anfangsdaten = reihe.Substring(0, 24); // Länge der Anfangsdaten
+                string anfangsdaten = reihe.Substring(0, 24); // L?nge der Anfangsdaten
                 messreihe.Startzeit = ParseDatumUndZeit(anfangsdaten.Substring(2, 14));
-                messreihe.StartTemperatur = (HexZuDouble(anfangsdaten.Substring(16, 4))-500)/10;
-                messreihe.StartDruck = HexZuDouble(anfangsdaten.Substring(20, 4))/10;
+                messreihe.StartTemperatur = (HexZuDouble(anfangsdaten.Substring(16, 4)) - 500) / 10;
+                messreihe.StartDruck = HexZuDouble(anfangsdaten.Substring(20, 4)) / 10;
 
                 // Extraktion und Verarbeitung der Messdaten
                 int messdatenStartIndex = 24;
-                int messdatenEndIndex = reihe.IndexOf("FFFF");
-                string messdaten = reihe.Substring(messdatenStartIndex, messdatenEndIndex - messdatenStartIndex);// Exklusive Abschlussdaten
+                int messdatenEndIndex = reihe.IndexOf("FFFF", StringComparison.Ordinal);
+                if (messdatenEndIndex < 0 || messdatenEndIndex <= messdatenStartIndex)
+                {
+                    continue;
+                }
+
+                string messdaten = reihe.Substring(messdatenStartIndex, messdatenEndIndex - messdatenStartIndex); // Exklusive Abschlussdaten
 
                 //Verarbeitung Messdaten
                 double temperatur = messreihe.StartTemperatur; // Starttemperatur aus der Anfangsdatenfolge
                 int tempCounter = 1;
                 int timeCounter = 0;
-               
 
-                for (int i = 0; i < messdaten.Length; i += 16)
+                for (int i = 0; i + 15 < messdaten.Length; i += 16)
                 {
-                    Debug.WriteLine(tempCounter.ToString() + "  " +  i.ToString() + "  " + messdaten.Substring(i, 16));
-
-                    if (tempCounter >=240)
+                    if (tempCounter >= 240)
                     {
                         tempCounter = 0;
-                        
-                        Debug.WriteLine("TEMPERATUR");
-                        temperatur = (HexZuDouble(messdaten.Substring(i, 4)) - 500)/ 10;
+
+                        if (i + 19 >= messdaten.Length)
+                        {
+                            break;
+                        }
+
+                        temperatur = (HexZuDouble(messdaten.Substring(i, 4)) - 500) / 10;
                         i += 4;
                     }
 
+                    if (i + 15 >= messdaten.Length)
+                    {
+                        break;
+                    }
 
                     var daten = new Messdaten
                     {
-                        Zeit = messreihe.Startzeit.AddMilliseconds(250*timeCounter),
-                        Druck = HexZuDouble(messdaten.Substring(i, 4))/10,
-                        Hoehe = Math.Round((288.15/0.0065)*(1-((HexZuDouble(messdaten.Substring(i, 4)) / 10) /1013.25))*0.190294957,2),
+                        Zeit = messreihe.Startzeit.AddMilliseconds(250 * timeCounter),
+                        Druck = HexZuDouble(messdaten.Substring(i, 4)) / 10,
+                        Hoehe = Math.Round((288.15 / 0.0065) * (1 - ((HexZuDouble(messdaten.Substring(i, 4)) / 10) / 1013.25)) * 0.190294957, 2),
                         BeschleunigungX = CalculateAccelerationFromHex(messdaten.Substring(i + 4, 4)),
                         BeschleunigungY = CalculateAccelerationFromHex(messdaten.Substring(i + 8, 4)),
                         BeschleunigungZ = CalculateAccelerationFromHex(messdaten.Substring(i + 12, 4)),
@@ -553,20 +1073,22 @@ namespace DataViewer_1._0._0._0
 
                 // Abschlussdatenfolge
                 string abschlussdaten = reihe.Substring(messdatenEndIndex + 4);
-                messreihe.Status = abschlussdaten.Substring(0, 4);
-                messreihe.Spannung = abschlussdaten.Substring(4, 4);
-                messreihe.Endzeit = ParseDatumUndZeit(abschlussdaten.Substring(10, 14));
-                messreihe.EndTemperatur = HexZuDouble(abschlussdaten.Substring(24, 4));
-                messreihe.EndDruck = HexZuDouble(abschlussdaten.Substring(28, 4));
+                if (abschlussdaten.Length >= 32)
+                {
+                    messreihe.Status = abschlussdaten.Substring(0, 4);
+                    messreihe.Spannung = abschlussdaten.Substring(4, 4);
+                    messreihe.Endzeit = ParseDatumUndZeit(abschlussdaten.Substring(10, 14));
+                    messreihe.EndTemperatur = HexZuDouble(abschlussdaten.Substring(24, 4));
+                    messreihe.EndDruck = HexZuDouble(abschlussdaten.Substring(28, 4));
+                }
 
                 messreihen.Add(messreihe);
-             
             }
 
-            //Messreihen im TreeView dem Datenlogger als Subitem hinzufügen
-            foreach (var _messreihe in messreihen)
+            //Messreihen im TreeView dem Datenlogger als Subitem hinzuf?gen
+            foreach (Messreihe messreihe in messreihen)
             {
-                TreeViewManager.AddSubItem(portName, _messreihe.Startzeit.ToString());
+                TreeViewManager.AddSubItem(portName, messreihe.Startzeit.ToString());
             }
 
             return messreihen;
@@ -637,9 +1159,30 @@ namespace DataViewer_1._0._0._0
 
 
         // Methode zum Auslösen des Events zum Plotten von Datenn aus anderen Klassen heraus
-        public void TriggerPlotData(int index)
+        public void TriggerPlotData(string portName, int index)
         {
-            PlotData(measurementSeries,index);
+            if (string.IsNullOrWhiteSpace(portName))
+            {
+                MessageBox.Show("Invalid device selection.");
+                return;
+            }
+
+            if (!measurementSeriesByPort.TryGetValue(portName, out List<Messreihe> series) || series == null || series.Count == 0)
+            {
+                MessageBox.Show("No data for selected device.");
+                return;
+            }
+
+            if (index < 0 || index >= series.Count)
+            {
+                MessageBox.Show("Invalid data index.");
+                return;
+            }
+
+            currentPortName = portName;
+            currentSeriesIndex = index;
+            PlotData(series, index);
+            UpdateDeviceInfo(portName);
         }
 
 
@@ -650,120 +1193,50 @@ namespace DataViewer_1._0._0._0
         // EventHandler für die Verschiebung des Plots mit der Maus
         private void WpfPlot1_MouseMove(object sender, MouseEventArgs e)
         {
-            //Textboxen für Achsenlimits aktualisieren
-            textBoxAltMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMax.ToString("F2");
-            textBoxAltMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMin.ToString("F2");
-            textBoxTempMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMax.ToString("F2");
-            textBoxTempMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMin.ToString("F2");
-            textBoxAccMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMax.ToString("F2");
-            textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");
+            RefreshAxisTextBoxes();
+            UpdateCrosshairState();
+            UpdateMeasuringState();
+            UpdateHoverPoint(e);
         }
 
         // EventHandler für das Zoomen des Plots mit der Maus
         private void WpfPlot1_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            //Textboxen für Achsenlimits aktualisieren
-            textBoxAltMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMax.ToString("F2");
-            textBoxAltMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 0).YMin.ToString("F2");
-            textBoxTempMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMax.ToString("F2");
-            textBoxTempMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 2).YMin.ToString("F2");
-            textBoxAccMax.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMax.ToString("F2");
-            textBoxAccMin.Text = WpfPlot1.Plot.GetAxisLimits(0, 3).YMin.ToString("F2");
+            RefreshAxisTextBoxes();
+            UpdateCrosshairState();
+            UpdateMeasuringState();
         }
 
+        private void WpfPlot1_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (hoverMarker?.IsVisible == true || hoverLabel?.IsVisible == true)
+            {
+                HideHover();
+                WpfPlot1.Refresh();
+            }
+        }
 
-        // EventHandler für das Dragged-Ereignis des Messcursors
-
+        // EventHandler f?r das Dragged-Ereignis des Messcursors
         private void measuringSpan_Edge1Dragged(object sender, double e)
         {
-            if (measuringSpan.X1 < measuringSpan.X2)
-            {
-                measuringSpan.X1 = e;
-            }
-            else if (measuringSpan.X2 < measuringSpan.X1)
-            {
-                measuringSpan.X2 = e;
-            }
-            //Finde den X-Wert des Cursors
-            indexCursor1 = FindIndex(xh, measuringSpan.X1);
-
-            //Finde Min/Max Werte für Höhe
-            minMaxAlt = FindMinMax(minMaxAlt, yh, indexCursor1, indexCursor2);
-            textBoxMeasAltMin.Text = minMaxAlt.min.ToString("F2");
-            textBoxMeasAltMax.Text = minMaxAlt.max.ToString("F2");
-
-            //Finde Min/Max Werte für Temperatur
-            minMaxTemp = FindMinMax(minMaxTemp, yt, indexCursor1, indexCursor2);
-            textBoxMeasTempMin.Text = minMaxTemp.min.ToString("F2");
-            textBoxMeasTempMax.Text = minMaxTemp.max.ToString("F2");
-
-            //Finde Min/Max Werte für Beschleunigung
-            minMaxAcc = FindMinMax(minMaxAcc, ya, indexCursor1, indexCursor2);
-            textBoxMeasAccMin.Text = minMaxAcc.min.ToString("F2");
-            textBoxMeasAccMax.Text = minMaxAcc.max.ToString("F2");
-
-            /*
-             * 
-             * HIER NOCH XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!###################################################
-             * 
-             */
-
-
-            RefreshMeasuringTextBoxes();
+            UpdateMeasuringCursor();
         }
 
         private void measuringSpan_Edge2Dragged(object sender, double e)
         {
-            if (measuringSpan.X1 < measuringSpan.X2)
-            {
-                measuringSpan.X2 = e;
-                //x2SpanPosTextBlock.Text = vLine1.X2.ToString();
-            }
-            else if (measuringSpan.X2 < measuringSpan.X1)
-            {
-                measuringSpan.X1 = e;
-                //x1SpanPosTextBlock.Text = vLine1.X1.ToString();
-            }
-            //Finde den X-Wert des Cursors
-            indexCursor2 = FindIndex(xh, measuringSpan.X2);
-
-            //Finde Min/Max Werte für Höhe
-            minMaxAlt = FindMinMax(minMaxAlt, yh, indexCursor1, indexCursor2);
-            textBoxMeasAltMin.Text = minMaxAlt.min.ToString("F2");
-            textBoxMeasAltMax.Text = minMaxAlt.max.ToString("F2");
-
-            //Finde Min/Max Werte für Temperatur
-            minMaxTemp = FindMinMax(minMaxTemp, yt, indexCursor1, indexCursor2);
-            textBoxMeasTempMin.Text = minMaxTemp.min.ToString("F2");
-            textBoxMeasTempMax.Text = minMaxTemp.max.ToString("F2");
-
-            //Finde Min/Max Werte für Beschleunigung
-            minMaxAcc = FindMinMax(minMaxAcc, ya, indexCursor1, indexCursor2);
-            textBoxMeasAccMin.Text = minMaxAcc.min.ToString("F2");
-            textBoxMeasAccMax.Text = minMaxAcc.max.ToString("F2");
-
-            /*
-             * 
-             * HIER NOCH MIN/MAX XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!###############################################
-             * 
-             */
-
-            RefreshMeasuringTextBoxes();
+            UpdateMeasuringCursor();
         }
 
         //Eventhandler wenn der X-Achsen Crosshair auf der Zeitachse verschoben wird
         private void crosshairX_Dragged(object sender, EventArgs e)
         {
-            //Während der Verschiebeung des X-Achsen Crosshairs laufend die Textboxen mit den aktuellen Y-Werten an der X-Position füllen
-            RefreshCrosshairTextBoxes();
+            UpdateCrosshairState();
         }
 
         //Eventhandler wenn der Cursor auf der Y-Achse verschoben wird
         private void crosshairAlt_Dragged(object sender, EventArgs e)
         {
-            var draggedPixel = WpfPlot1.Plot.GetPixelY(crosshairAlt.Y);
-            crosshairTemp.Y = WpfPlot1.Plot.GetCoordinateY(draggedPixel,yAxisTemp.AxisIndex);
-            crosshairAcc.Y = WpfPlot1.Plot.GetCoordinateY(draggedPixel, yAxisAcc.AxisIndex);
+            UpdateCrosshairState();
         }
 
        // Eventhandler wenn der Timer auslöst  - aktuell für Buttons um die Achsen zu verschieben wenn man den Button gedrückt hält
@@ -772,37 +1245,37 @@ namespace DataViewer_1._0._0._0
             timer.Interval = TimeSpan.FromSeconds(activeTime);
             if (buttonAltUpPressed)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin - (WpfPlot1.Plot.GetAxisLimits().YMax- WpfPlot1.Plot.GetAxisLimits().YMin)/50, WpfPlot1.Plot.GetAxisLimits().YMax - (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50);
+                ShiftAxis(WpfPlot1.Plot.Axes.Left, -1.0 / 50);
                 WpfPlot1.Refresh();
                 RefreshAxisTextBoxes();
             }
-            else if(buttonAltDownPressed)
+            else if (buttonAltDownPressed)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50, WpfPlot1.Plot.GetAxisLimits().YMax + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50);
+                ShiftAxis(WpfPlot1.Plot.Axes.Left, 1.0 / 50);
                 WpfPlot1.Refresh();
                 RefreshAxisTextBoxes();
             }
-            else if (buttonTempUpPressed)
+            else if (buttonTempUpPressed && yAxisTemp != null)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, yAxisTemp.AxisIndex);
+                ShiftAxis(yAxisTemp, -1.0 / 50);
                 WpfPlot1.Refresh();
                 RefreshAxisTextBoxes();
             }
-            else if (buttonTempDownPressed)
+            else if (buttonTempDownPressed && yAxisTemp != null)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin + (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, yAxisTemp.AxisIndex);
+                ShiftAxis(yAxisTemp, 1.0 / 50);
                 WpfPlot1.Refresh();
                 RefreshAxisTextBoxes();
             }
-            else if (buttonAccUpPressed)
+            else if (buttonAccUpPressed && yAxisAcc != null)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, yAxisAcc.AxisIndex);
+                ShiftAxis(yAxisAcc, -1.0 / 50);
                 WpfPlot1.Refresh();
                 RefreshAxisTextBoxes();
             }
-            else if (buttonAccDownPressed)
+            else if (buttonAccDownPressed && yAxisAcc != null)
             {
-                WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, yAxisAcc.AxisIndex);
+                ShiftAxis(yAxisAcc, 1.0 / 50);
                 WpfPlot1.Refresh();
                 RefreshAxisTextBoxes();
             }
@@ -810,107 +1283,139 @@ namespace DataViewer_1._0._0._0
 
         //------------------BUTTON EVENTS---------------------------------------
 
+        private void menuItemExportCsv_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetCurrentSeries(out Messreihe series, out string portName, out _))
+            {
+                MessageBox.Show("No data to export.");
+                return;
+            }
+
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = "CSV (*.csv)|*.csv",
+                FileName = $"{portName}_{series.Startzeit:yyyyMMdd_HHmmss}.csv"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            try
+            {
+                ExportSeriesToCsv(series, dialog.FileName);
+                MessageBox.Show("Export complete.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Export failed: " + ex.Message);
+            }
+        }
+
         //Measuring Cursor enable / disable
         private void toggleButtonMeasuringCursor_Checked(object sender, RoutedEventArgs e)
         {
-            measuringSpan = WpfPlot1.Plot.AddHorizontalSpan((WpfPlot1.Plot.GetAxisLimits().XMin+((WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 4)), (WpfPlot1.Plot.GetAxisLimits().XMax - ((WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 4)), label: "Measuring Cursor");
-            measuringSpan.DragEnabled = true;
+            var limits = WpfPlot1.Plot.Axes.GetLimits();
+            double span = limits.Right - limits.Left;
+            double x1 = limits.Left + (span / 4);
+            double x2 = limits.Right - (span / 4);
 
-            // Registriere einen EventHandler für das Dragged-Ereignis
-            measuringSpan.Edge1Dragged += measuringSpan_Edge1Dragged;
-            measuringSpan.Edge2Dragged += measuringSpan_Edge2Dragged;
+            measuringSpan = WpfPlot1.Plot.Add.InteractiveHorizontalSpan(x1, x2);
+            measuringSpan.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            measuringSpan.LineStyle.Color = Colors.DimGray;
+            lastMeasuringX1 = null;
+            lastMeasuringX2 = null;
 
-            //Finde den X-Wert des Cursors 1 und 2
-            indexCursor1 = FindIndex(xh, measuringSpan.X1);
-            indexCursor2 = FindIndex(xh, measuringSpan.X2);
-
-            //Finde Min/Max Werte für Höhe
-            minMaxAlt = FindMinMax(minMaxAlt,yh,indexCursor1,indexCursor2);
-            textBoxMeasAltMin.Text = minMaxAlt.min.ToString("F2");
-            textBoxMeasAltMax.Text = minMaxAlt.max.ToString("F2");
-
-            //Finde Min/Max Werte für Temperatur
-            minMaxTemp = FindMinMax(minMaxTemp, yt, indexCursor1, indexCursor2);
-            textBoxMeasTempMin.Text = minMaxTemp.min.ToString("F2");
-            textBoxMeasTempMax.Text = minMaxTemp.max.ToString("F2");
-
-            //Finde Min/Max Werte für Beschleunigung
-            minMaxAcc = FindMinMax(minMaxAcc, ya, indexCursor1, indexCursor2);
-            textBoxMeasAccMin.Text = minMaxAcc.min.ToString("F2");
-            textBoxMeasAccMax.Text = minMaxAcc.max.ToString("F2");
-
-            /*
-             * 
-             * HIER NOCH XYZ BESCHLEUNIGUNGEN HINZUFÜGEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!##########################################################
-             * 
-             */
-
-            RefreshMeasuringTextBoxes(); //Textboxen der Messungen initial aktualisieren wenn der Messcursor aktiviert wird
+            UpdateMeasuringCursor();
             WpfPlot1.Refresh();
         }
-
         private void toggleButtonMeasuringCursor_Unchecked(object sender, RoutedEventArgs e)
         {
-            WpfPlot1.Plot.Remove(measuringSpan);
+            if (measuringSpan != null)
+            {
+                WpfPlot1.Plot.Remove(measuringSpan);
+                measuringSpan = null;
+            }
 
-            ClearMeasuringTextBoxes(); //Textboxen der Messungen leeren wenn der Messcursor deaktiviert wird
+            lastMeasuringX1 = null;
+            lastMeasuringX2 = null;
+            ClearMeasuringTextBoxes();
             WpfPlot1.Refresh();
         }
+
 
         //Crosshair enable
         private void toggleButtonCrosshair_Checked(object sender, RoutedEventArgs e)
         {
-            crosshairX = WpfPlot1.Plot.AddVerticalLine(WpfPlot1.Plot.GetAxisLimits().XMin + (WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 2, label: "Crosshair X-Axis");
-            crosshairX.PositionLabel = true;
-            crosshairX.PositionLabelBackground = crosshairX.Color;
-            crosshairX.DragEnabled = true;
+            var limits = WpfPlot1.Plot.Axes.GetLimits();
+            double xCenter = limits.Left + ((limits.Right - limits.Left) / 2);
+            double yCenter = limits.Bottom + ((limits.Top - limits.Bottom) / 2);
 
-            crosshairAlt = WpfPlot1.Plot.AddHorizontalLine(WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 2, color: Color.Black, label: "Crosshair Y-Axis");
-            crosshairAlt.YAxisIndex = pltAlt.YAxisIndex;
-            crosshairAlt.PositionLabel = true;
-            crosshairAlt.PositionLabelBackground = crosshairAlt.Color;
-            crosshairAlt.DragEnabled = true;
+            crosshairX = WpfPlot1.Plot.Add.InteractiveVerticalLine(xCenter);
+            crosshairX.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            crosshairX.LineStyle.Color = Colors.Black;
 
-            crosshairTemp = WpfPlot1.Plot.AddHorizontalLine(WpfPlot1.Plot.GetCoordinateY(WpfPlot1.Plot.GetPixelY(crosshairAlt.Y), yAxisTemp.AxisIndex), color: Color.Transparent);
-            crosshairTemp.YAxisIndex = pltTemp.YAxisIndex;
-            crosshairTemp.PositionLabel = true;
-            crosshairTemp.PositionLabelOppositeAxis = true;
-            crosshairTemp.PositionLabelBackground = Color.Red;
-            crosshairTemp.PositionLabelAxis = yAxisTemp;
-            crosshairTemp.DragEnabled = true;
+            crosshairAlt = WpfPlot1.Plot.Add.InteractiveHorizontalLine(yCenter);
+            crosshairAlt.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
+            crosshairAlt.LineStyle.Color = Colors.Black;
 
-            crosshairAcc = WpfPlot1.Plot.AddHorizontalLine(WpfPlot1.Plot.GetCoordinateY(WpfPlot1.Plot.GetPixelY(crosshairAlt.Y), yAxisAcc.AxisIndex), color: Color.Transparent);
-            crosshairAcc.YAxisIndex = pltAcc.YAxisIndex;
-            crosshairAcc.PositionLabel = true;
-            crosshairAcc.PositionLabelOppositeAxis = true;
-            crosshairAcc.PositionLabelBackground = Color.Green;
-            crosshairAcc.PositionLabelAxis = yAxisAcc;
-            crosshairAcc.DragEnabled = true;
+            ScottPlot.Pixel pixel = WpfPlot1.Plot.GetPixel(
+                new ScottPlot.Coordinates(xCenter, yCenter),
+                WpfPlot1.Plot.Axes.Bottom,
+                WpfPlot1.Plot.Axes.Left);
 
-            // Registriere einen EventHandler für das Dragged-Ereignis
-            crosshairX.Dragged += crosshairX_Dragged;
-            crosshairAlt.Dragged += crosshairAlt_Dragged;
+            double tempY = WpfPlot1.Plot.GetCoordinates(pixel, WpfPlot1.Plot.Axes.Bottom, yAxisTemp).Y;
+            double accY = WpfPlot1.Plot.GetCoordinates(pixel, WpfPlot1.Plot.Axes.Bottom, yAxisAcc).Y;
 
-            //Textboxen für Cursorwerte initial refreshen
-            RefreshCrosshairTextBoxes();
+            crosshairTemp = WpfPlot1.Plot.Add.HorizontalLine(tempY, color: Colors.Transparent);
+            crosshairTemp.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
+            crosshairTemp.LabelOppositeAxis = true;
+            crosshairTemp.LabelBackgroundColor = Colors.Red;
+            crosshairTemp.IsDraggable = false;
 
-            //Plot refreshen
+            crosshairAcc = WpfPlot1.Plot.Add.HorizontalLine(accY, color: Colors.Transparent);
+            crosshairAcc.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
+            crosshairAcc.LabelOppositeAxis = true;
+            crosshairAcc.LabelBackgroundColor = Colors.Green;
+            crosshairAcc.IsDraggable = false;
+
+            UpdateCrosshairState();
             WpfPlot1.Refresh();
         }
+
 
         //Crosshair disable
         private void toggleButtonCrosshair_Unchecked(object sender, RoutedEventArgs e)
         {
-            //Crosshairs entfernen
-            WpfPlot1.Plot.Remove(crosshairX);
-            WpfPlot1.Plot.Remove(crosshairAlt);
-            WpfPlot1.Plot.Remove(crosshairTemp);
-            WpfPlot1.Plot.Remove(crosshairAcc);
-            //Textboxen für Cursorwerte leeren (NaN)
+            if (crosshairX != null)
+            {
+                WpfPlot1.Plot.Remove(crosshairX);
+                crosshairX = null;
+            }
+
+            if (crosshairAlt != null)
+            {
+                WpfPlot1.Plot.Remove(crosshairAlt);
+                crosshairAlt = null;
+            }
+
+            if (crosshairTemp != null)
+            {
+                WpfPlot1.Plot.Remove(crosshairTemp);
+                crosshairTemp = null;
+            }
+
+            if (crosshairAcc != null)
+            {
+                WpfPlot1.Plot.Remove(crosshairAcc);
+                crosshairAcc = null;
+            }
+
             ClearCrosshairTextBoxes();
-            //Plot refreshen
             WpfPlot1.Refresh();
         }
+
 
 
         //---------------------------- Achsenlimit Textfelder ---------------------------------------
@@ -929,7 +1434,7 @@ namespace DataViewer_1._0._0._0
                     {
                         if(result > testresult)
                         {
-                            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin, result);
+                            WpfPlot1.Plot.Axes.SetLimitsY(WpfPlot1.Plot.Axes.GetLimits().Bottom, result);
                             WpfPlot1.Refresh();
                         }
                         else
@@ -968,7 +1473,7 @@ namespace DataViewer_1._0._0._0
                     {
                         if (result < testresult)
                         {
-                            WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits().YMax);
+                            WpfPlot1.Plot.Axes.SetLimitsY(result, WpfPlot1.Plot.Axes.GetLimits().Top);
                             WpfPlot1.Refresh();
                         }
                         else
@@ -1007,7 +1512,7 @@ namespace DataViewer_1._0._0._0
                     {
                         if (result > testresult)
                         {
-                            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin, result, yAxisTemp.AxisIndex);
+                            WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisTemp).Bottom, result, yAxisTemp);
                             WpfPlot1.Refresh();
                         }
                         else
@@ -1046,7 +1551,7 @@ namespace DataViewer_1._0._0._0
                     {
                         if (result < testresult)
                         {
-                            WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax, yAxisTemp.AxisIndex);
+                            WpfPlot1.Plot.Axes.SetLimitsY(result, GetAxisLimits(yAxisTemp).Top, yAxisTemp);
                             WpfPlot1.Refresh();
                         }
                         else
@@ -1085,7 +1590,7 @@ namespace DataViewer_1._0._0._0
                     {
                         if (result > testresult)
                         {
-                            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin, result, yAxisAcc.AxisIndex);
+                            WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisAcc).Bottom, result, yAxisAcc);
                             WpfPlot1.Refresh();
                         }
                         else
@@ -1124,7 +1629,7 @@ namespace DataViewer_1._0._0._0
                     {
                         if (result < testresult)
                         {
-                            WpfPlot1.Plot.SetAxisLimitsY(result, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax, yAxisAcc.AxisIndex);
+                            WpfPlot1.Plot.Axes.SetLimitsY(result, GetAxisLimits(yAxisAcc).Top, yAxisAcc);
                             WpfPlot1.Refresh();
                         }
                         else
@@ -1157,8 +1662,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonAltUpPressed = true;
-            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin-1, WpfPlot1.Plot.GetAxisLimits().YMax-1);
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin - (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50, WpfPlot1.Plot.GetAxisLimits().YMax - (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50);
+            //WpfPlot1.Plot.Axes.SetLimitsY(WpfPlot1.Plot.Axes.GetLimits().Bottom-1, WpfPlot1.Plot.Axes.GetLimits().Top-1);
+            WpfPlot1.Plot.Axes.SetLimitsY(WpfPlot1.Plot.Axes.GetLimits().Bottom - (WpfPlot1.Plot.Axes.GetLimits().Top - WpfPlot1.Plot.Axes.GetLimits().Bottom) / 50, WpfPlot1.Plot.Axes.GetLimits().Top - (WpfPlot1.Plot.Axes.GetLimits().Top - WpfPlot1.Plot.Axes.GetLimits().Bottom) / 50);
             WpfPlot1.Refresh();
             RefreshAxisTextBoxes();
         }
@@ -1167,8 +1672,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonAltDownPressed = true;
-            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + 1, WpfPlot1.Plot.GetAxisLimits().YMax + 1);
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50, WpfPlot1.Plot.GetAxisLimits().YMax + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 50);
+            //WpfPlot1.Plot.Axes.SetLimitsY(WpfPlot1.Plot.Axes.GetLimits().Bottom + 1, WpfPlot1.Plot.Axes.GetLimits().Top + 1);
+            WpfPlot1.Plot.Axes.SetLimitsY(WpfPlot1.Plot.Axes.GetLimits().Bottom + (WpfPlot1.Plot.Axes.GetLimits().Top - WpfPlot1.Plot.Axes.GetLimits().Bottom) / 50, WpfPlot1.Plot.Axes.GetLimits().Top + (WpfPlot1.Plot.Axes.GetLimits().Top - WpfPlot1.Plot.Axes.GetLimits().Bottom) / 50);
             WpfPlot1.Refresh();
             RefreshAxisTextBoxes();
         }
@@ -1177,8 +1682,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonTempUpPressed = true;
-            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - 1,yAxisTemp.AxisIndex);
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin - (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, yAxisTemp.AxisIndex);
+            //WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisTemp).Bottom - 1, GetAxisLimits(yAxisTemp).Top - 1,yAxisTemp);
+            WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisTemp).Bottom - (GetAxisLimits(yAxisTemp).Top - GetAxisLimits(yAxisTemp).Bottom) / 50, GetAxisLimits(yAxisTemp).Top - (GetAxisLimits(yAxisTemp).Top - GetAxisLimits(yAxisTemp).Bottom) / 50, yAxisTemp);
             WpfPlot1.Refresh();
             RefreshAxisTextBoxes();
         }
@@ -1187,8 +1692,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonTempDownPressed = true;
-            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0,yAxisTemp.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + 1, yAxisTemp.AxisIndex);
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin + (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax + (WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisTemp.AxisIndex).YMin) / 50, yAxisTemp.AxisIndex);
+            //WpfPlot1.Plot.Axes.SetLimitsY(WpfPlot1.Plot.GetAxisLimits(0,yAxisTemp).Bottom + 1, GetAxisLimits(yAxisTemp).Top + 1, yAxisTemp);
+            WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisTemp).Bottom + (GetAxisLimits(yAxisTemp).Top - GetAxisLimits(yAxisTemp).Bottom) / 50, GetAxisLimits(yAxisTemp).Top + (GetAxisLimits(yAxisTemp).Top - GetAxisLimits(yAxisTemp).Bottom) / 50, yAxisTemp);
             WpfPlot1.Refresh();
             RefreshAxisTextBoxes();
         }
@@ -1197,8 +1702,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonAccUpPressed = true;
-            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - 1, yAxisAcc.AxisIndex);
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin - (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, yAxisAcc.AxisIndex);
+            //WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisAcc).Bottom - 1, GetAxisLimits(yAxisAcc).Top - 1, yAxisAcc);
+            WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisAcc).Bottom - (GetAxisLimits(yAxisAcc).Top - GetAxisLimits(yAxisAcc).Bottom) / 50, GetAxisLimits(yAxisAcc).Top - (GetAxisLimits(yAxisAcc).Top - GetAxisLimits(yAxisAcc).Bottom) / 50, yAxisAcc);
             WpfPlot1.Refresh();
             RefreshAxisTextBoxes();
         }
@@ -1207,8 +1712,8 @@ namespace DataViewer_1._0._0._0
         {
             timer.Start();
             buttonAccDownPressed = true;
-            //WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + 1, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + 1, yAxisAcc.AxisIndex);
-            WpfPlot1.Plot.SetAxisLimitsY(WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin + (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax + (WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMax - WpfPlot1.Plot.GetAxisLimits(0, yAxisAcc.AxisIndex).YMin) / 50, yAxisAcc.AxisIndex);
+            //WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisAcc).Bottom + 1, GetAxisLimits(yAxisAcc).Top + 1, yAxisAcc);
+            WpfPlot1.Plot.Axes.SetLimitsY(GetAxisLimits(yAxisAcc).Bottom + (GetAxisLimits(yAxisAcc).Top - GetAxisLimits(yAxisAcc).Bottom) / 50, GetAxisLimits(yAxisAcc).Top + (GetAxisLimits(yAxisAcc).Top - GetAxisLimits(yAxisAcc).Bottom) / 50, yAxisAcc);
             WpfPlot1.Refresh();
             RefreshAxisTextBoxes();
         }
@@ -1220,29 +1725,47 @@ namespace DataViewer_1._0._0._0
             timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
-        private void buttonRefreshDeviceList_Click(object sender, RoutedEventArgs e)
+        private async void buttonRefreshDeviceList_Click(object sender, RoutedEventArgs e)
         {
-            //Status is refreshing
-            buttonRefreshPressed = true;
-            // DeviceListe leeren
-            TreeViewManager.ClearTreeView();
-            // DataLogger Dictionary Einträge löschen
-            DataLoggerManager.ClearLoggers();
-            //Suche COM-Ports mit SI-TL
-            validPorts = ComPortChecker.FindValidPorts();
-            if (validPorts != null)
+            buttonRefreshDeviceList.IsEnabled = false;
+
+            try
             {
-                foreach(string validPort in validPorts)
+                ClearSerialPortManagers();
+                measurementSeriesByPort.Clear();
+                currentPortName = null;
+                currentSeriesIndex = -1;
+                TreeViewManager.ClearTreeView();
+                DataLoggerManager.ClearLoggers();
+
+                //Suche COM-Ports mit SI-TL
+                validPorts = await Task.Run(() => ComPortChecker.FindValidPorts());
+                if (validPorts == null || validPorts.Count == 0)
+                {
+                    MessageBox.Show("No compatible devices found.");
+                    return;
+                }
+
+                foreach (string validPort in validPorts)
                 {
                     // Datenlogger in Dictionary aufnehmen
                     DataLoggerManager.AddLogger(new DataLogger(), validPort);
-                    // Erstelle Port für den gefundenen Logger
-                    serialPortManager = new SerialPortManager(validPort);
-                    serialPortManager.DataReceived += OnDataReceived;
-                    serialPortManager.OpenPort();
-                    serialPortManager.SendCommand("I");
+                    // Erstelle Port f?r den gefundenen Logger
+                    SerialPortManager manager = new SerialPortManager(validPort);
+                    manager.DataReceived += OnDataReceived;
+                    serialPortManagers[validPort] = manager;
+
+                    manager.OpenPort();
+                    manager.SendCommand("I");
                 }
-                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Device scan failed: " + ex.Message);
+            }
+            finally
+            {
+                buttonRefreshDeviceList.IsEnabled = true;
             }
         }
 
@@ -1276,100 +1799,119 @@ namespace DataViewer_1._0._0._0
 
         private void buttonLimitAccDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-            buttonAccUpPressed = false;
+            buttonAccDownPressed = false;
             timer.Stop();
             timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
-
-        
         private void toggleButtonMarker_Checked(object sender, RoutedEventArgs e)
         {
-            // place the marker at the first data point
-            marker = WpfPlot1.Plot.AddMarkerDraggable((WpfPlot1.Plot.GetAxisLimits().XMin + (WpfPlot1.Plot.GetAxisLimits().XMax - WpfPlot1.Plot.GetAxisLimits().XMin) / 2), (WpfPlot1.Plot.GetAxisLimits().YMin + (WpfPlot1.Plot.GetAxisLimits().YMax - WpfPlot1.Plot.GetAxisLimits().YMin) / 2), MarkerShape.filledTriangleDown, 15, Color.Magenta, label: "Marker");
+            var limits = WpfPlot1.Plot.Axes.GetLimits();
+            marker = WpfPlot1.Plot.Add.InteractiveMarker(new ScottPlot.Coordinates(
+                limits.Left + ((limits.Right - limits.Left) / 2),
+                limits.Bottom + ((limits.Top - limits.Bottom) / 2)));
+            marker.MarkerStyle.Shape = MarkerShape.FilledTriangleDown;
+            marker.MarkerStyle.Size = 15;
+            marker.MarkerStyle.FillColor = Colors.Magenta;
+            marker.MarkerStyle.LineColor = Colors.Magenta;
             WpfPlot1.Refresh();
         }
-
         private void toggleButtonMarker_Unchecked(object sender, RoutedEventArgs e)
         {
-            WpfPlot1.Plot.Remove(marker);
+            if (marker != null)
+            {
+                WpfPlot1.Plot.Remove(marker);
+                marker = null;
+            }
+
             WpfPlot1.Refresh();
         }
-
         private void toggleButtonLegend_Checked(object sender, RoutedEventArgs e)
         {
-            WpfPlot1.Plot.Legend(true);
+            WpfPlot1.Plot.Legend.IsVisible = true;
+            WpfPlot1.Refresh();
+        }
+        private void toggleButtonLegend_Unchecked(object sender, RoutedEventArgs e)
+        {
+            WpfPlot1.Plot.Legend.IsVisible = false;
             WpfPlot1.Refresh();
         }
 
-        private void toggleButtonLegend_Unchecked(object sender, RoutedEventArgs e)
-        {
-            WpfPlot1.Plot.Legend(false);
-            WpfPlot1.Refresh();
-        }
 
         /*############################   COM PORT EVENTS        ###################################################*/
 
         //Evenhandler für DataReceived
-        private void OnDataReceived(string[] data)
+        private void OnDataReceived(string portName, string[] data)
         {
-            serialPortManager.ClosePort();
+            if (string.IsNullOrWhiteSpace(portName))
+            {
+                return;
+            }
+
+            if (serialPortManagers.TryGetValue(portName, out SerialPortManager manager))
+            {
+                manager.ClosePort();
+            }
 
             Dispatcher.Invoke(() =>
             {
+                if (data == null || data.Length == 0 || string.IsNullOrEmpty(data[0]))
+                {
+                    MessageBox.Show("Invalid response from " + portName);
+                    return;
+                }
+
                 char echoCommand = data[0][0];
                 switch (echoCommand)
                 {
                     case 'I': // Header auslesen
-                        if (buttonRefreshPressed) //Ausführen wenn DeviceList refreshed werden soll
+                        if (data[0].Length < 89)
                         {
-                            buttonRefreshPressed = false;
-
-
-                            DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].comPort = serialPortManager.GetPortName();
-                            DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].checkSum = data[0].Substring(3, 2) + data[0].Substring(1, 2);
-                            DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber = int.Parse(data[0].Substring(49, 4), NumberStyles.HexNumber).ToString();
-
-                            switch (data[0].Substring(53, 2))
-                            {
-                                case "20": // Kennung 20 bedeutet Modell SI-TL1
-                                    DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id = "SI-TL1";
-                                    break;
-                                default:
-                                    // Umgang mit unbekannter ID
-                                    break;
-                            }
-
-                            DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].productionDate = data[0].Substring(81, 2) + "." + data[0].Substring(83, 2) + "." + data[0].Substring(85, 4);
-
-                            TreeViewManager.AddTreeViewItem(serialPortManager.GetPortName(), DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id + " No. " + DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber + " (" + serialPortManager.GetPortName() + ")");
-
-                            //###################################TESTCODE################################################################################################
-                            //###################################TESTCODE################################################################################################
-                            //###################################TESTCODE################################################################################################
-                            //###################################TESTCODE################################################################################################
-                            //###################################TESTCODE################################################################################################
-
-                            textBoxModel.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].id;
-                            textBoxSerialNumber.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].serialNumber;
-                            textBoxProductionDate.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].productionDate;
-                            textBoxChecksum.Text = DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].checkSum;
-
-                            //###################################TESTCODE################################################################################################
-                            //###################################TESTCODE################################################################################################
-                            //###################################TESTCODE################################################################################################
-                            //###################################TESTCODE################################################################################################
-                            //###################################TESTCODE################################################################################################
+                            MessageBox.Show("Invalid header data from " + portName);
+                            break;
                         }
 
+                        if (!DataLoggerManager.dataLoggers.TryGetValue(portName, out DataLogger logger))
+                        {
+                            logger = new DataLogger();
+                            DataLoggerManager.AddLogger(logger, portName);
+                        }
+
+                        logger.comPort = portName;
+                        logger.checkSum = data[0].Substring(3, 2) + data[0].Substring(1, 2);
+                        logger.serialNumber = int.Parse(data[0].Substring(49, 4), NumberStyles.HexNumber).ToString();
+
+                        switch (data[0].Substring(53, 2))
+                        {
+                            case "20": // Kennung 20 bedeutet Modell SI-TL1
+                                logger.id = "SI-TL1";
+                                break;
+                            default:
+                                logger.id = "Unknown";
+                                break;
+                        }
+
+                        logger.productionDate = data[0].Substring(81, 2) + "." + data[0].Substring(83, 2) + "." + data[0].Substring(85, 4);
+
+                        TreeViewManager.AddTreeViewItem(portName, logger.id + " No. " + logger.serialNumber + " (" + portName + ")");
+                        UpdateDeviceInfo(portName);
                         break;
                     case 'S': // Letzte Aufnahme auslesen
-                        
-                        measurementSeries = DekodiereDatenpaket(data[3], DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].comPort);
-
-                        //Prüfe ob Daten enthalten sind (keine Daten => measurementSeries = null)
-                        if (measurementSeries!=null)
+                    case 'G': // Gesamten Speicher auslesen
+                        if (data.Length <= 3 || string.IsNullOrEmpty(data[3]))
                         {
-                            PlotData(measurementSeries, 0); //Plotte Daten 
+                            MessageBox.Show("Invalid data response from " + portName);
+                            break;
+                        }
+
+                        List<Messreihe> series = DekodiereDatenpaket(data[3], portName);
+
+                        //Pr?fe ob Daten enthalten sind (keine Daten => series = null)
+                        if (series != null && series.Count > 0)
+                        {
+                            measurementSeriesByPort[portName] = series;
+                            currentPortName = portName;
+                            currentSeriesIndex = 0;
+                            PlotData(series, 0); //Plotte Daten
                         }
                         else
                         {
@@ -1378,31 +1920,20 @@ namespace DataViewer_1._0._0._0
                         }
 
                         break;
-
-                    case 'G': // Gesamten Speicher auslesen
-                        measurementSeries = DekodiereDatenpaket(data[3], DataLoggerManager.dataLoggers[serialPortManager.GetPortName()].comPort);
-                        
-                        PlotData(measurementSeries, 0);
-                        break;
                     default:
                         // Umgang mit unbekanntem Echo-Befehl
                         break;
                 }
-
-                
-
-
             });
         }
 
         //Evenhandler wenn Fenster geschlossen wird
         private void Window_Closed(object sender, EventArgs e)
         {
-            // Beim Schließen der Anwendung den COM-Port schließen
-            if (serialPortManager.IsOpen())
-            {
-                serialPortManager.ClosePort();
-            }
+            TreeViewManager.RequestCommand -= HandlePortCommand;
+            TreeViewManager.TriggerPlotData -= TriggerPlotData;
+            // Beim Schlie?en der Anwendung alle COM-Ports schlie?en
+            ClearSerialPortManagers();
         }
 
     }

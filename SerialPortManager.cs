@@ -12,7 +12,7 @@ using System.Timers;
 
 namespace DataViewer_1._0._0._0
 {
-    public class SerialPortManager
+    public class SerialPortManager : IDisposable
     {
         //Neuen SerialPort anlegen
         private SerialPort serialPort;
@@ -27,7 +27,7 @@ namespace DataViewer_1._0._0._0
         private System.Timers.Timer dataReceiveTimer;
 
         //Verlinkung zum DataReceived Event der Instanz des SerialPorts im Main Code mit Übergabe der complete Message
-        public event Action<string[]> DataReceived;
+        public event Action<string, string[]> DataReceived;
  
         //Initialisiere SerialPort
         public SerialPortManager(string portName)
@@ -50,6 +50,10 @@ namespace DataViewer_1._0._0._0
         {
             try
             {
+                if (serialPort.IsOpen)
+                {
+                    return;
+                }
                 serialPort.Open();
             }
             catch
@@ -137,13 +141,14 @@ namespace DataViewer_1._0._0._0
                         // Zurücksetzen für den nächsten Empfang
                         expectedPacketCount = 0;
                         // Verlinke das komplette Datenpaket an das Data Received Event der jeweiligen Instanz des SerialPorts
-                        DataReceived?.Invoke(packets);
+                        DataReceived?.Invoke(serialPort.PortName, packets);
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error has occurred: " + serialPort.PortName + ": " + ex.Message, "COM-Port Error", MessageBoxButton.OKCancel, MessageBoxImage.Error);
+                ResetReceiveState();
+                ShowError("An error has occurred: " + serialPort.PortName + ": " + ex.Message, "COM-Port Error");
             }
         }
 
@@ -160,11 +165,54 @@ namespace DataViewer_1._0._0._0
         }
 
             // Event wenn Timeout Timer abgelaufen
-            private void DataReceiveTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private void DataReceiveTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            MessageBox.Show("Timeout: " + serialPort.PortName + " not responding.", "COM-Port Error", MessageBoxButton.OKCancel, MessageBoxImage.Error);
+            ShowError("Timeout: " + serialPort.PortName + " not responding.", "COM-Port Error");
             // Timeout Timer anhalten
+            ResetReceiveState();
+        }
+
+        private void ResetReceiveState()
+        {
+            receivedData = "";
+            expectedPacketCount = 0;
             StopDataReception();
+        }
+
+        private void ShowError(string message, string title)
+        {
+            if (Application.Current?.Dispatcher != null)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(message, title, MessageBoxButton.OKCancel, MessageBoxImage.Error);
+                });
+            }
+            else
+            {
+                MessageBox.Show(message, title, MessageBoxButton.OKCancel, MessageBoxImage.Error);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (serialPort != null)
+            {
+                serialPort.DataReceived -= SerialPort_DataReceived;
+                if (serialPort.IsOpen)
+                {
+                    serialPort.Close();
+                }
+                serialPort.Dispose();
+                serialPort = null;
+            }
+
+            if (dataReceiveTimer != null)
+            {
+                dataReceiveTimer.Stop();
+                dataReceiveTimer.Dispose();
+                dataReceiveTimer = null;
+            }
         }
 
     }

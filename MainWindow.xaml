@@ -4,10 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DataViewer_1._0._0._0"
-        xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="SIEMERT DataViewer 1.0.0" Height="600" Width="900" MinHeight="450" MinWidth="800" Icon="/Icons/Icon.png">
+        Title="SIEMERT DataViewer 1.0.0" Height="600" Width="900" MinHeight="450" MinWidth="800" Icon="/Icons/Icon.png" Closed="Window_Closed">
 
 
     <Grid>
@@ -32,7 +32,7 @@
                             <fa:FontAwesome Icon="Save" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Export csv">
+                    <MenuItem Header="Export csv" Click="menuItemExportCsv_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="Share" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
