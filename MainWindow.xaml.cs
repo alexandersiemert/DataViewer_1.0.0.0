@@ -65,6 +65,9 @@ namespace DataViewer_1._0._0._0
         double? hoverX;
         double? hoverY;
         const float HoverSnapDistance = 15f;
+        const int HoverUpdateIntervalMs = 33;
+        long lastHoverUpdateMs;
+        readonly Stopwatch hoverStopwatch = Stopwatch.StartNew();
 
         bool buttonAltUpPressed = false;
         bool buttonAltDownPressed = false;
@@ -159,7 +162,7 @@ namespace DataViewer_1._0._0._0
             pltAlt.LegendText = "Altitude";
             pltAlt.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
             WpfPlot1.Plot.YLabel("Altitude [m]");
-            pltAlt.MarkerSize = 1;
+            pltAlt.MarkerSize = 0;
             pltAlt.Color = Colors.Black;
             if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
             {
@@ -172,7 +175,7 @@ namespace DataViewer_1._0._0._0
             pltTemp.LegendText = "Temperature";
             pltTemp.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
             yAxisTemp.LabelText = "Temperature [\u00b0C]";
-            pltTemp.MarkerSize = 1;
+            pltTemp.MarkerSize = 0;
             pltTemp.Color = Colors.Red;
             yAxisTemp.LabelFontColor = pltTemp.Color;
 
@@ -182,7 +185,7 @@ namespace DataViewer_1._0._0._0
             pltAcc.LegendText = "3-Axis Acceleration";
             pltAcc.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
             yAxisAcc.LabelText = "Acceleration [g]";
-            pltAcc.MarkerSize = 1;
+            pltAcc.MarkerSize = 0;
             pltAcc.Color = Colors.Green;
             yAxisAcc.LabelFontColor = pltAcc.Color;
 
@@ -352,7 +355,7 @@ namespace DataViewer_1._0._0._0
             pltAlt.LegendText = "Altitude";
             pltAlt.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
             WpfPlot1.Plot.YLabel("Altitude [m]");
-            pltAlt.MarkerSize = 1;
+            pltAlt.MarkerSize = 0;
             pltAlt.Color = Colors.Black;
             if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
             {
@@ -364,7 +367,7 @@ namespace DataViewer_1._0._0._0
             pltTemp.LegendText = "Temperature";
             pltTemp.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
             yAxisTemp.LabelText = "Temperature [\u00b0C]";
-            pltTemp.MarkerSize = 1;
+            pltTemp.MarkerSize = 0;
             pltTemp.Color = Colors.Red;
             yAxisTemp.LabelFontColor = pltTemp.Color;
 
@@ -373,7 +376,7 @@ namespace DataViewer_1._0._0._0
             pltAcc.LegendText = "3-Axis Acceleration";
             pltAcc.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
             yAxisAcc.LabelText = "Acceleration [g]";
-            pltAcc.MarkerSize = 1;
+            pltAcc.MarkerSize = 0;
             pltAcc.Color = Colors.Green;
             yAxisAcc.LabelFontColor = pltAcc.Color;
 
@@ -781,6 +784,14 @@ namespace DataViewer_1._0._0._0
 
         private void UpdateHoverPoint(MouseEventArgs e)
         {
+            long nowMs = hoverStopwatch.ElapsedMilliseconds;
+            if (nowMs - lastHoverUpdateMs < HoverUpdateIntervalMs)
+            {
+                return;
+            }
+
+            lastHoverUpdateMs = nowMs;
+
             if (WpfPlot1.Plot.LastRender.Equals(default(ScottPlot.RenderDetails)))
             {
                 return;

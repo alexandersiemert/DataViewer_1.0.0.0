@@ -10,7 +10,6 @@ namespace DataViewer_1._0._0._0
     {
         public string comPort { get; set; }
         public string checkSum { get; set; }
-
         public string sensorConstant1 { get; set; }
         public string sensorConstant2 { get; set; }
         public string sensorConstant3 { get; set; }
