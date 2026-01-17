@@ -82,7 +82,12 @@
     <Compile Include="ComPortChecker.cs" />
     <Compile Include="DataLogger.cs" />
     <Compile Include="DataLoggerManager.cs" />
+    <Compile Include="Models\Messdaten.cs" />
+    <Compile Include="Models\Messreihe.cs" />
+    <Compile Include="Models\minMax.cs" />
     <Compile Include="SerialPortManager.cs" />
+    <Compile Include="Services\CsvExporter.cs" />
+    <Compile Include="Services\DataPacketDecoder.cs" />
     <Compile Include="TreeViewManager.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

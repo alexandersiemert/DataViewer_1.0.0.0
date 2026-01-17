@@ -16,6 +16,7 @@ namespace DataViewer_1._0._0._0
     {
         //Neuen SerialPort anlegen
         private SerialPort serialPort;
+        private readonly object receiveLock = new object();
 
         //String für das Abspeichern des Empfangspuffers
         private string receivedData = "";
@@ -94,54 +95,43 @@ namespace DataViewer_1._0._0._0
         //Event wenn Daten vollständig empfangen wurden
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
+            string[] packetsToDispatch = null;
+
             try
             {
-                // Daten vom COM-Port lesen und an den empfangenen Datenstring anhängen
-                receivedData += serialPort.ReadExisting();
-                // Timeout Stoppen
-                StopDataReception();
-                // Timeout wieder starten für nächsten Datenblock
-                StartDataReception();
-
-                // Bestimmen des Echo-Befehls und Setzen der erwarteten Paketzahl
-                if (receivedData.Length > 0 && expectedPacketCount == 0)
+                lock (receiveLock)
                 {
-                    char echoCommand = receivedData[0];
-                    switch (echoCommand)
+                    // Read from port and append to buffer
+                    receivedData += serialPort.ReadExisting();
+                    StopDataReception();
+                    StartDataReception();
+
+                    if (receivedData.Length > 0 && expectedPacketCount == 0)
                     {
-                        case 'I':
-                            expectedPacketCount = 2;
-                            break;
-                        case 'S':
-                            expectedPacketCount = 4;
-                            break;
-                        case 'G':
-                            expectedPacketCount = 4;
-                            break;
-                        default:
-                            // Umgang mit unbekanntem Echo-Befehl
-                            break;
+                        expectedPacketCount = GetExpectedPacketCount(receivedData[0]);
+                        if (expectedPacketCount == 0)
+                        {
+                            Debug.WriteLine($"Unknown echo command: {receivedData[0]}");
+                            ResetReceiveStateLocked();
+                            return;
+                        }
                     }
-                }
 
-                // Überprüfen, ob die Daten mit CR LF enden
-                if (receivedData.EndsWith("\r\n"))
-                {
-                    var packets = receivedData.ToString().Split(new[] { "\r\n" }, StringSplitOptions.None);
+                    if (!receivedData.EndsWith("\r\n", StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+
+                    var packets = receivedData.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (var packet in packets)
                     {
                         Debug.WriteLine(packet);
                     }
-                    if (packets.Length >= expectedPacketCount) // -1, weil das letzte Element leer sein könnte
+                    if (expectedPacketCount > 0 && packets.Length >= expectedPacketCount)
                     {
-                        // Stoppe Timeout Timer bei komplettem Datenempfang
                         StopDataReception();
-                        // Zurücksetzen des empfangenen Datenstrings
-                        receivedData = "";
-                        // Zurücksetzen für den nächsten Empfang
-                        expectedPacketCount = 0;
-                        // Verlinke das komplette Datenpaket an das Data Received Event der jeweiligen Instanz des SerialPorts
-                        DataReceived?.Invoke(serialPort.PortName, packets);
+                        ResetReceiveStateLocked();
+                        packetsToDispatch = packets;
                     }
                 }
             }
@@ -150,8 +140,12 @@ namespace DataViewer_1._0._0._0
                 ResetReceiveState();
                 ShowError("An error has occurred: " + serialPort.PortName + ": " + ex.Message, "COM-Port Error");
             }
-        }
 
+            if (packetsToDispatch != null)
+            {
+                DataReceived?.Invoke(serialPort.PortName, packetsToDispatch);
+            }
+        }
         // Starten Sie den Timer, wenn Sie auf Daten warten
         private void StartDataReception()
         {
@@ -174,9 +168,31 @@ namespace DataViewer_1._0._0._0
 
         private void ResetReceiveState()
         {
+            lock (receiveLock)
+            {
+                ResetReceiveStateLocked();
+            }
+        }
+
+        private void ResetReceiveStateLocked()
+        {
             receivedData = "";
             expectedPacketCount = 0;
             StopDataReception();
+        }
+
+        private static int GetExpectedPacketCount(char echoCommand)
+        {
+            switch (echoCommand)
+            {
+                case 'I':
+                    return 2;
+                case 'S':
+                case 'G':
+                    return 4;
+                default:
+                    return 0;
+            }
         }
 
         private void ShowError(string message, string title)
@@ -217,3 +233,4 @@ namespace DataViewer_1._0._0._0
 
     }
 }
+

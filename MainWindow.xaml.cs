@@ -78,6 +78,7 @@ namespace DataViewer_1._0._0._0
         bool buttonAccDownPressed = false;
         private readonly Dictionary<string, SerialPortManager> serialPortManagers = new Dictionary<string, SerialPortManager>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, List<Messreihe>> measurementSeriesByPort = new Dictionary<string, List<Messreihe>>(StringComparer.OrdinalIgnoreCase);
+        private readonly DataPacketDecoder dataPacketDecoder = new DataPacketDecoder();
         private string currentPortName;
         private int currentSeriesIndex = -1;
 
@@ -92,11 +93,6 @@ namespace DataViewer_1._0._0._0
         int indexCursor1, indexCursor2;
 
         //Klasse für Min/Max Werte
-        public class minMax
-        {
-            public double min { get; set; }
-            public double max { get; set; }
-        }
         //Variablen mit Min/Max Werten
         minMax minMaxAlt = new minMax();
         minMax minMaxTemp = new minMax();
@@ -113,30 +109,6 @@ namespace DataViewer_1._0._0._0
         //Serial Port Manager 
 
         //Klassen für Messwerte
-        public class Messreihe
-        {
-            public DateTime Startzeit { get; set; }
-            public double StartTemperatur { get; set; }
-            public double StartDruck { get; set; }
-            public List<Messdaten> Messungen { get; set; } = new List<Messdaten>();
-            public string Status { get; set; }
-            public string Spannung { get; set; }
-            public DateTime Endzeit { get; set; }
-            public double EndTemperatur { get; set; }
-            public double EndDruck { get; set; }
-        }
-
-        public class Messdaten
-        {
-            public DateTime Zeit { get; set; }
-            public double Druck { get; set; }
-            public double Hoehe { get; set; }
-            public double BeschleunigungX { get; set; }
-            public double BeschleunigungY { get; set; }
-            public double BeschleunigungZ { get; set; }
-            public double Temperatur { get; set; } // Optional
-        }
-
         //Variablen für Messreihen 
 
         public MainWindow()
@@ -238,44 +210,6 @@ namespace DataViewer_1._0._0._0
             series = seriesList[seriesIndex];
             return series != null;
         }
-
-        private void ExportSeriesToCsv(Messreihe series, string filePath)
-        {
-            if (series == null)
-            {
-                throw new ArgumentNullException(nameof(series));
-            }
-
-            StringBuilder csv = new StringBuilder();
-            csv.AppendLine("Timestamp;Pressure_hPa;Altitude_m;Temperature_C;AccX_g;AccY_g;AccZ_g;AccAbs_g");
-
-            foreach (Messdaten data in series.Messungen)
-            {
-                double accAbs = Math.Sqrt(
-                    (data.BeschleunigungX * data.BeschleunigungX) +
-                    (data.BeschleunigungY * data.BeschleunigungY) +
-                    (data.BeschleunigungZ * data.BeschleunigungZ));
-
-                csv.Append(data.Zeit.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.Druck.ToString("F2", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.Hoehe.ToString("F2", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.Temperatur.ToString("F2", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.BeschleunigungX.ToString("F3", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.BeschleunigungY.ToString("F3", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.Append(data.BeschleunigungZ.ToString("F3", CultureInfo.InvariantCulture));
-                csv.Append(';');
-                csv.AppendLine(accAbs.ToString("F3", CultureInfo.InvariantCulture));
-            }
-
-            File.WriteAllText(filePath, csv.ToString(), Encoding.UTF8);
-        }
-
         //################################################################################################################################
         //                                                   FUNKTIONEN
         //################################################################################################################################
@@ -1005,178 +939,6 @@ namespace DataViewer_1._0._0._0
             return minMax;
         }
 
-        private List<Messreihe> DekodiereDatenpaket(string datenpaket, string portName)
-        {
-            if (string.IsNullOrEmpty(datenpaket))
-            {
-                return null;
-            }
-
-            //Pr?fe ob ?berhaupt der Beginn einer Aufnahme da ist mittels Anfangskodierung AAAA. Wenn nicht, ist keine g?ltige Aufnahme in den Daten vorhanden
-            int splitStartIndex = datenpaket.IndexOf("AAAA", StringComparison.Ordinal);
-            if (splitStartIndex < 0)
-            {
-                //Breche die Dekodierung ab und gebe null zur?ck
-                return null;
-            }
-
-            if (splitStartIndex > 0)
-            {
-                datenpaket = datenpaket.Substring(splitStartIndex);
-            }
-
-            List<Messreihe> messreihen = new List<Messreihe>();
-
-            // Trennung der einzelnen Messreihen an der Anfangskodierung
-            string[] einzelneReihen = datenpaket.Split(new[] { "AAAA" }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string reihe in einzelneReihen)
-            {
-                if (string.IsNullOrEmpty(reihe) || reihe.Length < 24)
-                {
-                    continue; // Leere oder ung?ltige Reihe ?berspringen
-                }
-
-                var messreihe = new Messreihe();
-                // Anfangsdatenfolge
-                string anfangsdaten = reihe.Substring(0, 24); // L?nge der Anfangsdaten
-                messreihe.Startzeit = ParseDatumUndZeit(anfangsdaten.Substring(2, 14));
-                messreihe.StartTemperatur = (HexZuDouble(anfangsdaten.Substring(16, 4)) - 500) / 10;
-                messreihe.StartDruck = HexZuDouble(anfangsdaten.Substring(20, 4)) / 10;
-
-                // Extraktion und Verarbeitung der Messdaten
-                int messdatenStartIndex = 24;
-                int messdatenEndIndex = reihe.IndexOf("FFFF", StringComparison.Ordinal);
-                if (messdatenEndIndex < 0 || messdatenEndIndex <= messdatenStartIndex)
-                {
-                    continue;
-                }
-
-                string messdaten = reihe.Substring(messdatenStartIndex, messdatenEndIndex - messdatenStartIndex); // Exklusive Abschlussdaten
-
-                //Verarbeitung Messdaten
-                double temperatur = messreihe.StartTemperatur; // Starttemperatur aus der Anfangsdatenfolge
-                int tempCounter = 1;
-                int timeCounter = 0;
-
-                for (int i = 0; i + 15 < messdaten.Length; i += 16)
-                {
-                    if (tempCounter >= 240)
-                    {
-                        tempCounter = 0;
-
-                        if (i + 19 >= messdaten.Length)
-                        {
-                            break;
-                        }
-
-                        temperatur = (HexZuDouble(messdaten.Substring(i, 4)) - 500) / 10;
-                        i += 4;
-                    }
-
-                    if (i + 15 >= messdaten.Length)
-                    {
-                        break;
-                    }
-
-                    var daten = new Messdaten
-                    {
-                        Zeit = messreihe.Startzeit.AddMilliseconds(250 * timeCounter),
-                        Druck = HexZuDouble(messdaten.Substring(i, 4)) / 10,
-                        Hoehe = Math.Round((288.15 / 0.0065) * (1 - ((HexZuDouble(messdaten.Substring(i, 4)) / 10) / 1013.25)) * 0.190294957, 2),
-                        BeschleunigungX = CalculateAccelerationFromHex(messdaten.Substring(i + 4, 4)),
-                        BeschleunigungY = CalculateAccelerationFromHex(messdaten.Substring(i + 8, 4)),
-                        BeschleunigungZ = CalculateAccelerationFromHex(messdaten.Substring(i + 12, 4)),
-                        Temperatur = temperatur
-                    };
-
-                    messreihe.Messungen.Add(daten);
-                    tempCounter++;
-                    timeCounter++;
-                }
-
-                // Abschlussdatenfolge
-                string abschlussdaten = reihe.Substring(messdatenEndIndex + 4);
-                if (abschlussdaten.Length >= 32)
-                {
-                    messreihe.Status = abschlussdaten.Substring(0, 4);
-                    messreihe.Spannung = abschlussdaten.Substring(4, 4);
-                    messreihe.Endzeit = ParseDatumUndZeit(abschlussdaten.Substring(10, 14));
-                    messreihe.EndTemperatur = HexZuDouble(abschlussdaten.Substring(24, 4));
-                    messreihe.EndDruck = HexZuDouble(abschlussdaten.Substring(28, 4));
-                }
-
-                messreihen.Add(messreihe);
-            }
-
-            //Messreihen im TreeView dem Datenlogger als Subitem hinzuf?gen
-            foreach (Messreihe messreihe in messreihen)
-            {
-                TreeViewManager.AddSubItem(portName, messreihe.Startzeit.ToString());
-            }
-
-            return messreihen;
-        }
-
-        private DateTime ParseDatumUndZeit(string hexDatumZeit)
-        {
-            // Stellen Sie sicher, dass die Länge von hexDatumZeit korrekt ist
-            if (hexDatumZeit.Length != 14)
-            {
-                throw new ArgumentException("Ungültige Länge für Datum und Zeit.");
-            }
-
-            int sekunden = HexZuInt(hexDatumZeit.Substring(0, 2));
-            int minuten = HexZuInt(hexDatumZeit.Substring(2, 2));
-            int stunden = HexZuInt(hexDatumZeit.Substring(4, 2));
-            int tag = int.Parse(hexDatumZeit.Substring(6, 2));
-            int monat = int.Parse(hexDatumZeit.Substring(8, 2));
-            int jahr = int.Parse(hexDatumZeit.Substring(10, 4));
-
-            // Validierung der Datumswerte
-            if (jahr < 1 || jahr > 9999 || monat < 1 || monat > 12 || tag < 1 || tag > DateTime.DaysInMonth(jahr, monat))
-            {
-                return new DateTime(1900, 1, 1, stunden, minuten, sekunden);
-            }
-            return new DateTime(jahr, monat, tag, stunden, minuten, sekunden);
-        }
-
-        private int HexZuInt(string hex)
-        {
-            return int.Parse(hex, NumberStyles.HexNumber);
-        }
-
-        private double HexZuDouble(string hex)
-        {
-            long intValue = Convert.ToInt64(hex, 16);
-            return (double)intValue;
-        }
-
-        private double CalculateAccelerationFromHex(string hexData)
-        {
-            double acceleration;
-
-            if (hexData.Length > 4)
-            {
-                throw new ArgumentException("Der Hexadezimal-String darf maximal vier Zeichen lang sein.");
-            }
-
-            // Konvertiere Hexadezimal-String in Integer (10-Bit Zweierkomplement)
-            int rawValue = Convert.ToInt32(hexData, 16);
-
-            
-            if (rawValue <= 32767) // 
-            {
-                acceleration = rawValue / 2048.0;
-                return Math.Round(acceleration, 3);
-            }
-            else
-            {
-                acceleration = (rawValue - 65535.0) / 2048.0;
-                return Math.Round(acceleration, 3);
-            }
-        }
-
         //################################################################################################################################
         //                                                   AUSLÖSEMETHODEN FÜR EVENTS
         //################################################################################################################################
@@ -1328,7 +1090,7 @@ namespace DataViewer_1._0._0._0
 
             try
             {
-                ExportSeriesToCsv(series, dialog.FileName);
+                CsvExporter.ExportSeriesToCsv(series, dialog.FileName);
                 MessageBox.Show("Export complete.");
             }
             catch (Exception ex)
@@ -1951,7 +1713,7 @@ namespace DataViewer_1._0._0._0
                             break;
                         }
 
-                        List<Messreihe> series = DekodiereDatenpaket(data[3], portName);
+                        List<Messreihe> series = dataPacketDecoder.Decode(data[3]);
 
                         //Pr?fe ob Daten enthalten sind (keine Daten => series = null)
                         if (series != null && series.Count > 0)
@@ -1959,6 +1721,10 @@ namespace DataViewer_1._0._0._0
                             measurementSeriesByPort[portName] = series;
                             currentPortName = portName;
                             currentSeriesIndex = 0;
+                            foreach (Messreihe messreihe in series)
+                            {
+                                TreeViewManager.AddSubItem(portName, messreihe.Startzeit.ToString());
+                            }
                             PlotData(series, 0); //Plotte Daten
                         }
                         else
@@ -1986,3 +1752,6 @@ namespace DataViewer_1._0._0._0
 
     }
 }
+
+
+
