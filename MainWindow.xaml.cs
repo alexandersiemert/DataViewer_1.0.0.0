@@ -8,6 +8,8 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -19,6 +21,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Management;
 using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.Plottables.Interactive;
@@ -37,7 +40,7 @@ namespace DataViewer_1._0._0._0
             Imperial
         }
 
-        Scatter pltAlt, pltTemp, pltAcc;
+        Scatter pltAlt, pltTemp, pltAcc, pltAccX, pltAccY, pltAccZ;
 
         ScottPlot.AxisPanels.RightAxis yAxisTemp, yAxisAcc;
 
@@ -51,11 +54,9 @@ namespace DataViewer_1._0._0._0
 
         //XY-Datenarray für Beschleunigung
         double[] xa, ya; //Betrag 3-Achsen
-        /* FREISCHALTEN WENN ES SOWEIT IST ##########################################################################################################################
         double[] xax, yax; //Beschleunigung X-Achse
         double[] xay, yay; //Beschleunigung Y-Achse
         double[] xaz, yaz; //Beschleunigung Z-Achse
-        */
 
         InteractiveHorizontalSpan measuringSpan;
 
@@ -77,6 +78,11 @@ namespace DataViewer_1._0._0._0
         const int HoverUpdateIntervalMs = 33;
         long lastHoverUpdateMs;
         readonly Stopwatch hoverStopwatch = Stopwatch.StartNew();
+        const float PlotTitleFontSize = 20f;
+        const float AxisLabelFontSize = 18f;
+        const float AxisTickFontSize = 16f;
+        const float LegendFontSize = 16f;
+        const float HoverTooltipFontSize = 16f;
 
         const double FeetPerMeter = 3.28083989501312;
         const double CelsiusToFahrenheitScale = 9.0 / 5.0;
@@ -88,10 +94,22 @@ namespace DataViewer_1._0._0._0
         bool buttonTempDownPressed = false;
         bool buttonAccUpPressed = false;
         bool buttonAccDownPressed = false;
+        bool showAltitude = true;
+        bool showTemperature = true;
+        bool showAccAbs = true;
+        bool showAccX = true;
+        bool showAccY = true;
+        bool showAccZ = true;
         private readonly Dictionary<string, SerialPortManager> serialPortManagers = new Dictionary<string, SerialPortManager>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, List<Messreihe>> measurementSeriesByPort = new Dictionary<string, List<Messreihe>>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> filePortNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private string currentPortName;
         private int currentSeriesIndex = -1;
+        private ManagementEventWatcher deviceArrivalWatcher;
+        private ManagementEventWatcher deviceRemovalWatcher;
+        private DispatcherTimer deviceRefreshTimer;
+        private bool isRefreshingDevices;
+        private const int DeviceRefreshDebounceMs = 750;
 
         //Timer für Achsen Limit Button
         DispatcherTimer timer;
@@ -113,11 +131,9 @@ namespace DataViewer_1._0._0._0
         minMax minMaxAlt = new minMax();
         minMax minMaxTemp = new minMax();
         minMax minMaxAcc = new minMax();
-        /* FREISCHALTEN WENN ES SOWEIT IST ###############################################################################################################################
         minMax minMaxAccX = new minMax();
         minMax minMaxAccY = new minMax();
         minMax minMaxAccZ = new minMax();
-        */
 
         //Variablen für COM-Port Sachen
         List<string> validPorts = new List<string>();
@@ -164,11 +180,16 @@ namespace DataViewer_1._0._0._0
             //TreeView initialisieren für DeviceList
             TreeViewManager.Initialize(deviceListTreeView);
             TreeViewManager.RequestCommand += HandlePortCommand;
+            TreeViewManager.SeriesToggleChanged += TreeViewManager_SeriesToggleChanged;
+            TreeViewManager.SetSeriesStates(showAltitude, showTemperature, showAccAbs, showAccX, showAccY, showAccZ);
 
             //Testdaten für Entwicklung erzeugen
             (xh, yhRaw) = GenerateRandomWalk(10000, 4); //Testdaten Höhe
             (xt, ytRaw) = GenerateRandomWalk(10000, 5); //Testdaten Temperatur
             (xa, ya) = GenerateRandomWalk(10000, 6); //Testdaten Beschleunigung
+            (xax, yax) = GenerateRandomWalk(10000, 7); //Testdaten Beschleunigung X
+            (xay, yay) = GenerateRandomWalk(10000, 8); //Testdaten Beschleunigung Y
+            (xaz, yaz) = GenerateRandomWalk(10000, 9); //Testdaten Beschleunigung Z
             ApplyUnitsToDisplayData();
 
             //Plot Titel festlegen
@@ -183,9 +204,14 @@ namespace DataViewer_1._0._0._0
 
             //Daten für Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzufügen
             yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
-            pltAcc = AddAccelerationScatter(xh, ya);
+            pltAcc = AddAccelerationScatter(xh, ya, "3-Axis Acceleration", ScottPlot.Color.FromHex("#CC79A7"), true);
+            pltAccX = AddAccelerationScatter(xax, yax, "Acc X", ScottPlot.Color.FromHex("#0072B2"), false);
+            pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", ScottPlot.Color.FromHex("#009E73"), false);
+            pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", ScottPlot.Color.FromHex("#E69F00"), false);
 
+            ApplySeriesVisibility();
             UpdateAxisLabelText();
+            ApplyPlotFontSizes();
 
             ConfigurePlotInteractions();
 
@@ -209,6 +235,14 @@ namespace DataViewer_1._0._0._0
 
             //Plot neu zeichnen
             WpfPlot1.Refresh();
+
+            Loaded += MainWindow_Loaded;
+        }
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            InitializeDeviceMonitoring();
+            await RefreshDeviceListAsync(false);
         }
 
         private bool TryGetCurrentSeries(out Messreihe series, out string portName, out int seriesIndex)
@@ -290,6 +324,366 @@ namespace DataViewer_1._0._0._0
             File.WriteAllText(filePath, csv.ToString(), Encoding.UTF8);
         }
 
+        private DataViewerLogFile BuildLogFile(DataLogger logger, IEnumerable<Messreihe> series)
+        {
+            DataViewerLogFile logFile = new DataViewerLogFile
+            {
+                FileVersion = "1.0",
+                Logger = new LoggerMetadata
+                {
+                    Model = logger?.id,
+                    SerialNumber = logger?.serialNumber,
+                    ProductionDate = logger?.productionDate,
+                    Checksum = logger?.checkSum
+                }
+            };
+
+            if (series != null)
+            {
+                foreach (Messreihe entry in series)
+                {
+                    logFile.Recordings.Add(ConvertToRecording(entry));
+                }
+            }
+
+            return logFile;
+        }
+
+        private static Recording ConvertToRecording(Messreihe series)
+        {
+            Recording record = new Recording();
+            if (series == null)
+            {
+                return record;
+            }
+
+            record.Startzeit = series.Startzeit;
+            record.StartTemperatur = series.StartTemperatur;
+            record.StartDruck = series.StartDruck;
+            record.Status = series.Status;
+            record.Spannung = series.Spannung;
+            record.Endzeit = series.Endzeit;
+            record.EndTemperatur = series.EndTemperatur;
+            record.EndDruck = series.EndDruck;
+
+            if (series.Messungen != null)
+            {
+                foreach (Messdaten entry in series.Messungen)
+                {
+                    record.Measurements.Add(ConvertToMeasurement(entry));
+                }
+            }
+
+            return record;
+        }
+
+        private static Measurement ConvertToMeasurement(Messdaten data)
+        {
+            Measurement measurement = new Measurement();
+            if (data == null)
+            {
+                return measurement;
+            }
+
+            measurement.Zeit = data.Zeit;
+            measurement.Druck = data.Druck;
+            measurement.Hoehe = data.Hoehe;
+            measurement.BeschleunigungX = data.BeschleunigungX;
+            measurement.BeschleunigungY = data.BeschleunigungY;
+            measurement.BeschleunigungZ = data.BeschleunigungZ;
+            measurement.Temperatur = data.Temperatur;
+            return measurement;
+        }
+
+        private static Messreihe ConvertToMessreihe(Recording record)
+        {
+            Messreihe series = new Messreihe();
+            if (record == null)
+            {
+                return series;
+            }
+
+            series.Startzeit = record.Startzeit;
+            series.StartTemperatur = record.StartTemperatur;
+            series.StartDruck = record.StartDruck;
+            series.Status = record.Status;
+            series.Spannung = record.Spannung;
+            series.Endzeit = record.Endzeit;
+            series.EndTemperatur = record.EndTemperatur;
+            series.EndDruck = record.EndDruck;
+
+            if (record.Measurements != null)
+            {
+                foreach (Measurement entry in record.Measurements)
+                {
+                    series.Messungen.Add(ConvertToMessdaten(entry));
+                }
+            }
+
+            return series;
+        }
+
+        private static Messdaten ConvertToMessdaten(Measurement data)
+        {
+            Messdaten measurement = new Messdaten();
+            if (data == null)
+            {
+                return measurement;
+            }
+
+            measurement.Zeit = data.Zeit;
+            measurement.Druck = data.Druck;
+            measurement.Hoehe = data.Hoehe;
+            measurement.BeschleunigungX = data.BeschleunigungX;
+            measurement.BeschleunigungY = data.BeschleunigungY;
+            measurement.BeschleunigungZ = data.BeschleunigungZ;
+            measurement.Temperatur = data.Temperatur;
+            return measurement;
+        }
+
+        private void SaveLogFile(DataViewerLogFile logFile, string filePath)
+        {
+            if (logFile == null)
+            {
+                throw new ArgumentNullException(nameof(logFile));
+            }
+
+            XmlSerializer serializer = new XmlSerializer(typeof(DataViewerLogFile));
+            XmlWriterSettings settings = new XmlWriterSettings
+            {
+                Indent = true,
+                Encoding = Encoding.UTF8
+            };
+
+            using (XmlWriter writer = XmlWriter.Create(filePath, settings))
+            {
+                serializer.Serialize(writer, logFile);
+            }
+        }
+
+        private DataViewerLogFile LoadLogFile(string filePath)
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(DataViewerLogFile));
+            using (FileStream stream = File.OpenRead(filePath))
+            {
+                return serializer.Deserialize(stream) as DataViewerLogFile;
+            }
+        }
+
+        private static string CreateFilePortName(string filePath)
+        {
+            string baseName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+            if (string.IsNullOrWhiteSpace(baseName))
+            {
+                baseName = "File";
+            }
+
+            return $"FILE:{baseName}:{Guid.NewGuid():N}";
+        }
+
+        private string BuildLogFileName(DataLogger logger, string suffix)
+        {
+            string model = SanitizeFileName(logger?.id ?? "UnknownModel");
+            string serialNumber = SanitizeFileName(logger?.serialNumber ?? "UnknownSerial");
+            return $"{model}_{serialNumber}_{suffix}.sdvlog";
+        }
+
+        private bool TryGetSelectedSeries(out string portName, out int index)
+        {
+            portName = null;
+            index = -1;
+
+            if (deviceListTreeView == null)
+            {
+                return false;
+            }
+
+            if (!(deviceListTreeView.SelectedItem is TreeViewItem selectedItem))
+            {
+                return false;
+            }
+
+            dynamic tag = selectedItem.Tag;
+            if (tag == null)
+            {
+                return false;
+            }
+
+            if (string.Equals(tag.ItemType, "SubItem", StringComparison.OrdinalIgnoreCase))
+            {
+                portName = tag.PortName;
+                TreeViewItem parentItem = LogicalTreeHelper.GetParent(selectedItem) as TreeViewItem;
+                if (parentItem != null)
+                {
+                    index = parentItem.Items.IndexOf(selectedItem);
+                }
+            }
+
+            return !string.IsNullOrWhiteSpace(portName) && index >= 0;
+        }
+
+        private bool TryGetSelectedLogger(out string portName)
+        {
+            portName = null;
+
+            if (deviceListTreeView == null)
+            {
+                return false;
+            }
+
+            if (!(deviceListTreeView.SelectedItem is TreeViewItem selectedItem))
+            {
+                return false;
+            }
+
+            dynamic tag = selectedItem.Tag;
+            if (tag == null)
+            {
+                return false;
+            }
+
+            if (string.Equals(tag.ItemType, "SubItem", StringComparison.OrdinalIgnoreCase))
+            {
+                portName = tag.PortName;
+                return !string.IsNullOrWhiteSpace(portName);
+            }
+
+            if (string.Equals(tag.ItemType, "ComPort", StringComparison.OrdinalIgnoreCase))
+            {
+                portName = tag.PortName ?? tag.Name;
+                return !string.IsNullOrWhiteSpace(portName);
+            }
+
+            return false;
+        }
+
+        private ContextMenu CreateFileItemContextMenu(string portName)
+        {
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem closeItem = new MenuItem { Header = "Close" };
+            closeItem.Click += (s, e) => CloseFileLogger(portName);
+            contextMenu.Items.Add(closeItem);
+            return contextMenu;
+        }
+
+        private void CloseFileLogger(string portName)
+        {
+            if (string.IsNullOrWhiteSpace(portName) || !filePortNames.Contains(portName))
+            {
+                return;
+            }
+
+            filePortNames.Remove(portName);
+            measurementSeriesByPort.Remove(portName);
+            DataLoggerManager.RemoveLogger(portName);
+            TreeViewManager.RemoveTreeViewItem(portName);
+
+            if (string.Equals(currentPortName, portName, StringComparison.OrdinalIgnoreCase))
+            {
+                currentPortName = null;
+                currentSeriesIndex = -1;
+                ClearPlotState();
+                ClearDeviceInfo();
+            }
+        }
+
+        private void ClearDeviceInfo()
+        {
+            textBoxModel.Text = "-";
+            textBoxSerialNumber.Text = "-";
+            textBoxProductionDate.Text = "-";
+            textBoxChecksum.Text = "-";
+        }
+
+        private void ClearPlotState()
+        {
+            WpfPlot1.Plot.Clear();
+            WpfPlot1.Plot.Axes.Remove(ScottPlot.Edge.Right);
+            pltAlt = null;
+            pltTemp = null;
+            pltAcc = null;
+            pltAccX = null;
+            pltAccY = null;
+            pltAccZ = null;
+            yAxisTemp = null;
+            yAxisAcc = null;
+
+            measuringSpan = null;
+            lastMeasuringX1 = null;
+            lastMeasuringX2 = null;
+            crosshairX = null;
+            crosshairAlt = null;
+            crosshairTemp = null;
+            crosshairAcc = null;
+            crosshairAltLabel = null;
+            crosshairXLabel = null;
+            marker = null;
+            hoverMarker = null;
+            hoverLabel = null;
+            hoverSeries = null;
+            hoverX = null;
+            hoverY = null;
+
+            ClearMeasuringTextBoxes();
+            ClearCrosshairTextBoxes();
+            UpdateAxisLabelText();
+            WpfPlot1.Refresh();
+        }
+
+        private void SetAxisFontSizes(ScottPlot.IAxis axis, float labelSize, float tickSize)
+        {
+            if (axis == null)
+            {
+                return;
+            }
+
+            axis.Label.FontSize = labelSize;
+            axis.TickLabelStyle.FontSize = tickSize;
+        }
+
+        private void ApplyPlotFontSizes()
+        {
+            if (WpfPlot1?.Plot?.Axes == null)
+            {
+                return;
+            }
+
+            if (WpfPlot1.Plot.Axes.Title != null)
+            {
+                WpfPlot1.Plot.Axes.Title.Label.FontSize = PlotTitleFontSize;
+            }
+
+            SetAxisFontSizes(WpfPlot1.Plot.Axes.Bottom, AxisLabelFontSize, AxisTickFontSize);
+            SetAxisFontSizes(WpfPlot1.Plot.Axes.Left, AxisLabelFontSize, AxisTickFontSize);
+            SetAxisFontSizes(yAxisTemp, AxisLabelFontSize, AxisTickFontSize);
+            SetAxisFontSizes(yAxisAcc, AxisLabelFontSize, AxisTickFontSize);
+
+            if (WpfPlot1.Plot.Legend != null)
+            {
+                WpfPlot1.Plot.Legend.FontSize = LegendFontSize;
+            }
+
+            if (hoverLabel != null)
+            {
+                hoverLabel.LabelFontSize = HoverTooltipFontSize;
+            }
+        }
+
+        private void ApplySeriesVisibility()
+        {
+            if (pltAlt != null) pltAlt.IsVisible = showAltitude;
+            if (pltTemp != null) pltTemp.IsVisible = showTemperature;
+            if (pltAcc != null) pltAcc.IsVisible = showAccAbs;
+            if (pltAccX != null) pltAccX.IsVisible = showAccX;
+            if (pltAccY != null) pltAccY.IsVisible = showAccY;
+            if (pltAccZ != null) pltAccZ.IsVisible = showAccZ;
+
+            if (WpfPlot1?.Plot?.Legend != null)
+            {
+                WpfPlot1.Plot.Legend.ShowItemsFromHiddenPlottables = false;
+            }
+        }
+
         //################################################################################################################################
         //                                                   FUNKTIONEN
         //################################################################################################################################
@@ -316,7 +710,7 @@ namespace DataViewer_1._0._0._0
             yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
 
             //Plot Titel festlegen
-            WpfPlot1.Plot.Title(_messreihe[index].Startzeit.ToString());
+            WpfPlot1.Plot.Title(BuildPlotTitle(currentPortName, _messreihe[index]));
 
             List<DateTime> timeList = new List<DateTime>();
             List<double> pressureList = new List<double>();
@@ -368,6 +762,12 @@ namespace DataViewer_1._0._0._0
             xa = timeArray;
             xt = timeArray;
             ya = accAbsArray;
+            xax = timeArray;
+            xay = timeArray;
+            xaz = timeArray;
+            yax = accXArray;
+            yay = accYArray;
+            yaz = accZArray;
 
             //Aktiviere DateTime Format f?r die X-Achse
             WpfPlot1.Plot.Axes.DateTimeTicksBottom();
@@ -380,16 +780,62 @@ namespace DataViewer_1._0._0._0
             pltTemp = AddTemperatureScatter(timeArray, yt);
 
             //Daten f?r Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
-            pltAcc = AddAccelerationScatter(timeArray, ya);
+            pltAcc = AddAccelerationScatter(timeArray, ya, "3-Axis Acceleration", ScottPlot.Color.FromHex("#CC79A7"), true);
+            pltAccX = AddAccelerationScatter(xax, yax, "Acc X", ScottPlot.Color.FromHex("#0072B2"), false);
+            pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", ScottPlot.Color.FromHex("#009E73"), false);
+            pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", ScottPlot.Color.FromHex("#E69F00"), false);
 
+            ApplySeriesVisibility();
             WpfPlot1.Plot.Axes.AutoScale();
 
             UpdateAxisLabelText();
+            ApplyPlotFontSizes();
 
             WpfPlot1.Plot.Legend.IsVisible = false;
 
             RefreshAxisTextBoxes();
             WpfPlot1.Refresh();
+        }
+
+        private string BuildPlotTitle(string portName, Messreihe series)
+        {
+            string title = null;
+            string model = null;
+            string serialNumber = null;
+
+            if (!string.IsNullOrWhiteSpace(portName))
+            {
+                DataLogger logger = DataLoggerManager.GetLogger(portName);
+                if (logger != null)
+                {
+                    model = logger.id;
+                    serialNumber = logger.serialNumber;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(model) && !string.IsNullOrWhiteSpace(serialNumber))
+            {
+                title = $"{model} No. {serialNumber}";
+            }
+            else if (!string.IsNullOrWhiteSpace(model))
+            {
+                title = model;
+            }
+            else if (!string.IsNullOrWhiteSpace(serialNumber))
+            {
+                title = $"Serial {serialNumber}";
+            }
+
+            if (series != null)
+            {
+                string startText = series.Startzeit.ToString();
+                if (!string.IsNullOrWhiteSpace(startText))
+                {
+                    title = string.IsNullOrWhiteSpace(title) ? startText : $"{title} - {startText}";
+                }
+            }
+
+            return string.IsNullOrWhiteSpace(title) ? "DataViewer" : title;
         }
 
         private Scatter AddAltitudeScatter(double[] xs, double[] ys)
@@ -398,7 +844,8 @@ namespace DataViewer_1._0._0._0
             scatter.LegendText = "Altitude";
             scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
             scatter.MarkerSize = 0;
-            scatter.Color = Colors.Black;
+            scatter.Color = ScottPlot.Color.FromHex("#1B1B1B");
+            scatter.LineWidth = 2.2f;
             if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
             {
                 leftAxis.LabelFontColor = scatter.Color;
@@ -418,12 +865,12 @@ namespace DataViewer_1._0._0._0
             scatter.LegendText = "Temperature";
             scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
             scatter.MarkerSize = 0;
-            scatter.Color = Colors.Red;
+            scatter.Color = ScottPlot.Color.FromHex("#D32F2F");
             yAxisTemp.LabelFontColor = scatter.Color;
             return scatter;
         }
 
-        private Scatter AddAccelerationScatter(double[] xs, double[] ys)
+        private Scatter AddAccelerationScatter(double[] xs, double[] ys, string legendText, ScottPlot.Color color, bool setAxisColor)
         {
             if (yAxisAcc == null)
             {
@@ -431,11 +878,14 @@ namespace DataViewer_1._0._0._0
             }
 
             Scatter scatter = WpfPlot1.Plot.Add.Scatter(xs, ys);
-            scatter.LegendText = "3-Axis Acceleration";
+            scatter.LegendText = legendText;
             scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
             scatter.MarkerSize = 0;
-            scatter.Color = Colors.Green;
-            yAxisAcc.LabelFontColor = scatter.Color;
+            scatter.Color = color;
+            if (setAxisColor)
+            {
+                yAxisAcc.LabelFontColor = scatter.Color;
+            }
             return scatter;
         }
 
@@ -474,6 +924,24 @@ namespace DataViewer_1._0._0._0
                 pltAcc = null;
             }
 
+            if (pltAccX != null)
+            {
+                WpfPlot1.Plot.Remove(pltAccX);
+                pltAccX = null;
+            }
+
+            if (pltAccY != null)
+            {
+                WpfPlot1.Plot.Remove(pltAccY);
+                pltAccY = null;
+            }
+
+            if (pltAccZ != null)
+            {
+                WpfPlot1.Plot.Remove(pltAccZ);
+                pltAccZ = null;
+            }
+
             if (xh == null || yh == null || yt == null || ya == null)
             {
                 return;
@@ -481,8 +949,22 @@ namespace DataViewer_1._0._0._0
 
             pltAlt = AddAltitudeScatter(xh, yh);
             pltTemp = AddTemperatureScatter(xh, yt);
-            pltAcc = AddAccelerationScatter(xh, ya);
+            pltAcc = AddAccelerationScatter(xh, ya, "3-Axis Acceleration", ScottPlot.Color.FromHex("#CC79A7"), true);
+            if (xax != null && yax != null)
+            {
+                pltAccX = AddAccelerationScatter(xax, yax, "Acc X", ScottPlot.Color.FromHex("#0072B2"), false);
+            }
+            if (xay != null && yay != null)
+            {
+                pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", ScottPlot.Color.FromHex("#009E73"), false);
+            }
+            if (xaz != null && yaz != null)
+            {
+                pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", ScottPlot.Color.FromHex("#E69F00"), false);
+            }
+            ApplySeriesVisibility();
             UpdateAxisLabelText();
+            ApplyPlotFontSizes();
         }
 
         private void UpdateUnitTextBlocks()
@@ -631,6 +1113,85 @@ namespace DataViewer_1._0._0._0
             timer.Tick += new EventHandler(Timer_Tick);
         }
 
+        private void InitializeDeviceMonitoring()
+        {
+            if (deviceRefreshTimer == null)
+            {
+                deviceRefreshTimer = new DispatcherTimer();
+                deviceRefreshTimer.Interval = TimeSpan.FromMilliseconds(DeviceRefreshDebounceMs);
+                deviceRefreshTimer.Tick += DeviceRefreshTimer_Tick;
+            }
+
+            if (deviceArrivalWatcher != null || deviceRemovalWatcher != null)
+            {
+                return;
+            }
+
+            try
+            {
+                deviceArrivalWatcher = new ManagementEventWatcher(
+                    new WqlEventQuery("SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2"));
+                deviceRemovalWatcher = new ManagementEventWatcher(
+                    new WqlEventQuery("SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 3"));
+                deviceArrivalWatcher.EventArrived += DeviceChange_EventArrived;
+                deviceRemovalWatcher.EventArrived += DeviceChange_EventArrived;
+                deviceArrivalWatcher.Start();
+                deviceRemovalWatcher.Start();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Device monitoring disabled: " + ex.Message);
+                deviceArrivalWatcher = null;
+                deviceRemovalWatcher = null;
+            }
+        }
+
+        private void StopDeviceMonitoring()
+        {
+            if (deviceRefreshTimer != null)
+            {
+                deviceRefreshTimer.Stop();
+                deviceRefreshTimer.Tick -= DeviceRefreshTimer_Tick;
+                deviceRefreshTimer = null;
+            }
+
+            if (deviceArrivalWatcher != null)
+            {
+                deviceArrivalWatcher.EventArrived -= DeviceChange_EventArrived;
+                deviceArrivalWatcher.Stop();
+                deviceArrivalWatcher.Dispose();
+                deviceArrivalWatcher = null;
+            }
+
+            if (deviceRemovalWatcher != null)
+            {
+                deviceRemovalWatcher.EventArrived -= DeviceChange_EventArrived;
+                deviceRemovalWatcher.Stop();
+                deviceRemovalWatcher.Dispose();
+                deviceRemovalWatcher = null;
+            }
+        }
+
+        private void DeviceChange_EventArrived(object sender, EventArrivedEventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (deviceRefreshTimer == null)
+                {
+                    return;
+                }
+
+                deviceRefreshTimer.Stop();
+                deviceRefreshTimer.Start();
+            });
+        }
+
+        private async void DeviceRefreshTimer_Tick(object sender, EventArgs e)
+        {
+            deviceRefreshTimer.Stop();
+            await RefreshDeviceListAsync(false);
+        }
+
         private static (double[] xs, double[] ys) GenerateRandomWalk(int count, int seed)
         {
             double[] xs = new double[count];
@@ -717,11 +1278,9 @@ namespace DataViewer_1._0._0._0
             textBoxCrossAlt.Text = InterpolateY(xh, yh, crosshairX.X).ToString("F2");
             textBoxCrossTemp.Text = InterpolateY(xt, yt, crosshairX.X).ToString("F2");
             textBoxCrossAcc.Text = InterpolateY(xa, ya, crosshairX.X).ToString("F2");
-            /* FREISCHALTEN WENN ES SOWEIT IST #########################################################################################################################################
             textBoxCrossAccX.Text = InterpolateY(xax, yax, crosshairX.X).ToString("F2");
             textBoxCrossAccY.Text = InterpolateY(xay, yay, crosshairX.X).ToString("F2");
             textBoxCrossAccZ.Text = InterpolateY(xaz, yaz, crosshairX.X).ToString("F2");
-            */
         }
 
         //Textboxen für Crosshair leeren
@@ -730,11 +1289,9 @@ namespace DataViewer_1._0._0._0
             textBoxCrossAlt.Text = double.NaN.ToString();
             textBoxCrossTemp.Text = double.NaN.ToString();
             textBoxCrossAcc.Text = double.NaN.ToString();
-            /* FREISCHALTEN WENN ES SOWEIT IST ###########################################################################################################################################
             textBoxCrossAccX.Text = double.NaN.ToString();
             textBoxCrossAccY.Text = double.NaN.ToString();
             textBoxCrossAccZ.Text = double.NaN.ToString();
-            */
         }
 
         private void UpdateCrosshairState()
@@ -925,6 +1482,10 @@ namespace DataViewer_1._0._0._0
                     return GetTemperatureUnitLabel();
                 case "3-Axis Acceleration":
                     return "g";
+                case "Acc X":
+                case "Acc Y":
+                case "Acc Z":
+                    return "g";
                 default:
                     return string.Empty;
             }
@@ -981,6 +1542,39 @@ namespace DataViewer_1._0._0._0
             //Textboxen für Messungen aktualisieren
             textBoxMeasAccCursor1.Text = InterpolateY(xh, ya, measuringSpan.X1).ToString("F2");
             textBoxMeasAccCursor2.Text = InterpolateY(xh, ya, measuringSpan.X2).ToString("F2");
+
+            if (xax != null && yax != null)
+            {
+                textBoxMeasAccCursor1X.Text = InterpolateY(xax, yax, measuringSpan.X1).ToString("F2");
+                textBoxMeasAccCursor2X.Text = InterpolateY(xax, yax, measuringSpan.X2).ToString("F2");
+            }
+            else
+            {
+                textBoxMeasAccCursor1X.Text = double.NaN.ToString();
+                textBoxMeasAccCursor2X.Text = double.NaN.ToString();
+            }
+
+            if (xay != null && yay != null)
+            {
+                textBoxMeasAccCursor1Y.Text = InterpolateY(xay, yay, measuringSpan.X1).ToString("F2");
+                textBoxMeasAccCursor2Y.Text = InterpolateY(xay, yay, measuringSpan.X2).ToString("F2");
+            }
+            else
+            {
+                textBoxMeasAccCursor1Y.Text = double.NaN.ToString();
+                textBoxMeasAccCursor2Y.Text = double.NaN.ToString();
+            }
+
+            if (xaz != null && yaz != null)
+            {
+                textBoxMeasAccCursor1Z.Text = InterpolateY(xaz, yaz, measuringSpan.X1).ToString("F2");
+                textBoxMeasAccCursor2Z.Text = InterpolateY(xaz, yaz, measuringSpan.X2).ToString("F2");
+            }
+            else
+            {
+                textBoxMeasAccCursor1Z.Text = double.NaN.ToString();
+                textBoxMeasAccCursor2Z.Text = double.NaN.ToString();
+            }
 
             /*
              * ################## FREISCHALTEN WENN ES SOWEIT IST #######################################################################################################################
@@ -1094,7 +1688,102 @@ namespace DataViewer_1._0._0._0
             textBoxMeasAccMin.Text = minMaxAcc.min.ToString("F2");
             textBoxMeasAccMax.Text = minMaxAcc.max.ToString("F2");
 
+            if (yax != null)
+            {
+                minMaxAccX = FindMinMax(minMaxAccX, yax, indexCursor1, indexCursor2);
+                textBoxMeasAccMinX.Text = minMaxAccX.min.ToString("F2");
+                textBoxMeasAccMaxX.Text = minMaxAccX.max.ToString("F2");
+            }
+            else
+            {
+                textBoxMeasAccMinX.Text = double.NaN.ToString();
+                textBoxMeasAccMaxX.Text = double.NaN.ToString();
+            }
+
+            if (yay != null)
+            {
+                minMaxAccY = FindMinMax(minMaxAccY, yay, indexCursor1, indexCursor2);
+                textBoxMeasAccMinY.Text = minMaxAccY.min.ToString("F2");
+                textBoxMeasAccMaxY.Text = minMaxAccY.max.ToString("F2");
+            }
+            else
+            {
+                textBoxMeasAccMinY.Text = double.NaN.ToString();
+                textBoxMeasAccMaxY.Text = double.NaN.ToString();
+            }
+
+            if (yaz != null)
+            {
+                minMaxAccZ = FindMinMax(minMaxAccZ, yaz, indexCursor1, indexCursor2);
+                textBoxMeasAccMinZ.Text = minMaxAccZ.min.ToString("F2");
+                textBoxMeasAccMaxZ.Text = minMaxAccZ.max.ToString("F2");
+            }
+            else
+            {
+                textBoxMeasAccMinZ.Text = double.NaN.ToString();
+                textBoxMeasAccMaxZ.Text = double.NaN.ToString();
+            }
+
+            UpdateMeasuringCalculations();
             RefreshMeasuringTextBoxes();
+        }
+
+        private void UpdateMeasuringCalculations()
+        {
+            double alt1 = InterpolateY(xh, yh, measuringSpan.X1);
+            double alt2 = InterpolateY(xh, yh, measuringSpan.X2);
+            textBoxMeasAltDelta.Text = FormatMeasurementValue(alt2 - alt1);
+            textBoxMeasAltAverage.Text = FormatMeasurementValue(CalculateAverage(yh, indexCursor1, indexCursor2));
+            textBoxMeasAltSpeed.Text = FormatMeasurementValue(CalculateSpeed(alt1, alt2, measuringSpan.X1, measuringSpan.X2));
+
+            double temp1 = InterpolateY(xh, yt, measuringSpan.X1);
+            double temp2 = InterpolateY(xh, yt, measuringSpan.X2);
+            textBoxMeasTempDelta.Text = FormatMeasurementValue(temp2 - temp1);
+            textBoxMeasTempAverage.Text = FormatMeasurementValue(CalculateAverage(yt, indexCursor1, indexCursor2));
+
+            double acc1 = InterpolateY(xh, ya, measuringSpan.X1);
+            double acc2 = InterpolateY(xh, ya, measuringSpan.X2);
+            textBoxMeasAccDelta.Text = FormatMeasurementValue(acc2 - acc1);
+            textBoxMeasAccAverage.Text = FormatMeasurementValue(CalculateAverage(ya, indexCursor1, indexCursor2));
+
+            if (yax != null)
+            {
+                double accX1 = InterpolateY(xax, yax, measuringSpan.X1);
+                double accX2 = InterpolateY(xax, yax, measuringSpan.X2);
+                textBoxMeasAccDeltaX.Text = FormatMeasurementValue(accX2 - accX1);
+                textBoxMeasAccAverageX.Text = FormatMeasurementValue(CalculateAverage(yax, indexCursor1, indexCursor2));
+            }
+            else
+            {
+                textBoxMeasAccDeltaX.Text = double.NaN.ToString();
+                textBoxMeasAccAverageX.Text = double.NaN.ToString();
+            }
+
+            if (yay != null)
+            {
+                double accY1 = InterpolateY(xay, yay, measuringSpan.X1);
+                double accY2 = InterpolateY(xay, yay, measuringSpan.X2);
+                textBoxMeasAccDeltaY.Text = FormatMeasurementValue(accY2 - accY1);
+                textBoxMeasAccAverageY.Text = FormatMeasurementValue(CalculateAverage(yay, indexCursor1, indexCursor2));
+            }
+            else
+            {
+                textBoxMeasAccDeltaY.Text = double.NaN.ToString();
+                textBoxMeasAccAverageY.Text = double.NaN.ToString();
+            }
+
+            if (yaz != null)
+            {
+                double accZ1 = InterpolateY(xaz, yaz, measuringSpan.X1);
+                double accZ2 = InterpolateY(xaz, yaz, measuringSpan.X2);
+                textBoxMeasAccDeltaZ.Text = FormatMeasurementValue(accZ2 - accZ1);
+                textBoxMeasAccAverageZ.Text = FormatMeasurementValue(CalculateAverage(yaz, indexCursor1, indexCursor2));
+            }
+            else
+            {
+                textBoxMeasAccDeltaZ.Text = double.NaN.ToString();
+                textBoxMeasAccAverageZ.Text = double.NaN.ToString();
+            }
         }
 
         private void EnsureHoverPlottables()
@@ -1113,7 +1802,7 @@ namespace DataViewer_1._0._0._0
                 hoverLabel.LabelBackgroundColor = Colors.White;
                 hoverLabel.LabelBorderColor = Colors.DimGray;
                 hoverLabel.LabelBorderWidth = 1;
-                hoverLabel.LabelFontSize = 12;
+                hoverLabel.LabelFontSize = HoverTooltipFontSize;
                 hoverLabel.OffsetX = 8;
                 hoverLabel.OffsetY = -8;
                 hoverLabel.IsVisible = false;
@@ -1174,6 +1863,9 @@ namespace DataViewer_1._0._0._0
             TryUpdateBestCandidate(pltAlt, "Altitude", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
             TryUpdateBestCandidate(pltTemp, "Temperature", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
             TryUpdateBestCandidate(pltAcc, "3-Axis Acceleration", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
+            TryUpdateBestCandidate(pltAccX, "Acc X", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
+            TryUpdateBestCandidate(pltAccY, "Acc Y", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
+            TryUpdateBestCandidate(pltAccZ, "Acc Z", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
 
             if (bestAxes == null)
             {
@@ -1214,6 +1906,11 @@ namespace DataViewer_1._0._0._0
             ref ScottPlot.DataPoint bestPoint, ref ScottPlot.IAxes bestAxes, ref ScottPlot.Color bestColor,
             ref string bestSeries, ref double bestDistance)
         {
+            if (scatter == null || !scatter.IsVisible)
+            {
+                return;
+            }
+
             if (scatter == null || !scatter.IsVisible)
             {
                 return;
@@ -1292,11 +1989,16 @@ namespace DataViewer_1._0._0._0
         }
 
             // Methode zur linearen Interpolation für den Measuring Cursor um Y-Koordinate des Plots aus X-Koordinate des Messcursors zu bekommen
-            private double InterpolateY(double[] xData, double[] yData, double xValue)
+        private double InterpolateY(double[] xData, double[] yData, double xValue)
         {
             if (xValue < 0 || xData == null || yData == null || xData.Length == 0 || xData.Length != yData.Length)
             {
                 return double.NaN; // Fr?hzeitige R?ckkehr bei negativem xValue oder ung?ltigen Eingabedaten
+            }
+
+            if (xValue >= xData[xData.Length - 1])
+            {
+                return yData[yData.Length - 1];
             }
 
             for (int i = 1; i < xData.Length; i++)
@@ -1315,6 +2017,21 @@ namespace DataViewer_1._0._0._0
         // Methode zur Findung der X-Koordinaten des Messcursors 1 und 2
         private int FindIndex(double[] xData, double xValue)
         {
+            if (xData == null || xData.Length == 0)
+            {
+                return 0;
+            }
+
+            if (xValue <= xData[0])
+            {
+                return 0;
+            }
+
+            if (xValue >= xData[xData.Length - 1])
+            {
+                return xData.Length - 1;
+            }
+
             for (int i = 1; i < xData.Length; i++)
             {
                 if (xValue < xData[i])
@@ -1329,18 +2046,26 @@ namespace DataViewer_1._0._0._0
         // Methode zur Findung der Min/Max Werte im gegebenen X-Achsenbereich den der Measuring Cursor abdeckt
         private minMax FindMinMax(minMax minMax, double[] data, int start, int end)
         {
-            if (start < 0 || end > data.Length || start >= end)
+            if (data == null || data.Length == 0)
             {
-                Debug.WriteLine("Invalid indices");
                 minMax.min = double.NaN;
                 minMax.max = double.NaN;
                 return minMax;
             }
 
-            minMax.min = data[start];
-            minMax.max = data[start];
+            int safeStart = Math.Max(0, Math.Min(start, data.Length - 1));
+            int safeEnd = Math.Max(0, Math.Min(end, data.Length - 1));
+            if (safeStart > safeEnd)
+            {
+                int temp = safeStart;
+                safeStart = safeEnd;
+                safeEnd = temp;
+            }
 
-            for (int i = start; i < end; i++)
+            minMax.min = data[safeStart];
+            minMax.max = data[safeStart];
+
+            for (int i = safeStart; i <= safeEnd; i++)
             {
                 if (data[i] < minMax.min)
                 {
@@ -1355,6 +2080,63 @@ namespace DataViewer_1._0._0._0
             Debug.WriteLine(minMax.min);
             Debug.WriteLine(minMax.max);
             return minMax;
+        }
+
+        private double CalculateAverage(double[] data, int start, int end)
+        {
+            if (data == null || data.Length == 0)
+            {
+                return double.NaN;
+            }
+
+            int safeStart = Math.Max(0, Math.Min(start, end));
+            int safeEnd = Math.Min(data.Length - 1, Math.Max(start, end));
+            if (safeStart > safeEnd)
+            {
+                return double.NaN;
+            }
+
+            double sum = 0;
+            int count = 0;
+            for (int i = safeStart; i <= safeEnd; i++)
+            {
+                sum += data[i];
+                count++;
+            }
+
+            return count > 0 ? sum / count : double.NaN;
+        }
+
+        private double CalculateSpeed(double alt1, double alt2, double x1, double x2)
+        {
+            if (double.IsNaN(alt1) || double.IsNaN(alt2))
+            {
+                return double.NaN;
+            }
+
+            double deltaX = x2 - x1;
+            if (deltaX == 0)
+            {
+                return double.NaN;
+            }
+
+            double deltaSeconds = IsDateTimeXAxis()
+                ? TimeSpan.FromDays(deltaX).TotalSeconds
+                : deltaX;
+
+            if (deltaSeconds == 0)
+            {
+                return double.NaN;
+            }
+
+            return (alt2 - alt1) / deltaSeconds;
+        }
+
+        private string FormatMeasurementValue(double value)
+        {
+            return double.IsNaN(value) || double.IsInfinity(value)
+                ? double.NaN.ToString()
+                : value.ToString("F2");
         }
 
         private List<Messreihe> DekodiereDatenpaket(string datenpaket, string portName)
@@ -1560,6 +2342,7 @@ namespace DataViewer_1._0._0._0
             PlotData(series, index);
             UpdateDeviceInfo(portName);
             TreeViewManager.SelectSubItem(portName, index);
+            SyncSeriesStateFromTreeView(portName, index);
         }
 
 
@@ -1670,6 +2453,286 @@ namespace DataViewer_1._0._0._0
             SetUnitMode(UnitMode.Imperial);
         }
 
+        private void menuItemSeries_Click(object sender, RoutedEventArgs e)
+        {
+            MenuItem menuItem = sender as MenuItem;
+            if (menuItem == null)
+            {
+                return;
+            }
+
+            string tag = menuItem.Tag as string;
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                return;
+            }
+
+            bool isChecked = menuItem.IsChecked;
+            switch (tag)
+            {
+                case "Alt":
+                    showAltitude = isChecked;
+                    break;
+                case "Temp":
+                    showTemperature = isChecked;
+                    break;
+                case "AccAbs":
+                    showAccAbs = isChecked;
+                    break;
+                case "AccX":
+                    showAccX = isChecked;
+                    break;
+                case "AccY":
+                    showAccY = isChecked;
+                    break;
+                case "AccZ":
+                    showAccZ = isChecked;
+                    break;
+            }
+
+            ApplySeriesVisibility();
+            TreeViewManager.SetSeriesStates(showAltitude, showTemperature, showAccAbs, showAccX, showAccY, showAccZ);
+            UpdateSeriesMenuChecks();
+            WpfPlot1.Refresh();
+        }
+
+        private void TreeViewManager_SeriesToggleChanged(string seriesKey, bool isChecked)
+        {
+            switch (seriesKey)
+            {
+                case "Alt":
+                    showAltitude = isChecked;
+                    break;
+                case "Temp":
+                    showTemperature = isChecked;
+                    break;
+                case "AccAbs":
+                    showAccAbs = isChecked;
+                    break;
+                case "AccX":
+                    showAccX = isChecked;
+                    break;
+                case "AccY":
+                    showAccY = isChecked;
+                    break;
+                case "AccZ":
+                    showAccZ = isChecked;
+                    break;
+            }
+
+            ApplySeriesVisibility();
+            TreeViewManager.SetSeriesStates(showAltitude, showTemperature, showAccAbs, showAccX, showAccY, showAccZ);
+            UpdateSeriesMenuChecks();
+            WpfPlot1.Refresh();
+        }
+
+        private void UpdateSeriesMenuChecks()
+        {
+            if (menuItemSeriesAlt != null) menuItemSeriesAlt.IsChecked = showAltitude;
+            if (menuItemSeriesTemp != null) menuItemSeriesTemp.IsChecked = showTemperature;
+            if (menuItemSeriesAccAbs != null) menuItemSeriesAccAbs.IsChecked = showAccAbs;
+            if (menuItemSeriesAccX != null) menuItemSeriesAccX.IsChecked = showAccX;
+            if (menuItemSeriesAccY != null) menuItemSeriesAccY.IsChecked = showAccY;
+            if (menuItemSeriesAccZ != null) menuItemSeriesAccZ.IsChecked = showAccZ;
+        }
+
+        private void SyncSeriesStateFromTreeView(string portName, int index)
+        {
+            if (!TreeViewManager.TryGetSeriesStates(portName, index, out bool alt, out bool temp, out bool accAbs, out bool accX, out bool accY, out bool accZ))
+            {
+                return;
+            }
+
+            showAltitude = alt;
+            showTemperature = temp;
+            showAccAbs = accAbs;
+            showAccX = accX;
+            showAccY = accY;
+            showAccZ = accZ;
+
+            ApplySeriesVisibility();
+            TreeViewManager.SetSeriesStates(showAltitude, showTemperature, showAccAbs, showAccX, showAccY, showAccZ);
+            UpdateSeriesMenuChecks();
+            WpfPlot1.Refresh();
+        }
+
+        private void menuItemOpen_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = "Siemert DataViewer Log (*.sdvlog)|*.sdvlog|All files (*.*)|*.*",
+                Multiselect = true
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            foreach (string filePath in dialog.FileNames)
+            {
+                try
+                {
+                    DataViewerLogFile logFile = LoadLogFile(filePath);
+                    if (logFile == null)
+                    {
+                        MessageBox.Show("Invalid file: " + filePath);
+                        continue;
+                    }
+
+                    string portName = CreateFilePortName(filePath);
+                    DataLogger logger = new DataLogger
+                    {
+                        id = logFile.Logger?.Model,
+                        serialNumber = logFile.Logger?.SerialNumber,
+                        productionDate = logFile.Logger?.ProductionDate,
+                        checkSum = logFile.Logger?.Checksum
+                    };
+
+                    DataLoggerManager.AddLogger(logger, portName);
+
+                    List<Messreihe> seriesList = new List<Messreihe>();
+                    if (logFile.Recordings != null)
+                    {
+                        foreach (Recording record in logFile.Recordings)
+                        {
+                            seriesList.Add(ConvertToMessreihe(record));
+                        }
+                    }
+
+                    measurementSeriesByPort[portName] = seriesList;
+                    filePortNames.Add(portName);
+
+                    string model = logger.id ?? "Unknown";
+                    string serialNumber = logger.serialNumber ?? "Unknown";
+                    string displayName = $"{model} No. {serialNumber} (File: {System.IO.Path.GetFileName(filePath)})";
+                    TreeViewManager.AddTreeViewItem(portName, displayName);
+                    TreeViewItem treeItem = TreeViewManager.FindTreeViewItem(portName);
+                    if (treeItem != null)
+                    {
+                        treeItem.ContextMenu = CreateFileItemContextMenu(portName);
+                    }
+
+                    foreach (Messreihe entry in seriesList)
+                    {
+                        TreeViewManager.AddSubItem(portName, entry.Startzeit.ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("File open failed: " + ex.Message);
+                }
+            }
+        }
+
+        private void menuItemSave_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetSelectedSeries(out string portName, out int seriesIndex))
+            {
+                MessageBox.Show("Select a recording to save.");
+                return;
+            }
+
+            if (!measurementSeriesByPort.TryGetValue(portName, out List<Messreihe> seriesList) ||
+                seriesList == null || seriesList.Count == 0)
+            {
+                MessageBox.Show("No data to save.");
+                return;
+            }
+
+            if (seriesIndex < 0 || seriesIndex >= seriesList.Count)
+            {
+                MessageBox.Show("Invalid recording selection.");
+                return;
+            }
+
+            MessageBoxResult choice = MessageBox.Show(
+                "Save selected recording only?\nYes = Selected\nNo = All recordings",
+                "Save",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question,
+                MessageBoxResult.Yes);
+
+            if (choice == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+
+            bool saveAll = choice == MessageBoxResult.No;
+            IEnumerable<Messreihe> toSave = saveAll
+                ? seriesList
+                : new List<Messreihe> { seriesList[seriesIndex] };
+
+            DataLogger logger = DataLoggerManager.GetLogger(portName);
+            string suffix = saveAll
+                ? $"All_{DateTime.Now:yyyyMMdd_HHmmss}"
+                : seriesList[seriesIndex].Startzeit.ToString("yyyyMMdd_HHmmss");
+            string fileName = BuildLogFileName(logger, suffix);
+
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = "Siemert DataViewer Log (*.sdvlog)|*.sdvlog",
+                FileName = fileName
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            try
+            {
+                DataViewerLogFile logFile = BuildLogFile(logger, toSave);
+                SaveLogFile(logFile, dialog.FileName);
+                MessageBox.Show("Save complete.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Save failed: " + ex.Message);
+            }
+        }
+
+        private void menuItemSaveAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetSelectedLogger(out string portName))
+            {
+                MessageBox.Show("Select a logger to save.");
+                return;
+            }
+
+            if (!measurementSeriesByPort.TryGetValue(portName, out List<Messreihe> seriesList) ||
+                seriesList == null || seriesList.Count == 0)
+            {
+                MessageBox.Show("No data to save.");
+                return;
+            }
+
+            DataLogger logger = DataLoggerManager.GetLogger(portName);
+            string fileName = BuildLogFileName(logger, $"All_{DateTime.Now:yyyyMMdd_HHmmss}");
+
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = "Siemert DataViewer Log (*.sdvlog)|*.sdvlog",
+                FileName = fileName
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            try
+            {
+                DataViewerLogFile logFile = BuildLogFile(logger, seriesList);
+                SaveLogFile(logFile, dialog.FileName);
+                MessageBox.Show("Save complete.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Save failed: " + ex.Message);
+            }
+        }
+
         private void menuItemExportCsv_Click(object sender, RoutedEventArgs e)
         {
             if (!TryGetCurrentSeries(out Messreihe series, out string portName, out _))
@@ -1720,6 +2783,7 @@ namespace DataViewer_1._0._0._0
             measuringSpan = WpfPlot1.Plot.Add.InteractiveHorizontalSpan(x1, x2);
             measuringSpan.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
             measuringSpan.LineStyle.Color = Colors.DimGray;
+            measuringSpan.FillStyle.Color = ScottPlot.Color.FromARGB(unchecked((int)0x46C8C8C8));
             lastMeasuringX1 = null;
             lastMeasuringX2 = null;
 
@@ -2145,35 +3209,61 @@ namespace DataViewer_1._0._0._0
             timer.Interval = TimeSpan.FromSeconds(passiveTime);
         }
 
-        private async void buttonRefreshDeviceList_Click(object sender, RoutedEventArgs e)
+        private async Task RefreshDeviceListAsync(bool showNoDevicesMessage)
         {
-            buttonRefreshDeviceList.IsEnabled = false;
+            if (isRefreshingDevices)
+            {
+                return;
+            }
+
+            isRefreshingDevices = true;
+            if (buttonRefreshDeviceList != null)
+            {
+                buttonRefreshDeviceList.IsEnabled = false;
+            }
 
             try
             {
-                ClearSerialPortManagers();
-                measurementSeriesByPort.Clear();
-                currentPortName = null;
-                currentSeriesIndex = -1;
-                TreeViewManager.ClearTreeView();
-                DataLoggerManager.ClearLoggers();
-
                 //Suche COM-Ports mit SI-TL
-                validPorts = await Task.Run(() => ComPortChecker.FindValidPorts());
-                if (validPorts == null || validPorts.Count == 0)
+                List<string> discoveredPorts = await Task.Run(() => ComPortChecker.FindValidPorts());
+                validPorts = discoveredPorts ?? new List<string>();
+
+                if (validPorts.Count == 0 && showNoDevicesMessage)
                 {
                     MessageBox.Show("No compatible devices found.");
-                    return;
                 }
 
-                foreach (string validPort in validPorts)
+                HashSet<string> discoveredSet = new HashSet<string>(validPorts, StringComparer.OrdinalIgnoreCase);
+                HashSet<string> existingSet = new HashSet<string>(serialPortManagers.Keys, StringComparer.OrdinalIgnoreCase);
+
+                foreach (string removedPort in existingSet.Except(discoveredSet).ToList())
+                {
+                    if (serialPortManagers.TryGetValue(removedPort, out SerialPortManager manager))
+                    {
+                        manager.DataReceived -= OnDataReceived;
+                        manager.Dispose();
+                        serialPortManagers.Remove(removedPort);
+                    }
+
+                    TreeViewManager.RemoveTreeViewItem(removedPort);
+                    DataLoggerManager.RemoveLogger(removedPort);
+                    measurementSeriesByPort.Remove(removedPort);
+
+                    if (string.Equals(currentPortName, removedPort, StringComparison.OrdinalIgnoreCase))
+                    {
+                        currentPortName = null;
+                        currentSeriesIndex = -1;
+                    }
+                }
+
+                foreach (string addedPort in discoveredSet.Except(existingSet))
                 {
                     // Datenlogger in Dictionary aufnehmen
-                    DataLoggerManager.AddLogger(new DataLogger(), validPort);
+                    DataLoggerManager.AddLogger(new DataLogger(), addedPort);
                     // Erstelle Port f?r den gefundenen Logger
-                    SerialPortManager manager = new SerialPortManager(validPort);
+                    SerialPortManager manager = new SerialPortManager(addedPort);
                     manager.DataReceived += OnDataReceived;
-                    serialPortManagers[validPort] = manager;
+                    serialPortManagers[addedPort] = manager;
 
                     manager.OpenPort();
                     manager.SendCommand("I");
@@ -2181,12 +3271,29 @@ namespace DataViewer_1._0._0._0
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Device scan failed: " + ex.Message);
+                if (showNoDevicesMessage)
+                {
+                    MessageBox.Show("Device scan failed: " + ex.Message);
+                }
+                else
+                {
+                    Debug.WriteLine("Device scan failed: " + ex.Message);
+                }
             }
             finally
             {
-                buttonRefreshDeviceList.IsEnabled = true;
+                if (buttonRefreshDeviceList != null)
+                {
+                    buttonRefreshDeviceList.IsEnabled = true;
+                }
+
+                isRefreshingDevices = false;
             }
+        }
+
+        private async void buttonRefreshDeviceList_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshDeviceListAsync(true);
         }
 
         private void buttonLimitAltDown_PreviewMouseUp(object sender, MouseButtonEventArgs e)
@@ -2333,6 +3440,7 @@ namespace DataViewer_1._0._0._0
                             currentSeriesIndex = 0;
                             PlotData(series, 0); //Plotte Daten
                             TreeViewManager.SelectSubItem(portName, 0);
+                            SyncSeriesStateFromTreeView(portName, 0);
                         }
                         else
                         {
@@ -2353,6 +3461,8 @@ namespace DataViewer_1._0._0._0
         {
             TreeViewManager.RequestCommand -= HandlePortCommand;
             TreeViewManager.TriggerPlotData -= TriggerPlotData;
+            TreeViewManager.SeriesToggleChanged -= TreeViewManager_SeriesToggleChanged;
+            StopDeviceMonitoring();
             // Beim Schlie?en der Anwendung alle COM-Ports schlie?en
             ClearSerialPortManagers();
         }

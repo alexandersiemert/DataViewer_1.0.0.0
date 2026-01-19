@@ -22,12 +22,17 @@
             <Menu DockPanel.Dock="Top">
 
                 <MenuItem Header="File">
-                    <MenuItem Header="Open">
+                    <MenuItem Header="Open" Click="menuItemOpen_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="FolderOpen" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Save">
+                    <MenuItem Header="Save" Click="menuItemSave_Click">
+                        <MenuItem.Icon>
+                            <fa:FontAwesome Icon="Save" VerticalAlignment="Center"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Save All" Click="menuItemSaveAll_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="Save" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
@@ -56,6 +61,14 @@
                         </MenuItem.Icon>
                         <MenuItem x:Name="menuItemUnitsMetric" Header="Metric (m, &#176;C)" IsCheckable="True" Click="menuItemUnitsMetric_Click"/>
                         <MenuItem x:Name="menuItemUnitsImperial" Header="Imperial (ft, &#176;F)" IsCheckable="True" Click="menuItemUnitsImperial_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="Series">
+                        <MenuItem x:Name="menuItemSeriesAlt" Header="Altitude" IsCheckable="True" IsChecked="True" Tag="Alt" Click="menuItemSeries_Click"/>
+                        <MenuItem x:Name="menuItemSeriesTemp" Header="Temperature" IsCheckable="True" IsChecked="True" Tag="Temp" Click="menuItemSeries_Click"/>
+                        <MenuItem x:Name="menuItemSeriesAccAbs" Header="3-Axis Acceleration" IsCheckable="True" IsChecked="True" Tag="AccAbs" Click="menuItemSeries_Click"/>
+                        <MenuItem x:Name="menuItemSeriesAccX" Header="Acc X" IsCheckable="True" IsChecked="True" Tag="AccX" Click="menuItemSeries_Click"/>
+                        <MenuItem x:Name="menuItemSeriesAccY" Header="Acc Y" IsCheckable="True" IsChecked="True" Tag="AccY" Click="menuItemSeries_Click"/>
+                        <MenuItem x:Name="menuItemSeriesAccZ" Header="Acc Z" IsCheckable="True" IsChecked="True" Tag="AccZ" Click="menuItemSeries_Click"/>
                     </MenuItem>
                     <MenuItem Header="Connection">
                         <MenuItem.Icon>
