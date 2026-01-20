@@ -28,6 +28,7 @@ Chart style
 - Settings > Chart Style: Light, Dark, or Slate.
 - Use Chart Style submenus to set series colors, axis label colors, and grid visibility.
 - Line Width and Line Pattern let you customize each series independently.
+- Smoothing (s) boxes at the bottom set time-based moving average per series (updates only the edited series). Temperature smoothing has a 60s minimum and smoothing is capped at 300s.
 - Reset Style restores the preset colors for backgrounds, grid, axes, and legend.
 - Reset Series Colors restores the default series colors.
 - Reset Line Styles restores the default widths and patterns.

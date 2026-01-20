@@ -7,7 +7,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="SIEMERT DataViewer 1.0.0" Height="600" Width="900" MinHeight="450" MinWidth="800" Icon="/Icons/Icon.png" Closed="Window_Closed">
+        Title="SIEMERT DataViewer 1.0.0" Height="600" Width="1050" MinHeight="450" MinWidth="1050" Icon="/Icons/Icon.png" Closed="Window_Closed">
 
 
     <Grid>
@@ -295,7 +295,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20"/>
                     <RowDefinition/>
-                    <RowDefinition Height="70"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
@@ -321,7 +321,7 @@
                 <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Row="1"/>
 
                 <Border Grid.Row="2" BorderBrush="Transparent" BorderThickness="0.4">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <GroupBox Height="Auto" Header="Altitude Axis">
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Vertical">
@@ -424,7 +424,52 @@
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
-                    </StackPanel>
+                        <GroupBox Height="Auto" Header="Smoothing (s)" Margin="8,0,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="Alt" Width="45" Margin="5,0,5,0" FontWeight="Bold"/>
+                                    <TextBox x:Name="textBoxSmoothAlt" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="Alt"/>
+                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="Temp" Width="45" Margin="5,0,5,0" FontWeight="Bold"/>
+                                    <TextBox x:Name="textBoxSmoothTemp" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="Temp"/>
+                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="Acc" Width="45" Margin="5,0,5,0" FontWeight="Bold"/>
+                                    <TextBox x:Name="textBoxSmoothAccAbs" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="AccAbs"/>
+                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="Acc-X" Width="45" Margin="10,0,5,0" FontWeight="Bold"/>
+                                    <TextBox x:Name="textBoxSmoothAccX" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="AccX"/>
+                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="Acc-Y" Width="45" Margin="10,0,5,0" FontWeight="Bold"/>
+                                    <TextBox x:Name="textBoxSmoothAccY" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="AccY"/>
+                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="Acc-Z" Width="45" Margin="10,0,5,0" FontWeight="Bold"/>
+                                    <TextBox x:Name="textBoxSmoothAccZ" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="AccZ"/>
+                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Grid>
+                        </GroupBox>
+                    </WrapPanel>
                 </Border>
 
             </Grid>

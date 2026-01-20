@@ -92,6 +92,7 @@ namespace DataViewer_1._0._0._0
         const float AxisTickFontSize = 16f;
         const float LegendFontSize = 16f;
         const float HoverTooltipFontSize = 16f;
+        const double MaxSmoothingSeconds = 300;
 
         const double FeetPerMeter = 3.28083989501312;
         const double CelsiusToFahrenheitScale = 9.0 / 5.0;
@@ -133,6 +134,13 @@ namespace DataViewer_1._0._0._0
         ScottPlot.LinePattern accYLinePattern = ScottPlot.LinePattern.Solid;
         ScottPlot.LinePattern accZLinePattern = ScottPlot.LinePattern.Solid;
 
+        double smoothingAltSeconds = 0;
+        double smoothingTempSeconds = 0;
+        double smoothingAccAbsSeconds = 0;
+        double smoothingAccXSeconds = 0;
+        double smoothingAccYSeconds = 0;
+        double smoothingAccZSeconds = 0;
+
         bool buttonAltUpPressed = false;
         bool buttonAltDownPressed = false;
         bool buttonTempUpPressed = false;
@@ -155,6 +163,8 @@ namespace DataViewer_1._0._0._0
         private DispatcherTimer deviceRefreshTimer;
         private bool isRefreshingDevices;
         private const int DeviceRefreshDebounceMs = 750;
+        private System.Windows.Input.Cursor previousOverrideCursor;
+        private int busyCursorDepth;
 
         //Timer für Achsen Limit Button
         DispatcherTimer timer;
@@ -221,6 +231,7 @@ namespace DataViewer_1._0._0._0
 
             UpdateUnitMenuChecks();
             UpdateUnitTextBlocks();
+            UpdateSmoothingTextBoxes();
             SetPlotVisibility(false);
             UpdateChartStyleMenuChecks();
             SetChartStylePreset(currentChartStyle);
@@ -737,6 +748,43 @@ namespace DataViewer_1._0._0._0
             }
         }
 
+        private bool IsSmoothingActive()
+        {
+            return smoothingAltSeconds > 0 ||
+                smoothingTempSeconds > 0 ||
+                smoothingAccAbsSeconds > 0 ||
+                smoothingAccXSeconds > 0 ||
+                smoothingAccYSeconds > 0 ||
+                smoothingAccZSeconds > 0;
+        }
+
+        private void PushBusyCursor()
+        {
+            if (busyCursorDepth == 0)
+            {
+                previousOverrideCursor = Mouse.OverrideCursor;
+                Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+                Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+            }
+
+            busyCursorDepth++;
+        }
+
+        private void PopBusyCursor()
+        {
+            if (busyCursorDepth <= 0)
+            {
+                return;
+            }
+
+            busyCursorDepth--;
+            if (busyCursorDepth == 0)
+            {
+                Mouse.OverrideCursor = previousOverrideCursor;
+                previousOverrideCursor = null;
+            }
+        }
+
         private void ApplyChartStyle()
         {
             if (WpfPlot1?.Plot == null)
@@ -869,6 +917,13 @@ namespace DataViewer_1._0._0._0
             }
         }
 
+        private void RefreshPlotNow()
+        {
+            WpfPlot1.Refresh();
+            WpfPlot1.InvalidateVisual();
+            Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+        }
+
         private void ResetSeriesColors()
         {
             altitudeColor = ScottPlot.Color.FromHex("#1B1B1B");
@@ -980,6 +1035,47 @@ namespace DataViewer_1._0._0._0
                 return true;
             }
         }
+
+        private double[] GetSmoothedSeries(double[] xs, double[] ys, double windowSeconds)
+        {
+            if (xs == null || ys == null || xs.Length == 0 || xs.Length != ys.Length || windowSeconds <= 0)
+            {
+                return ys;
+            }
+
+            double windowDays = windowSeconds / 86400.0;
+            double[] smoothed = new double[ys.Length];
+            int start = 0;
+            double sum = 0;
+            int count = 0;
+
+            for (int i = 0; i < ys.Length; i++)
+            {
+                double value = ys[i];
+                bool valid = !double.IsNaN(value) && !double.IsInfinity(value);
+                if (valid)
+                {
+                    sum += value;
+                    count++;
+                }
+
+                while (start < i && (xs[i] - xs[start]) > windowDays)
+                {
+                    double startValue = ys[start];
+                    if (!double.IsNaN(startValue) && !double.IsInfinity(startValue))
+                    {
+                        sum -= startValue;
+                        count--;
+                    }
+                    start++;
+                }
+
+                smoothed[i] = count > 0 ? (sum / count) : double.NaN;
+            }
+
+            return smoothed;
+        }
+
 
         private ScottPlot.Color GetColorForTag(string tag)
         {
@@ -1267,94 +1363,117 @@ namespace DataViewer_1._0._0._0
             yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
             ApplyChartStyle();
 
-            //Plot Titel festlegen
-            WpfPlot1.Plot.Title(BuildPlotTitle(currentPortName, _messreihe[index]));
-
-            List<DateTime> timeList = new List<DateTime>();
-            List<double> pressureList = new List<double>();
-            List<double> heightList = new List<double>();
-            List<double> accXList = new List<double>();
-            List<double> accYList = new List<double>();
-            List<double> accZList = new List<double>();
-            List<double> tempList = new List<double>();
-
-            foreach (Messdaten messdaten in _messreihe[index].Messungen)
+            bool showBusy = IsSmoothingActive();
+            if (showBusy)
             {
-                timeList.Add(messdaten.Zeit);
-                pressureList.Add(messdaten.Druck);
-                heightList.Add(messdaten.Hoehe);
-                accXList.Add(messdaten.BeschleunigungX);
-                accYList.Add(messdaten.BeschleunigungY);
-                accZList.Add(messdaten.BeschleunigungZ);
-                tempList.Add(messdaten.Temperatur);
+                PushBusyCursor();
             }
 
-            // Konvertieren der Liste in ein Array
-            DateTime[] dateTimeArray = timeList.ToArray();
-            double[] timeArray = new double[timeList.Count];
-
-            for (int i = 0; i < dateTimeArray.Length; i++)
+            try
             {
-                timeArray[i] = dateTimeArray[i].ToOADate();
+                //Plot Titel festlegen
+                WpfPlot1.Plot.Title(BuildPlotTitle(currentPortName, _messreihe[index]));
+
+                List<DateTime> timeList = new List<DateTime>();
+                List<double> pressureList = new List<double>();
+                List<double> heightList = new List<double>();
+                List<double> accXList = new List<double>();
+                List<double> accYList = new List<double>();
+                List<double> accZList = new List<double>();
+                List<double> tempList = new List<double>();
+
+                foreach (Messdaten messdaten in _messreihe[index].Messungen)
+                {
+                    timeList.Add(messdaten.Zeit);
+                    pressureList.Add(messdaten.Druck);
+                    heightList.Add(messdaten.Hoehe);
+                    accXList.Add(messdaten.BeschleunigungX);
+                    accYList.Add(messdaten.BeschleunigungY);
+                    accZList.Add(messdaten.BeschleunigungZ);
+                    tempList.Add(messdaten.Temperatur);
+                }
+
+                // Konvertieren der Liste in ein Array
+                DateTime[] dateTimeArray = timeList.ToArray();
+                double[] timeArray = new double[timeList.Count];
+
+                for (int i = 0; i < dateTimeArray.Length; i++)
+                {
+                    timeArray[i] = dateTimeArray[i].ToOADate();
+                }
+
+                double[] pressureArray = pressureList.ToArray();
+                double[] heightArray = heightList.ToArray();
+                double[] accXArray = accXList.ToArray();
+                double[] accYArray = accYList.ToArray();
+                double[] accZArray = accZList.ToArray();
+                double[] tempArray = tempList.ToArray();
+                double[] accAbsArray = new double[accXArray.Length];
+
+                for (int i = 0; i < accAbsArray.Length; i++)
+                {
+                    accAbsArray[i] = Math.Sqrt((accXArray[i] * accXArray[i]) + (accYArray[i] * accYArray[i]) + (accZArray[i] * accZArray[i]));
+                }
+
+                // Schreiben der Werte in den public main Bereich um die Arrays au?erhalb dieser Methode verf?gbar zu machen (z.B. f?r Cursor Berechnungen)
+                yhRaw = heightArray;
+                ytRaw = tempArray;
+                ApplyUnitsToDisplayData();
+
+                xh = timeArray;
+                xa = timeArray;
+                xt = timeArray;
+                ya = accAbsArray;
+                xax = timeArray;
+                xay = timeArray;
+                xaz = timeArray;
+                yax = accXArray;
+                yay = accYArray;
+                yaz = accZArray;
+
+                //Aktiviere DateTime Format f?r die X-Achse
+                WpfPlot1.Plot.Axes.DateTimeTicksBottom();
+                isDateTimeXAxis = true;
+
+                //Daten f?r H?he zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
+                double[] yhPlot = GetSmoothedSeries(timeArray, yh, smoothingAltSeconds);
+                double[] ytPlot = GetSmoothedSeries(timeArray, yt, smoothingTempSeconds);
+                double[] yaPlot = GetSmoothedSeries(timeArray, ya, smoothingAccAbsSeconds);
+                double[] yaxPlot = GetSmoothedSeries(xax, yax, smoothingAccXSeconds);
+                double[] yayPlot = GetSmoothedSeries(xay, yay, smoothingAccYSeconds);
+                double[] yazPlot = GetSmoothedSeries(xaz, yaz, smoothingAccZSeconds);
+
+                pltAlt = AddAltitudeScatter(timeArray, yhPlot);
+
+                //Daten f?r Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
+                pltTemp = AddTemperatureScatter(timeArray, ytPlot);
+
+                //Daten f?r Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
+                pltAcc = AddAccelerationScatter(timeArray, yaPlot, FormatLegendText("Acc Abs", smoothingAccAbsSeconds), accAbsColor, true);
+                pltAccX = AddAccelerationScatter(xax, yaxPlot, FormatLegendText("Acc X", smoothingAccXSeconds), accXColor, false);
+                pltAccY = AddAccelerationScatter(xay, yayPlot, FormatLegendText("Acc Y", smoothingAccYSeconds), accYColor, false);
+                pltAccZ = AddAccelerationScatter(xaz, yazPlot, FormatLegendText("Acc Z", smoothingAccZSeconds), accZColor, false);
+
+                ApplySeriesColors(false);
+                ApplySeriesLineStyles(false);
+                ApplySeriesVisibility();
+                WpfPlot1.Plot.Axes.AutoScale();
+
+                UpdateAxisLabelText();
+                ApplyPlotFontSizes();
+
+                WpfPlot1.Plot.Legend.IsVisible = false;
+
+                RefreshAxisTextBoxes();
+                WpfPlot1.Refresh();
             }
-
-            double[] pressureArray = pressureList.ToArray();
-            double[] heightArray = heightList.ToArray();
-            double[] accXArray = accXList.ToArray();
-            double[] accYArray = accYList.ToArray();
-            double[] accZArray = accZList.ToArray();
-            double[] tempArray = tempList.ToArray();
-            double[] accAbsArray = new double[accXArray.Length];
-
-            for (int i = 0; i < accAbsArray.Length; i++)
+            finally
             {
-                accAbsArray[i] = Math.Sqrt((accXArray[i] * accXArray[i]) + (accYArray[i] * accYArray[i]) + (accZArray[i] * accZArray[i]));
+                if (showBusy)
+                {
+                    PopBusyCursor();
+                }
             }
-
-            // Schreiben der Werte in den public main Bereich um die Arrays au?erhalb dieser Methode verf?gbar zu machen (z.B. f?r Cursor Berechnungen)
-            yhRaw = heightArray;
-            ytRaw = tempArray;
-            ApplyUnitsToDisplayData();
-
-            xh = timeArray;
-            xa = timeArray;
-            xt = timeArray;
-            ya = accAbsArray;
-            xax = timeArray;
-            xay = timeArray;
-            xaz = timeArray;
-            yax = accXArray;
-            yay = accYArray;
-            yaz = accZArray;
-
-            //Aktiviere DateTime Format f?r die X-Achse
-            WpfPlot1.Plot.Axes.DateTimeTicksBottom();
-            isDateTimeXAxis = true;
-
-            //Daten f?r H?he zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
-            pltAlt = AddAltitudeScatter(timeArray, yh);
-
-            //Daten f?r Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
-            pltTemp = AddTemperatureScatter(timeArray, yt);
-
-            //Daten f?r Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
-            pltAcc = AddAccelerationScatter(timeArray, ya, "Acc Abs", accAbsColor, true);
-            pltAccX = AddAccelerationScatter(xax, yax, "Acc X", accXColor, false);
-            pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", accYColor, false);
-            pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", accZColor, false);
-
-            ApplySeriesColors(false);
-            ApplySeriesLineStyles(false);
-            ApplySeriesVisibility();
-            WpfPlot1.Plot.Axes.AutoScale();
-
-            UpdateAxisLabelText();
-            ApplyPlotFontSizes();
-
-            WpfPlot1.Plot.Legend.IsVisible = false;
-
-            RefreshAxisTextBoxes();
-            WpfPlot1.Refresh();
         }
 
         private string BuildPlotTitle(string portName, Messreihe series)
@@ -1401,7 +1520,7 @@ namespace DataViewer_1._0._0._0
         private Scatter AddAltitudeScatter(double[] xs, double[] ys)
         {
             Scatter scatter = WpfPlot1.Plot.Add.Scatter(xs, ys);
-            scatter.LegendText = "Altitude";
+            scatter.LegendText = FormatLegendText("Altitude", smoothingAltSeconds);
             scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
             scatter.MarkerSize = 0;
             scatter.Color = altitudeColor;
@@ -1417,7 +1536,7 @@ namespace DataViewer_1._0._0._0
             }
 
             Scatter scatter = WpfPlot1.Plot.Add.Scatter(xs, ys);
-            scatter.LegendText = "Temperature";
+            scatter.LegendText = FormatLegendText("Temperature", smoothingTempSeconds);
             scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
             scatter.MarkerSize = 0;
             scatter.Color = temperatureColor;
@@ -1497,26 +1616,49 @@ namespace DataViewer_1._0._0._0
                 return;
             }
 
-            pltAlt = AddAltitudeScatter(xh, yh);
-            pltTemp = AddTemperatureScatter(xh, yt);
-            pltAcc = AddAccelerationScatter(xh, ya, "Acc Abs", accAbsColor, true);
-            if (xax != null && yax != null)
+            bool showBusy = IsSmoothingActive();
+            if (showBusy)
             {
-                pltAccX = AddAccelerationScatter(xax, yax, "Acc X", accXColor, false);
+                PushBusyCursor();
             }
-            if (xay != null && yay != null)
+
+            try
             {
-                pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", accYColor, false);
+                double[] yhPlot = GetSmoothedSeries(xh, yh, smoothingAltSeconds);
+                double[] ytPlot = GetSmoothedSeries(xh, yt, smoothingTempSeconds);
+                double[] yaPlot = GetSmoothedSeries(xh, ya, smoothingAccAbsSeconds);
+                double[] yaxPlot = GetSmoothedSeries(xax, yax, smoothingAccXSeconds);
+                double[] yayPlot = GetSmoothedSeries(xay, yay, smoothingAccYSeconds);
+                double[] yazPlot = GetSmoothedSeries(xaz, yaz, smoothingAccZSeconds);
+
+                pltAlt = AddAltitudeScatter(xh, yhPlot);
+                pltTemp = AddTemperatureScatter(xh, ytPlot);
+                pltAcc = AddAccelerationScatter(xh, yaPlot, FormatLegendText("Acc Abs", smoothingAccAbsSeconds), accAbsColor, true);
+                if (xax != null && yax != null)
+                {
+                    pltAccX = AddAccelerationScatter(xax, yaxPlot, FormatLegendText("Acc X", smoothingAccXSeconds), accXColor, false);
+                }
+                if (xay != null && yay != null)
+                {
+                    pltAccY = AddAccelerationScatter(xay, yayPlot, FormatLegendText("Acc Y", smoothingAccYSeconds), accYColor, false);
+                }
+                if (xaz != null && yaz != null)
+                {
+                    pltAccZ = AddAccelerationScatter(xaz, yazPlot, FormatLegendText("Acc Z", smoothingAccZSeconds), accZColor, false);
+                }
+                ApplySeriesColors(false);
+                ApplySeriesLineStyles(false);
+                ApplySeriesVisibility();
+                UpdateAxisLabelText();
+                ApplyPlotFontSizes();
             }
-            if (xaz != null && yaz != null)
+            finally
             {
-                pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", accZColor, false);
+                if (showBusy)
+                {
+                    PopBusyCursor();
+                }
             }
-            ApplySeriesColors(false);
-            ApplySeriesLineStyles(false);
-            ApplySeriesVisibility();
-            UpdateAxisLabelText();
-            ApplyPlotFontSizes();
         }
 
         private void UpdateUnitTextBlocks()
@@ -1544,6 +1686,214 @@ namespace DataViewer_1._0._0._0
             if (textBlockMeasTempMaxUnit != null) textBlockMeasTempMaxUnit.Text = tempUnit;
             if (textBlockMeasTempDeltaUnit != null) textBlockMeasTempDeltaUnit.Text = tempUnit;
             if (textBlockMeasTempAverageUnit != null) textBlockMeasTempAverageUnit.Text = tempUnit;
+        }
+
+        private void UpdateSmoothingTextBoxes()
+        {
+            if (textBoxSmoothAlt != null) textBoxSmoothAlt.Text = FormatSmoothingSeconds(smoothingAltSeconds);
+            if (textBoxSmoothTemp != null) textBoxSmoothTemp.Text = FormatSmoothingSeconds(smoothingTempSeconds);
+            if (textBoxSmoothAccAbs != null) textBoxSmoothAccAbs.Text = FormatSmoothingSeconds(smoothingAccAbsSeconds);
+            if (textBoxSmoothAccX != null) textBoxSmoothAccX.Text = FormatSmoothingSeconds(smoothingAccXSeconds);
+            if (textBoxSmoothAccY != null) textBoxSmoothAccY.Text = FormatSmoothingSeconds(smoothingAccYSeconds);
+            if (textBoxSmoothAccZ != null) textBoxSmoothAccZ.Text = FormatSmoothingSeconds(smoothingAccZSeconds);
+        }
+
+        private string FormatSmoothingSeconds(double seconds)
+        {
+            if (seconds <= 0)
+            {
+                return "0";
+            }
+
+            double rounded = Math.Round(seconds, 1);
+            bool isWhole = Math.Abs(rounded - Math.Round(rounded)) < 0.0001;
+            return rounded.ToString(isWhole ? "0" : "0.#", CultureInfo.CurrentCulture);
+        }
+
+        private string FormatLegendText(string baseName, double smoothingSeconds)
+        {
+            if (smoothingSeconds <= 0)
+            {
+                return baseName;
+            }
+
+            return $"{baseName} (AVG {FormatSmoothingSeconds(smoothingSeconds)}s)";
+        }
+
+        private bool TryGetSmoothingTarget(
+            string tag,
+            out double[] xs,
+            out double[] ys,
+            out Scatter scatter,
+            out string legendBase,
+            out double seconds)
+        {
+            xs = null;
+            ys = null;
+            scatter = null;
+            legendBase = null;
+            seconds = 0;
+
+            switch (tag)
+            {
+                case "Alt":
+                    xs = xh;
+                    ys = yh;
+                    scatter = pltAlt;
+                    legendBase = "Altitude";
+                    seconds = smoothingAltSeconds;
+                    return true;
+                case "Temp":
+                    xs = xt;
+                    ys = yt;
+                    scatter = pltTemp;
+                    legendBase = "Temperature";
+                    seconds = smoothingTempSeconds;
+                    return true;
+                case "AccAbs":
+                    xs = xa;
+                    ys = ya;
+                    scatter = pltAcc;
+                    legendBase = "Acc Abs";
+                    seconds = smoothingAccAbsSeconds;
+                    return true;
+                case "AccX":
+                    xs = xax;
+                    ys = yax;
+                    scatter = pltAccX;
+                    legendBase = "Acc X";
+                    seconds = smoothingAccXSeconds;
+                    return true;
+                case "AccY":
+                    xs = xay;
+                    ys = yay;
+                    scatter = pltAccY;
+                    legendBase = "Acc Y";
+                    seconds = smoothingAccYSeconds;
+                    return true;
+                case "AccZ":
+                    xs = xaz;
+                    ys = yaz;
+                    scatter = pltAccZ;
+                    legendBase = "Acc Z";
+                    seconds = smoothingAccZSeconds;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private void ApplySmoothingToSeries(string tag)
+        {
+            if (!TryGetSmoothingTarget(tag, out double[] xs, out double[] ys, out Scatter scatter, out string legendBase, out double seconds))
+            {
+                return;
+            }
+
+            if (xs == null || ys == null)
+            {
+                return;
+            }
+
+            bool showBusy = seconds > 0;
+            if (showBusy)
+            {
+                PushBusyCursor();
+            }
+
+            try
+            {
+                double[] smoothed = GetSmoothedSeries(xs, ys, seconds);
+                ReplaceSmoothedScatter(tag, xs, smoothed, legendBase, seconds);
+                ApplySeriesLineStyles(false);
+                ApplySeriesVisibility();
+                ApplySeriesAxisColors();
+                RefreshPlotNow();
+            }
+            finally
+            {
+                if (showBusy)
+                {
+                    PopBusyCursor();
+                }
+            }
+        }
+
+        private void ReplaceSmoothedScatter(string tag, double[] xs, double[] ys, string legendBase, double seconds)
+        {
+            switch (tag)
+            {
+                case "Alt":
+                    if (pltAlt != null) WpfPlot1.Plot.Remove(pltAlt);
+                    pltAlt = AddAltitudeScatter(xs, ys);
+                    break;
+                case "Temp":
+                    if (pltTemp != null) WpfPlot1.Plot.Remove(pltTemp);
+                    pltTemp = AddTemperatureScatter(xs, ys);
+                    break;
+                case "AccAbs":
+                    if (pltAcc != null) WpfPlot1.Plot.Remove(pltAcc);
+                    pltAcc = AddAccelerationScatter(xs, ys, FormatLegendText(legendBase, seconds), accAbsColor, true);
+                    break;
+                case "AccX":
+                    if (pltAccX != null) WpfPlot1.Plot.Remove(pltAccX);
+                    pltAccX = AddAccelerationScatter(xs, ys, FormatLegendText(legendBase, seconds), accXColor, false);
+                    break;
+                case "AccY":
+                    if (pltAccY != null) WpfPlot1.Plot.Remove(pltAccY);
+                    pltAccY = AddAccelerationScatter(xs, ys, FormatLegendText(legendBase, seconds), accYColor, false);
+                    break;
+                case "AccZ":
+                    if (pltAccZ != null) WpfPlot1.Plot.Remove(pltAccZ);
+                    pltAccZ = AddAccelerationScatter(xs, ys, FormatLegendText(legendBase, seconds), accZColor, false);
+                    break;
+            }
+        }
+
+        private void SetSmoothingSeconds(string tag, double seconds)
+        {
+            seconds = ClampSmoothingSeconds(tag, seconds);
+            switch (tag)
+            {
+                case "Alt":
+                    smoothingAltSeconds = seconds;
+                    break;
+                case "Temp":
+                    smoothingTempSeconds = seconds;
+                    break;
+                case "AccAbs":
+                    smoothingAccAbsSeconds = seconds;
+                    break;
+                case "AccX":
+                    smoothingAccXSeconds = seconds;
+                    break;
+                case "AccY":
+                    smoothingAccYSeconds = seconds;
+                    break;
+                case "AccZ":
+                    smoothingAccZSeconds = seconds;
+                    break;
+            }
+        }
+
+        private double ClampSmoothingSeconds(string tag, double seconds)
+        {
+            if (seconds < 0)
+            {
+                seconds = 0;
+            }
+
+            if (seconds > MaxSmoothingSeconds)
+            {
+                seconds = MaxSmoothingSeconds;
+            }
+
+            if (string.Equals(tag, "Temp", StringComparison.OrdinalIgnoreCase) && seconds > 0 && seconds < 60)
+            {
+                seconds = 60;
+            }
+
+            return seconds;
         }
 
         private void UpdateUnitMenuChecks()
@@ -3099,6 +3449,7 @@ namespace DataViewer_1._0._0._0
             ApplySeriesLineStyles();
         }
 
+
         private void menuItemSeries_Click(object sender, RoutedEventArgs e)
         {
             MenuItem menuItem = sender as MenuItem;
@@ -3794,6 +4145,42 @@ namespace DataViewer_1._0._0._0
                 //Textboxen mit Achsenlimits auktualisieren
                 RefreshAxisTextBoxes();
             }
+        }
+
+        private void textBoxSmoothing_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+            {
+                return;
+            }
+
+            if (!(sender is TextBox textBox) || !(textBox.Tag is string tag))
+            {
+                return;
+            }
+
+            if (!double.TryParse(textBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double seconds))
+            {
+                UpdateSmoothingTextBoxes();
+                return;
+            }
+
+            double original = seconds;
+            seconds = ClampSmoothingSeconds(tag, seconds);
+
+            if (string.Equals(tag, "Temp", StringComparison.OrdinalIgnoreCase) && original > 0 && original < 60)
+            {
+                MessageBox.Show("Temperature smoothing minimum is 60 seconds.", "Smoothing", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            if (original > MaxSmoothingSeconds)
+            {
+                MessageBox.Show($"Smoothing is limited to {MaxSmoothingSeconds:0} seconds.", "Smoothing", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            SetSmoothingSeconds(tag, seconds);
+            UpdateSmoothingTextBoxes();
+            ApplySmoothingToSeries(tag);
         }
 
         private void textBoxAccMin_KeyDown(object sender, KeyEventArgs e)
