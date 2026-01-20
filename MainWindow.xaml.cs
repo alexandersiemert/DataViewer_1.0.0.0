@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Security.Policy;
 using System.Text;
 using System.Threading;
@@ -26,6 +27,7 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.Plottables.Interactive;
 using Microsoft.Win32;
+using WinForms = System.Windows.Forms;
 
 namespace DataViewer_1._0._0._0
 {
@@ -38,6 +40,13 @@ namespace DataViewer_1._0._0._0
         {
             Metric,
             Imperial
+        }
+
+        private enum ChartStylePreset
+        {
+            Light,
+            Dark,
+            Slate
         }
 
         Scatter pltAlt, pltTemp, pltAcc, pltAccX, pltAccY, pltAccZ;
@@ -87,6 +96,42 @@ namespace DataViewer_1._0._0._0
         const double FeetPerMeter = 3.28083989501312;
         const double CelsiusToFahrenheitScale = 9.0 / 5.0;
         UnitMode currentUnitMode = UnitMode.Metric;
+        ChartStylePreset currentChartStyle = ChartStylePreset.Light;
+        bool showGrid = true;
+        bool axisLabelColorsFollowSeries = true;
+
+        ScottPlot.Color altitudeColor = ScottPlot.Color.FromHex("#1B1B1B");
+        ScottPlot.Color temperatureColor = ScottPlot.Color.FromHex("#D32F2F");
+        ScottPlot.Color accAbsColor = ScottPlot.Color.FromHex("#CC79A7");
+        ScottPlot.Color accXColor = ScottPlot.Color.FromHex("#0072B2");
+        ScottPlot.Color accYColor = ScottPlot.Color.FromHex("#009E73");
+        ScottPlot.Color accZColor = ScottPlot.Color.FromHex("#E69F00");
+
+        ScottPlot.Color axisLabelAltColor = ScottPlot.Color.FromHex("#1B1B1B");
+        ScottPlot.Color axisLabelTempColor = ScottPlot.Color.FromHex("#D32F2F");
+        ScottPlot.Color axisLabelAccColor = ScottPlot.Color.FromHex("#CC79A7");
+
+        ScottPlot.Color figureBackgroundColor = ScottPlot.Color.FromHex("#FFFFFF");
+        ScottPlot.Color dataBackgroundColor = ScottPlot.Color.FromHex("#FFFFFF");
+        ScottPlot.Color axisColor = ScottPlot.Color.FromHex("#2E2E2E");
+        ScottPlot.Color gridMajorLineColor = ScottPlot.Color.FromHex("#E0E0E0");
+        ScottPlot.Color legendBackgroundColor = ScottPlot.Color.FromHex("#FFFFFF");
+        ScottPlot.Color legendFontColor = ScottPlot.Color.FromHex("#2E2E2E");
+        ScottPlot.Color legendOutlineColor = ScottPlot.Color.FromHex("#C8C8C8");
+
+        float altitudeLineWidth = 2.2f;
+        float temperatureLineWidth = 1.0f;
+        float accAbsLineWidth = 1.0f;
+        float accXLineWidth = 1.0f;
+        float accYLineWidth = 1.0f;
+        float accZLineWidth = 1.0f;
+
+        ScottPlot.LinePattern altitudeLinePattern = ScottPlot.LinePattern.Solid;
+        ScottPlot.LinePattern temperatureLinePattern = ScottPlot.LinePattern.Solid;
+        ScottPlot.LinePattern accAbsLinePattern = ScottPlot.LinePattern.Solid;
+        ScottPlot.LinePattern accXLinePattern = ScottPlot.LinePattern.Solid;
+        ScottPlot.LinePattern accYLinePattern = ScottPlot.LinePattern.Solid;
+        ScottPlot.LinePattern accZLinePattern = ScottPlot.LinePattern.Solid;
 
         bool buttonAltUpPressed = false;
         bool buttonAltDownPressed = false;
@@ -176,6 +221,10 @@ namespace DataViewer_1._0._0._0
 
             UpdateUnitMenuChecks();
             UpdateUnitTextBlocks();
+            SetPlotVisibility(false);
+            UpdateChartStyleMenuChecks();
+            SetChartStylePreset(currentChartStyle);
+            ApplyChartStyle();
 
             //TreeView initialisieren für DeviceList
             TreeViewManager.Initialize(deviceListTreeView);
@@ -183,31 +232,9 @@ namespace DataViewer_1._0._0._0
             TreeViewManager.SeriesToggleChanged += TreeViewManager_SeriesToggleChanged;
             TreeViewManager.SetSeriesStates(showAltitude, showTemperature, showAccAbs, showAccX, showAccY, showAccZ);
 
-            //Testdaten für Entwicklung erzeugen
-            (xh, yhRaw) = GenerateRandomWalk(10000, 4); //Testdaten Höhe
-            (xt, ytRaw) = GenerateRandomWalk(10000, 5); //Testdaten Temperatur
-            (xa, ya) = GenerateRandomWalk(10000, 6); //Testdaten Beschleunigung
-            (xax, yax) = GenerateRandomWalk(10000, 7); //Testdaten Beschleunigung X
-            (xay, yay) = GenerateRandomWalk(10000, 8); //Testdaten Beschleunigung Y
-            (xaz, yaz) = GenerateRandomWalk(10000, 9); //Testdaten Beschleunigung Z
-            ApplyUnitsToDisplayData();
-
-            //Plot Titel festlegen
-            WpfPlot1.Plot.Title("SI-TL1");
-
-            //Daten für Höhe zum Plot WpfPlot1 (in XAML definiert) hinzufügen
-            pltAlt = AddAltitudeScatter(xh, yh);
-
-            //Daten für Temperatur zum Plot WpfPlot1 (in XAML definiert) hinzufügen
+            // Prepare right axes without plotting startup data.
             yAxisTemp = WpfPlot1.Plot.Axes.AddRightAxis();
-            pltTemp = AddTemperatureScatter(xh, yt);
-
-            //Daten für Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzufügen
             yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
-            pltAcc = AddAccelerationScatter(xh, ya, "3-Axis Acceleration", ScottPlot.Color.FromHex("#CC79A7"), true);
-            pltAccX = AddAccelerationScatter(xax, yax, "Acc X", ScottPlot.Color.FromHex("#0072B2"), false);
-            pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", ScottPlot.Color.FromHex("#009E73"), false);
-            pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", ScottPlot.Color.FromHex("#E69F00"), false);
 
             ApplySeriesVisibility();
             UpdateAxisLabelText();
@@ -597,6 +624,7 @@ namespace DataViewer_1._0._0._0
 
         private void ClearPlotState()
         {
+            SetPlotVisibility(false);
             WpfPlot1.Plot.Clear();
             WpfPlot1.Plot.Axes.Remove(ScottPlot.Edge.Right);
             pltAlt = null;
@@ -628,6 +656,11 @@ namespace DataViewer_1._0._0._0
             ClearCrosshairTextBoxes();
             UpdateAxisLabelText();
             WpfPlot1.Refresh();
+        }
+
+        private void SetPlotVisibility(bool hasData)
+        {
+            WpfPlot1.Visibility = hasData ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void SetAxisFontSizes(ScottPlot.IAxis axis, float labelSize, float tickSize)
@@ -669,6 +702,528 @@ namespace DataViewer_1._0._0._0
             }
         }
 
+        private void SetChartStylePreset(ChartStylePreset preset)
+        {
+            currentChartStyle = preset;
+            switch (preset)
+            {
+                case ChartStylePreset.Dark:
+                    figureBackgroundColor = ScottPlot.Color.FromHex("#1E1E1E");
+                    dataBackgroundColor = ScottPlot.Color.FromHex("#1E1E1E");
+                    axisColor = ScottPlot.Color.FromHex("#E6E6E6");
+                    gridMajorLineColor = ScottPlot.Color.FromHex("#3A3A3A");
+                    legendBackgroundColor = ScottPlot.Color.FromHex("#2A2A2A");
+                    legendFontColor = ScottPlot.Color.FromHex("#E6E6E6");
+                    legendOutlineColor = ScottPlot.Color.FromHex("#4D4D4D");
+                    break;
+                case ChartStylePreset.Slate:
+                    figureBackgroundColor = ScottPlot.Color.FromHex("#F2F4F7");
+                    dataBackgroundColor = ScottPlot.Color.FromHex("#F7F9FC");
+                    axisColor = ScottPlot.Color.FromHex("#2B3645");
+                    gridMajorLineColor = ScottPlot.Color.FromHex("#D3DAE4");
+                    legendBackgroundColor = ScottPlot.Color.FromHex("#FFFFFF");
+                    legendFontColor = ScottPlot.Color.FromHex("#2B3645");
+                    legendOutlineColor = ScottPlot.Color.FromHex("#C5CFDB");
+                    break;
+                default:
+                    figureBackgroundColor = ScottPlot.Color.FromHex("#FFFFFF");
+                    dataBackgroundColor = ScottPlot.Color.FromHex("#FFFFFF");
+                    axisColor = ScottPlot.Color.FromHex("#2E2E2E");
+                    gridMajorLineColor = ScottPlot.Color.FromHex("#E0E0E0");
+                    legendBackgroundColor = ScottPlot.Color.FromHex("#FFFFFF");
+                    legendFontColor = ScottPlot.Color.FromHex("#2E2E2E");
+                    legendOutlineColor = ScottPlot.Color.FromHex("#C8C8C8");
+                    break;
+            }
+        }
+
+        private void ApplyChartStyle()
+        {
+            if (WpfPlot1?.Plot == null)
+            {
+                return;
+            }
+
+            ScottPlot.PlotStyle style = new ScottPlot.PlotStyle
+            {
+                Palette = ScottPlot.Palette.Default,
+                FigureBackgroundColor = figureBackgroundColor,
+                DataBackgroundColor = dataBackgroundColor,
+                AxisColor = axisColor,
+                GridMajorLineColor = gridMajorLineColor,
+                LegendBackgroundColor = legendBackgroundColor,
+                LegendFontColor = legendFontColor,
+                LegendOutlineColor = legendOutlineColor
+            };
+
+            WpfPlot1.Plot.SetStyle(style);
+            ApplyGridVisibility();
+            ApplySeriesAxisColors();
+            ApplyPlotFontSizes();
+            UpdateAxisLabelText();
+            WpfPlot1.Refresh();
+        }
+
+        private void ApplyGridVisibility()
+        {
+            if (WpfPlot1?.Plot == null)
+            {
+                return;
+            }
+
+            if (showGrid)
+            {
+                WpfPlot1.Plot.ShowGrid();
+            }
+            else
+            {
+                WpfPlot1.Plot.HideGrid();
+            }
+        }
+
+        private void ApplySeriesColors(bool refresh = true)
+        {
+            if (pltAlt != null)
+            {
+                pltAlt.Color = altitudeColor;
+            }
+
+            if (pltTemp != null)
+            {
+                pltTemp.Color = temperatureColor;
+            }
+
+            if (pltAcc != null)
+            {
+                pltAcc.Color = accAbsColor;
+            }
+
+            if (pltAccX != null)
+            {
+                pltAccX.Color = accXColor;
+            }
+
+            if (pltAccY != null)
+            {
+                pltAccY.Color = accYColor;
+            }
+
+            if (pltAccZ != null)
+            {
+                pltAccZ.Color = accZColor;
+            }
+
+            if (axisLabelColorsFollowSeries)
+            {
+                SyncAxisLabelColorsToSeries();
+            }
+
+            ApplySeriesAxisColors();
+            if (refresh)
+            {
+                WpfPlot1.Refresh();
+            }
+        }
+
+        private void ApplySeriesLineStyles(bool refresh = true)
+        {
+            if (pltAlt != null)
+            {
+                pltAlt.LineWidth = altitudeLineWidth;
+                pltAlt.LinePattern = altitudeLinePattern;
+            }
+
+            if (pltTemp != null)
+            {
+                pltTemp.LineWidth = temperatureLineWidth;
+                pltTemp.LinePattern = temperatureLinePattern;
+            }
+
+            if (pltAcc != null)
+            {
+                pltAcc.LineWidth = accAbsLineWidth;
+                pltAcc.LinePattern = accAbsLinePattern;
+            }
+
+            if (pltAccX != null)
+            {
+                pltAccX.LineWidth = accXLineWidth;
+                pltAccX.LinePattern = accXLinePattern;
+            }
+
+            if (pltAccY != null)
+            {
+                pltAccY.LineWidth = accYLineWidth;
+                pltAccY.LinePattern = accYLinePattern;
+            }
+
+            if (pltAccZ != null)
+            {
+                pltAccZ.LineWidth = accZLineWidth;
+                pltAccZ.LinePattern = accZLinePattern;
+            }
+
+            if (refresh)
+            {
+                WpfPlot1.Refresh();
+            }
+        }
+
+        private void ResetSeriesColors()
+        {
+            altitudeColor = ScottPlot.Color.FromHex("#1B1B1B");
+            temperatureColor = ScottPlot.Color.FromHex("#D32F2F");
+            accAbsColor = ScottPlot.Color.FromHex("#CC79A7");
+            accXColor = ScottPlot.Color.FromHex("#0072B2");
+            accYColor = ScottPlot.Color.FromHex("#009E73");
+            accZColor = ScottPlot.Color.FromHex("#E69F00");
+
+            if (axisLabelColorsFollowSeries)
+            {
+                SyncAxisLabelColorsToSeries();
+            }
+        }
+
+        private void ResetSeriesLineStyles()
+        {
+            altitudeLineWidth = 2.2f;
+            temperatureLineWidth = 1.0f;
+            accAbsLineWidth = 1.0f;
+            accXLineWidth = 1.0f;
+            accYLineWidth = 1.0f;
+            accZLineWidth = 1.0f;
+
+            altitudeLinePattern = ScottPlot.LinePattern.Solid;
+            temperatureLinePattern = ScottPlot.LinePattern.Solid;
+            accAbsLinePattern = ScottPlot.LinePattern.Solid;
+            accXLinePattern = ScottPlot.LinePattern.Solid;
+            accYLinePattern = ScottPlot.LinePattern.Solid;
+            accZLinePattern = ScottPlot.LinePattern.Solid;
+        }
+
+        private void SyncAxisLabelColorsToSeries()
+        {
+            axisLabelAltColor = altitudeColor;
+            axisLabelTempColor = temperatureColor;
+            axisLabelAccColor = accAbsColor;
+        }
+
+        private bool TryPickColor(ScottPlot.Color current, out ScottPlot.Color selected)
+        {
+            selected = current;
+            using (var dialog = new WinForms.ColorDialog())
+            {
+                dialog.AnyColor = true;
+                dialog.FullOpen = true;
+                dialog.SolidColorOnly = true;
+                dialog.Color = System.Drawing.Color.FromArgb(current.A, current.R, current.G, current.B);
+
+                if (dialog.ShowDialog() != WinForms.DialogResult.OK)
+                {
+                    return false;
+                }
+
+                selected = ScottPlot.Color.FromARGB(dialog.Color.ToArgb());
+                return true;
+            }
+        }
+
+        private bool TryPickLineWidth(float current, out float selected)
+        {
+            selected = current;
+            using (var form = new WinForms.Form())
+            using (var widthInput = new WinForms.NumericUpDown())
+            using (var okButton = new WinForms.Button())
+            using (var cancelButton = new WinForms.Button())
+            using (var label = new WinForms.Label())
+            {
+                form.Text = "Line Width";
+                form.FormBorderStyle = WinForms.FormBorderStyle.FixedDialog;
+                form.StartPosition = WinForms.FormStartPosition.CenterScreen;
+                form.MinimizeBox = false;
+                form.MaximizeBox = false;
+                form.ClientSize = new System.Drawing.Size(220, 120);
+
+                label.Text = "Width (px)";
+                label.AutoSize = true;
+                label.Location = new System.Drawing.Point(12, 15);
+
+                widthInput.Minimum = 0.1M;
+                widthInput.Maximum = 10M;
+                widthInput.DecimalPlaces = 2;
+                widthInput.Increment = 0.1M;
+                widthInput.Value = (decimal)current;
+                widthInput.Location = new System.Drawing.Point(12, 40);
+                widthInput.Width = 80;
+
+                okButton.Text = "OK";
+                okButton.DialogResult = WinForms.DialogResult.OK;
+                okButton.Location = new System.Drawing.Point(35, 75);
+
+                cancelButton.Text = "Cancel";
+                cancelButton.DialogResult = WinForms.DialogResult.Cancel;
+                cancelButton.Location = new System.Drawing.Point(120, 75);
+
+                form.Controls.Add(label);
+                form.Controls.Add(widthInput);
+                form.Controls.Add(okButton);
+                form.Controls.Add(cancelButton);
+                form.AcceptButton = okButton;
+                form.CancelButton = cancelButton;
+
+                if (form.ShowDialog() != WinForms.DialogResult.OK)
+                {
+                    return false;
+                }
+
+                selected = (float)widthInput.Value;
+                return true;
+            }
+        }
+
+        private ScottPlot.Color GetColorForTag(string tag)
+        {
+            switch (tag)
+            {
+                case "FigureBackground":
+                    return figureBackgroundColor;
+                case "DataBackground":
+                    return dataBackgroundColor;
+                case "GridMajor":
+                    return gridMajorLineColor;
+                case "AxisColor":
+                    return axisColor;
+                case "LegendBackground":
+                    return legendBackgroundColor;
+                case "LegendText":
+                    return legendFontColor;
+                case "LegendOutline":
+                    return legendOutlineColor;
+                case "SeriesAlt":
+                    return altitudeColor;
+                case "SeriesTemp":
+                    return temperatureColor;
+                case "SeriesAccAbs":
+                    return accAbsColor;
+                case "SeriesAccX":
+                    return accXColor;
+                case "SeriesAccY":
+                    return accYColor;
+                case "SeriesAccZ":
+                    return accZColor;
+                case "AxisLabelAlt":
+                    return axisLabelAltColor;
+                case "AxisLabelTemp":
+                    return axisLabelTempColor;
+                case "AxisLabelAcc":
+                    return axisLabelAccColor;
+                default:
+                    return ScottPlot.Color.FromHex("#000000");
+            }
+        }
+
+        private void ApplyColorByTag(string tag, ScottPlot.Color color)
+        {
+            switch (tag)
+            {
+                case "FigureBackground":
+                    figureBackgroundColor = color;
+                    ApplyChartStyle();
+                    break;
+                case "DataBackground":
+                    dataBackgroundColor = color;
+                    ApplyChartStyle();
+                    break;
+                case "GridMajor":
+                    gridMajorLineColor = color;
+                    ApplyChartStyle();
+                    break;
+                case "AxisColor":
+                    axisColor = color;
+                    ApplyChartStyle();
+                    break;
+                case "LegendBackground":
+                    legendBackgroundColor = color;
+                    ApplyChartStyle();
+                    break;
+                case "LegendText":
+                    legendFontColor = color;
+                    ApplyChartStyle();
+                    break;
+                case "LegendOutline":
+                    legendOutlineColor = color;
+                    ApplyChartStyle();
+                    break;
+                case "SeriesAlt":
+                    altitudeColor = color;
+                    ApplySeriesColors();
+                    break;
+                case "SeriesTemp":
+                    temperatureColor = color;
+                    ApplySeriesColors();
+                    break;
+                case "SeriesAccAbs":
+                    accAbsColor = color;
+                    ApplySeriesColors();
+                    break;
+                case "SeriesAccX":
+                    accXColor = color;
+                    ApplySeriesColors();
+                    break;
+                case "SeriesAccY":
+                    accYColor = color;
+                    ApplySeriesColors();
+                    break;
+                case "SeriesAccZ":
+                    accZColor = color;
+                    ApplySeriesColors();
+                    break;
+                case "AxisLabelAlt":
+                    axisLabelAltColor = color;
+                    ApplySeriesAxisColors();
+                    WpfPlot1.Refresh();
+                    break;
+                case "AxisLabelTemp":
+                    axisLabelTempColor = color;
+                    ApplySeriesAxisColors();
+                    WpfPlot1.Refresh();
+                    break;
+                case "AxisLabelAcc":
+                    axisLabelAccColor = color;
+                    ApplySeriesAxisColors();
+                    WpfPlot1.Refresh();
+                    break;
+            }
+        }
+
+        private float GetLineWidthForTag(string tag)
+        {
+            switch (tag)
+            {
+                case "LineWidthAlt":
+                    return altitudeLineWidth;
+                case "LineWidthTemp":
+                    return temperatureLineWidth;
+                case "LineWidthAccAbs":
+                    return accAbsLineWidth;
+                case "LineWidthAccX":
+                    return accXLineWidth;
+                case "LineWidthAccY":
+                    return accYLineWidth;
+                case "LineWidthAccZ":
+                    return accZLineWidth;
+                default:
+                    return 1.0f;
+            }
+        }
+
+        private void ApplyLineWidthByTag(string tag, float width)
+        {
+            switch (tag)
+            {
+                case "LineWidthAlt":
+                    altitudeLineWidth = width;
+                    break;
+                case "LineWidthTemp":
+                    temperatureLineWidth = width;
+                    break;
+                case "LineWidthAccAbs":
+                    accAbsLineWidth = width;
+                    break;
+                case "LineWidthAccX":
+                    accXLineWidth = width;
+                    break;
+                case "LineWidthAccY":
+                    accYLineWidth = width;
+                    break;
+                case "LineWidthAccZ":
+                    accZLineWidth = width;
+                    break;
+                default:
+                    return;
+            }
+
+            ApplySeriesLineStyles();
+        }
+
+        private bool TryGetLinePattern(string name, out ScottPlot.LinePattern pattern)
+        {
+            switch (name)
+            {
+                case "Solid":
+                    pattern = ScottPlot.LinePattern.Solid;
+                    return true;
+                case "Dashed":
+                    pattern = ScottPlot.LinePattern.Dashed;
+                    return true;
+                case "DenselyDashed":
+                    pattern = ScottPlot.LinePattern.DenselyDashed;
+                    return true;
+                case "Dotted":
+                    pattern = ScottPlot.LinePattern.Dotted;
+                    return true;
+                default:
+                    pattern = ScottPlot.LinePattern.Solid;
+                    return false;
+            }
+        }
+
+        private void ApplyLinePatternByTag(string tag, ScottPlot.LinePattern pattern)
+        {
+            switch (tag)
+            {
+                case "LinePatternAlt":
+                    altitudeLinePattern = pattern;
+                    break;
+                case "LinePatternTemp":
+                    temperatureLinePattern = pattern;
+                    break;
+                case "LinePatternAccAbs":
+                    accAbsLinePattern = pattern;
+                    break;
+                case "LinePatternAccX":
+                    accXLinePattern = pattern;
+                    break;
+                case "LinePatternAccY":
+                    accYLinePattern = pattern;
+                    break;
+                case "LinePatternAccZ":
+                    accZLinePattern = pattern;
+                    break;
+                default:
+                    return;
+            }
+
+            ApplySeriesLineStyles();
+        }
+
+        private void ApplySeriesAxisColors()
+        {
+            if (WpfPlot1?.Plot?.Axes == null)
+            {
+                return;
+            }
+
+            ScottPlot.Color altAxisColor = axisLabelColorsFollowSeries ? altitudeColor : axisLabelAltColor;
+            ScottPlot.Color tempAxisColor = axisLabelColorsFollowSeries ? temperatureColor : axisLabelTempColor;
+            ScottPlot.Color accAxisColor = axisLabelColorsFollowSeries ? accAbsColor : axisLabelAccColor;
+
+            if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
+            {
+                leftAxis.LabelFontColor = altAxisColor;
+            }
+
+            if (yAxisTemp != null)
+            {
+                yAxisTemp.LabelFontColor = tempAxisColor;
+            }
+
+            if (yAxisAcc != null)
+            {
+                yAxisAcc.LabelFontColor = accAxisColor;
+            }
+        }
+
         private void ApplySeriesVisibility()
         {
             if (pltAlt != null) pltAlt.IsVisible = showAltitude;
@@ -693,10 +1248,12 @@ namespace DataViewer_1._0._0._0
         {
             if (_messreihe == null || _messreihe.Count == 0 || index < 0 || index >= _messreihe.Count)
             {
+                SetPlotVisibility(false);
                 MessageBox.Show("No data to plot.");
                 return;
             }
 
+            SetPlotVisibility(true);
             WpfPlot1.Plot.Clear();
             WpfPlot1.Plot.Axes.Remove(ScottPlot.Edge.Right);
             yAxisTemp = null;
@@ -708,6 +1265,7 @@ namespace DataViewer_1._0._0._0
             hoverY = null;
             yAxisTemp = WpfPlot1.Plot.Axes.AddRightAxis();
             yAxisAcc = WpfPlot1.Plot.Axes.AddRightAxis();
+            ApplyChartStyle();
 
             //Plot Titel festlegen
             WpfPlot1.Plot.Title(BuildPlotTitle(currentPortName, _messreihe[index]));
@@ -780,11 +1338,13 @@ namespace DataViewer_1._0._0._0
             pltTemp = AddTemperatureScatter(timeArray, yt);
 
             //Daten f?r Beschleunigung zum Plot WpfPlot1 (in XAML definiert) hinzuf?gen
-            pltAcc = AddAccelerationScatter(timeArray, ya, "3-Axis Acceleration", ScottPlot.Color.FromHex("#CC79A7"), true);
-            pltAccX = AddAccelerationScatter(xax, yax, "Acc X", ScottPlot.Color.FromHex("#0072B2"), false);
-            pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", ScottPlot.Color.FromHex("#009E73"), false);
-            pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", ScottPlot.Color.FromHex("#E69F00"), false);
+            pltAcc = AddAccelerationScatter(timeArray, ya, "Acc Abs", accAbsColor, true);
+            pltAccX = AddAccelerationScatter(xax, yax, "Acc X", accXColor, false);
+            pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", accYColor, false);
+            pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", accZColor, false);
 
+            ApplySeriesColors(false);
+            ApplySeriesLineStyles(false);
             ApplySeriesVisibility();
             WpfPlot1.Plot.Axes.AutoScale();
 
@@ -844,12 +1404,7 @@ namespace DataViewer_1._0._0._0
             scatter.LegendText = "Altitude";
             scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = WpfPlot1.Plot.Axes.Left };
             scatter.MarkerSize = 0;
-            scatter.Color = ScottPlot.Color.FromHex("#1B1B1B");
-            scatter.LineWidth = 2.2f;
-            if (WpfPlot1.Plot.Axes.Left is ScottPlot.AxisPanels.LeftAxis leftAxis)
-            {
-                leftAxis.LabelFontColor = scatter.Color;
-            }
+            scatter.Color = altitudeColor;
 
             return scatter;
         }
@@ -865,8 +1420,7 @@ namespace DataViewer_1._0._0._0
             scatter.LegendText = "Temperature";
             scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisTemp };
             scatter.MarkerSize = 0;
-            scatter.Color = ScottPlot.Color.FromHex("#D32F2F");
-            yAxisTemp.LabelFontColor = scatter.Color;
+            scatter.Color = temperatureColor;
             return scatter;
         }
 
@@ -882,10 +1436,6 @@ namespace DataViewer_1._0._0._0
             scatter.Axes = new ScottPlot.Axes { XAxis = WpfPlot1.Plot.Axes.Bottom, YAxis = yAxisAcc };
             scatter.MarkerSize = 0;
             scatter.Color = color;
-            if (setAxisColor)
-            {
-                yAxisAcc.LabelFontColor = scatter.Color;
-            }
             return scatter;
         }
 
@@ -949,19 +1499,21 @@ namespace DataViewer_1._0._0._0
 
             pltAlt = AddAltitudeScatter(xh, yh);
             pltTemp = AddTemperatureScatter(xh, yt);
-            pltAcc = AddAccelerationScatter(xh, ya, "3-Axis Acceleration", ScottPlot.Color.FromHex("#CC79A7"), true);
+            pltAcc = AddAccelerationScatter(xh, ya, "Acc Abs", accAbsColor, true);
             if (xax != null && yax != null)
             {
-                pltAccX = AddAccelerationScatter(xax, yax, "Acc X", ScottPlot.Color.FromHex("#0072B2"), false);
+                pltAccX = AddAccelerationScatter(xax, yax, "Acc X", accXColor, false);
             }
             if (xay != null && yay != null)
             {
-                pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", ScottPlot.Color.FromHex("#009E73"), false);
+                pltAccY = AddAccelerationScatter(xay, yay, "Acc Y", accYColor, false);
             }
             if (xaz != null && yaz != null)
             {
-                pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", ScottPlot.Color.FromHex("#E69F00"), false);
+                pltAccZ = AddAccelerationScatter(xaz, yaz, "Acc Z", accZColor, false);
             }
+            ApplySeriesColors(false);
+            ApplySeriesLineStyles(false);
             ApplySeriesVisibility();
             UpdateAxisLabelText();
             ApplyPlotFontSizes();
@@ -1190,21 +1742,6 @@ namespace DataViewer_1._0._0._0
         {
             deviceRefreshTimer.Stop();
             await RefreshDeviceListAsync(false);
-        }
-
-        private static (double[] xs, double[] ys) GenerateRandomWalk(int count, int seed)
-        {
-            double[] xs = new double[count];
-            double[] ys = new double[count];
-            Random random = new Random(seed);
-
-            for (int i = 1; i < count; i++)
-            {
-                xs[i] = i;
-                ys[i] = ys[i - 1] + (random.NextDouble() - 0.5);
-            }
-
-            return (xs, ys);
         }
 
         private void ConfigurePlotInteractions()
@@ -1480,7 +2017,7 @@ namespace DataViewer_1._0._0._0
                     return GetAltitudeUnitLabel();
                 case "Temperature":
                     return GetTemperatureUnitLabel();
-                case "3-Axis Acceleration":
+                case "Acc Abs":
                     return "g";
                 case "Acc X":
                 case "Acc Y":
@@ -1862,7 +2399,7 @@ namespace DataViewer_1._0._0._0
 
             TryUpdateBestCandidate(pltAlt, "Altitude", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
             TryUpdateBestCandidate(pltTemp, "Temperature", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
-            TryUpdateBestCandidate(pltAcc, "3-Axis Acceleration", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
+            TryUpdateBestCandidate(pltAcc, "Acc Abs", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
             TryUpdateBestCandidate(pltAccX, "Acc X", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
             TryUpdateBestCandidate(pltAccY, "Acc Y", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
             TryUpdateBestCandidate(pltAccZ, "Acc Z", mousePixel, ref bestPoint, ref bestAxes, ref bestColor, ref bestSeries, ref bestDistance);
@@ -2453,6 +2990,115 @@ namespace DataViewer_1._0._0._0
             SetUnitMode(UnitMode.Imperial);
         }
 
+        private void menuItemChartStyle_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is string tag &&
+                Enum.TryParse(tag, true, out ChartStylePreset preset))
+            {
+                SetChartStylePreset(preset);
+                UpdateChartStyleMenuChecks();
+                ApplyChartStyle();
+            }
+        }
+
+        private void menuItemChartStyleColor_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is MenuItem menuItem) || !(menuItem.Tag is string tag))
+            {
+                return;
+            }
+
+            ScottPlot.Color current = GetColorForTag(tag);
+            if (!TryPickColor(current, out ScottPlot.Color selected))
+            {
+                return;
+            }
+
+            ApplyColorByTag(tag, selected);
+        }
+
+        private void menuItemChartStyleGrid_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                showGrid = menuItem.IsChecked;
+                UpdateChartStyleMenuChecks();
+                ApplyChartStyle();
+            }
+        }
+
+        private void menuItemAxisLabelMode_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                axisLabelColorsFollowSeries = menuItem.IsChecked;
+                if (axisLabelColorsFollowSeries)
+                {
+                    SyncAxisLabelColorsToSeries();
+                }
+
+                UpdateChartStyleMenuChecks();
+                ApplySeriesAxisColors();
+                WpfPlot1.Refresh();
+            }
+        }
+
+        private void menuItemChartStyleReset_Click(object sender, RoutedEventArgs e)
+        {
+            SetChartStylePreset(currentChartStyle);
+            UpdateChartStyleMenuChecks();
+            ApplyChartStyle();
+        }
+
+        private void menuItemSeriesColorsReset_Click(object sender, RoutedEventArgs e)
+        {
+            ResetSeriesColors();
+            ApplySeriesColors();
+        }
+
+        private void menuItemSeriesLineWidth_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is MenuItem menuItem) || !(menuItem.Tag is string tag))
+            {
+                return;
+            }
+
+            float current = GetLineWidthForTag(tag);
+            if (!TryPickLineWidth(current, out float selected))
+            {
+                return;
+            }
+
+            ApplyLineWidthByTag(tag, selected);
+        }
+
+        private void menuItemSeriesLinePattern_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is MenuItem menuItem) || !(menuItem.Tag is string tag))
+            {
+                return;
+            }
+
+            string[] parts = tag.Split('|');
+            if (parts.Length != 2)
+            {
+                return;
+            }
+
+            if (!TryGetLinePattern(parts[1], out ScottPlot.LinePattern pattern))
+            {
+                return;
+            }
+
+            ApplyLinePatternByTag(parts[0], pattern);
+        }
+
+        private void menuItemSeriesLineStylesReset_Click(object sender, RoutedEventArgs e)
+        {
+            ResetSeriesLineStyles();
+            ApplySeriesLineStyles();
+        }
+
         private void menuItemSeries_Click(object sender, RoutedEventArgs e)
         {
             MenuItem menuItem = sender as MenuItem;
@@ -2534,6 +3180,20 @@ namespace DataViewer_1._0._0._0
             if (menuItemSeriesAccX != null) menuItemSeriesAccX.IsChecked = showAccX;
             if (menuItemSeriesAccY != null) menuItemSeriesAccY.IsChecked = showAccY;
             if (menuItemSeriesAccZ != null) menuItemSeriesAccZ.IsChecked = showAccZ;
+        }
+
+        private void UpdateChartStyleMenuChecks()
+        {
+            if (menuItemChartStyleLight != null) menuItemChartStyleLight.IsChecked = currentChartStyle == ChartStylePreset.Light;
+            if (menuItemChartStyleDark != null) menuItemChartStyleDark.IsChecked = currentChartStyle == ChartStylePreset.Dark;
+            if (menuItemChartStyleSlate != null) menuItemChartStyleSlate.IsChecked = currentChartStyle == ChartStylePreset.Slate;
+            if (menuItemChartStyleShowGrid != null) menuItemChartStyleShowGrid.IsChecked = showGrid;
+            if (menuItemAxisLabelFollowSeries != null) menuItemAxisLabelFollowSeries.IsChecked = axisLabelColorsFollowSeries;
+
+            bool enableAxisLabelColors = !axisLabelColorsFollowSeries;
+            if (menuItemAxisLabelAltColor != null) menuItemAxisLabelAltColor.IsEnabled = enableAxisLabelColors;
+            if (menuItemAxisLabelTempColor != null) menuItemAxisLabelTempColor.IsEnabled = enableAxisLabelColors;
+            if (menuItemAxisLabelAccColor != null) menuItemAxisLabelAccColor.IsEnabled = enableAxisLabelColors;
         }
 
         private void SyncSeriesStateFromTreeView(string portName, int index)
@@ -2770,6 +3430,42 @@ namespace DataViewer_1._0._0._0
             {
                 MessageBox.Show("Export failed: " + ex.Message);
             }
+        }
+
+        private void menuItemHelpDocs_Click(object sender, RoutedEventArgs e)
+        {
+            string docsPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Docs", "DataViewer_Help.txt");
+            if (!File.Exists(docsPath))
+            {
+                MessageBox.Show("Help file not found.", "Docs", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = docsPath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to open help: " + ex.Message, "Docs", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void menuItemHelpAbout_Click(object sender, RoutedEventArgs e)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            string product = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "SIEMERT DataViewer";
+            string company = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "SIEMERT";
+            string version = FileVersionInfo.GetVersionInfo(assembly.Location).FileVersion
+                ?? assembly.GetName().Version?.ToString()
+                ?? "Unknown";
+
+            string message = $"{product}\nVersion: {version}\n{company}\nThird-party notices: Docs\\ThirdParty_Notices.txt";
+            MessageBox.Show(message, "About", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         //Measuring Cursor enable / disable

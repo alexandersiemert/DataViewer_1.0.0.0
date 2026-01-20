@@ -54,6 +54,90 @@
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="LineChart" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
+                        <MenuItem x:Name="menuItemChartStyleLight" Header="Light" IsCheckable="True" IsChecked="True" Tag="Light" Click="menuItemChartStyle_Click"/>
+                        <MenuItem x:Name="menuItemChartStyleDark" Header="Dark" IsCheckable="True" Tag="Dark" Click="menuItemChartStyle_Click"/>
+                        <MenuItem x:Name="menuItemChartStyleSlate" Header="Slate" IsCheckable="True" Tag="Slate" Click="menuItemChartStyle_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Background">
+                            <MenuItem Header="Figure..." Tag="FigureBackground" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem Header="Plot..." Tag="DataBackground" Click="menuItemChartStyleColor_Click"/>
+                        </MenuItem>
+                        <MenuItem Header="Grid">
+                            <MenuItem x:Name="menuItemChartStyleShowGrid" Header="Show Grid" IsCheckable="True" IsChecked="True" Click="menuItemChartStyleGrid_Click"/>
+                            <MenuItem Header="Grid Color..." Tag="GridMajor" Click="menuItemChartStyleColor_Click"/>
+                        </MenuItem>
+                        <MenuItem Header="Axes">
+                            <MenuItem Header="Axis Color..." Tag="AxisColor" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem x:Name="menuItemAxisLabelFollowSeries" Header="Axis Labels Follow Series" IsCheckable="True" IsChecked="True" Click="menuItemAxisLabelMode_Click"/>
+                            <MenuItem Header="Axis Label Colors">
+                                <MenuItem x:Name="menuItemAxisLabelAltColor" Header="Altitude..." Tag="AxisLabelAlt" Click="menuItemChartStyleColor_Click"/>
+                                <MenuItem x:Name="menuItemAxisLabelTempColor" Header="Temperature..." Tag="AxisLabelTemp" Click="menuItemChartStyleColor_Click"/>
+                                <MenuItem x:Name="menuItemAxisLabelAccColor" Header="Acceleration..." Tag="AxisLabelAcc" Click="menuItemChartStyleColor_Click"/>
+                            </MenuItem>
+                        </MenuItem>
+                        <MenuItem Header="Legend">
+                            <MenuItem Header="Background..." Tag="LegendBackground" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem Header="Text..." Tag="LegendText" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem Header="Outline..." Tag="LegendOutline" Click="menuItemChartStyleColor_Click"/>
+                        </MenuItem>
+                        <MenuItem Header="Series Colors">
+                            <MenuItem Header="Altitude..." Tag="SeriesAlt" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem Header="Temperature..." Tag="SeriesTemp" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem Header="Acc Abs..." Tag="SeriesAccAbs" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem Header="Acc X..." Tag="SeriesAccX" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem Header="Acc Y..." Tag="SeriesAccY" Click="menuItemChartStyleColor_Click"/>
+                            <MenuItem Header="Acc Z..." Tag="SeriesAccZ" Click="menuItemChartStyleColor_Click"/>
+                        </MenuItem>
+                        <MenuItem Header="Series Line Width">
+                            <MenuItem Header="Altitude..." Tag="LineWidthAlt" Click="menuItemSeriesLineWidth_Click"/>
+                            <MenuItem Header="Temperature..." Tag="LineWidthTemp" Click="menuItemSeriesLineWidth_Click"/>
+                            <MenuItem Header="Acc Abs..." Tag="LineWidthAccAbs" Click="menuItemSeriesLineWidth_Click"/>
+                            <MenuItem Header="Acc X..." Tag="LineWidthAccX" Click="menuItemSeriesLineWidth_Click"/>
+                            <MenuItem Header="Acc Y..." Tag="LineWidthAccY" Click="menuItemSeriesLineWidth_Click"/>
+                            <MenuItem Header="Acc Z..." Tag="LineWidthAccZ" Click="menuItemSeriesLineWidth_Click"/>
+                        </MenuItem>
+                        <MenuItem Header="Series Line Pattern">
+                            <MenuItem Header="Altitude">
+                                <MenuItem Header="Solid" Tag="LinePatternAlt|Solid" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dashed" Tag="LinePatternAlt|Dashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Densely Dashed" Tag="LinePatternAlt|DenselyDashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dotted" Tag="LinePatternAlt|Dotted" Click="menuItemSeriesLinePattern_Click"/>
+                            </MenuItem>
+                            <MenuItem Header="Temperature">
+                                <MenuItem Header="Solid" Tag="LinePatternTemp|Solid" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dashed" Tag="LinePatternTemp|Dashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Densely Dashed" Tag="LinePatternTemp|DenselyDashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dotted" Tag="LinePatternTemp|Dotted" Click="menuItemSeriesLinePattern_Click"/>
+                            </MenuItem>
+                            <MenuItem Header="Acc Abs">
+                                <MenuItem Header="Solid" Tag="LinePatternAccAbs|Solid" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dashed" Tag="LinePatternAccAbs|Dashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Densely Dashed" Tag="LinePatternAccAbs|DenselyDashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dotted" Tag="LinePatternAccAbs|Dotted" Click="menuItemSeriesLinePattern_Click"/>
+                            </MenuItem>
+                            <MenuItem Header="Acc X">
+                                <MenuItem Header="Solid" Tag="LinePatternAccX|Solid" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dashed" Tag="LinePatternAccX|Dashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Densely Dashed" Tag="LinePatternAccX|DenselyDashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dotted" Tag="LinePatternAccX|Dotted" Click="menuItemSeriesLinePattern_Click"/>
+                            </MenuItem>
+                            <MenuItem Header="Acc Y">
+                                <MenuItem Header="Solid" Tag="LinePatternAccY|Solid" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dashed" Tag="LinePatternAccY|Dashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Densely Dashed" Tag="LinePatternAccY|DenselyDashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dotted" Tag="LinePatternAccY|Dotted" Click="menuItemSeriesLinePattern_Click"/>
+                            </MenuItem>
+                            <MenuItem Header="Acc Z">
+                                <MenuItem Header="Solid" Tag="LinePatternAccZ|Solid" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dashed" Tag="LinePatternAccZ|Dashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Densely Dashed" Tag="LinePatternAccZ|DenselyDashed" Click="menuItemSeriesLinePattern_Click"/>
+                                <MenuItem Header="Dotted" Tag="LinePatternAccZ|Dotted" Click="menuItemSeriesLinePattern_Click"/>
+                            </MenuItem>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Reset Style" Click="menuItemChartStyleReset_Click"/>
+                        <MenuItem Header="Reset Series Colors" Click="menuItemSeriesColorsReset_Click"/>
+                        <MenuItem Header="Reset Line Styles" Click="menuItemSeriesLineStylesReset_Click"/>
                     </MenuItem>
                     <MenuItem Header="Units">
                         <MenuItem.Icon>
@@ -65,25 +149,19 @@
                     <MenuItem Header="Series">
                         <MenuItem x:Name="menuItemSeriesAlt" Header="Altitude" IsCheckable="True" IsChecked="True" Tag="Alt" Click="menuItemSeries_Click"/>
                         <MenuItem x:Name="menuItemSeriesTemp" Header="Temperature" IsCheckable="True" IsChecked="True" Tag="Temp" Click="menuItemSeries_Click"/>
-                        <MenuItem x:Name="menuItemSeriesAccAbs" Header="3-Axis Acceleration" IsCheckable="True" IsChecked="True" Tag="AccAbs" Click="menuItemSeries_Click"/>
+                        <MenuItem x:Name="menuItemSeriesAccAbs" Header="Acc Abs" IsCheckable="True" IsChecked="True" Tag="AccAbs" Click="menuItemSeries_Click"/>
                         <MenuItem x:Name="menuItemSeriesAccX" Header="Acc X" IsCheckable="True" IsChecked="True" Tag="AccX" Click="menuItemSeries_Click"/>
                         <MenuItem x:Name="menuItemSeriesAccY" Header="Acc Y" IsCheckable="True" IsChecked="True" Tag="AccY" Click="menuItemSeries_Click"/>
                         <MenuItem x:Name="menuItemSeriesAccZ" Header="Acc Z" IsCheckable="True" IsChecked="True" Tag="AccZ" Click="menuItemSeries_Click"/>
                     </MenuItem>
-                    <MenuItem Header="Connection">
-                        <MenuItem.Icon>
-                            <fa:FontAwesome Icon="Usb" VerticalAlignment="Center"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-
                 </MenuItem>
                 <MenuItem Header="Help">
-                    <MenuItem Header="Docs">
+                    <MenuItem Header="Docs" Click="menuItemHelpDocs_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="Book" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="About">
+                    <MenuItem Header="About" Click="menuItemHelpAbout_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="InfoCircle" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
@@ -446,7 +524,7 @@
 
                             <GroupBox Height="Auto" Header="Acceleration">
                                 <StackPanel Orientation="Vertical">
-                                    <TextBlock Text="3-Axis Absolute" Margin="5"/>
+                                    <TextBlock Text="Absolute" Margin="5"/>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
                                         <TextBox x:Name="textBoxMeasAccCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>

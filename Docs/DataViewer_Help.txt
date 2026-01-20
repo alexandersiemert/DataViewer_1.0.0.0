@@ -1,0 +1,42 @@
+SIEMERT DataViewer Help
+=======================
+
+Overview
+- Load and inspect SIEMERT logger recordings.
+- Use Device List to select a device and recording to plot.
+
+Quick start
+1) File > Open: load *.sdvlog files.
+2) Device List: select a recording to plot.
+3) Settings > Series: show or hide series.
+
+Plot and tools
+- Measuring Cursor: drag the span to get min/max/delta/average.
+- Crosshair: move the cursor to read values.
+- Marker: place or remove a marker.
+- Legend: toggle the legend display.
+
+Data management
+- File > Save: save a selected recording.
+- File > Save All: save all recordings for a device.
+- File > Export csv: export the current recording.
+
+Units
+- Settings > Units: Metric (m, C) or Imperial (ft, F).
+
+Chart style
+- Settings > Chart Style: Light, Dark, or Slate.
+- Use Chart Style submenus to set series colors, axis label colors, and grid visibility.
+- Line Width and Line Pattern let you customize each series independently.
+- Reset Style restores the preset colors for backgrounds, grid, axes, and legend.
+- Reset Series Colors restores the default series colors.
+- Reset Line Styles restores the default widths and patterns.
+
+Notes
+- The plot is hidden until a recording is loaded.
+
+Third-party licenses
+- ScottPlot 5.1.57 (MIT)
+- ScottPlot.WPF 5.1.57 (MIT)
+- FontAwesome.WPF 4.7.0.9 (license: https://github.com/charri/Font-Awesome-WPF/blob/master/LICENSE)
+- Full notices: Docs\\ThirdParty_Notices.txt

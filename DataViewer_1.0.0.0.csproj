@@ -147,6 +147,12 @@
     <Resource Include="Pictures\arrow-down-sign-to-navigate.png" />
     <Resource Include="Pictures\dataviewer.png" />
     <Resource Include="Pictures\siemert.png" />
+    <Content Include="Docs\DataViewer_Help.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Docs\ThirdParty_Notices.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
