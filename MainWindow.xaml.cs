@@ -3104,7 +3104,8 @@ namespace DataViewer_1._0._0._0
                     {
                         Zeit = messreihe.Startzeit.AddMilliseconds(250 * timeCounter),
                         Druck = HexZuDouble(messdaten.Substring(i, 4)) / 10,
-                        Hoehe = Math.Round((288.15 / 0.0065) * (1 - ((HexZuDouble(messdaten.Substring(i, 4)) / 10) / 1013.25)) * 0.190294957, 2),
+                        //Hoehe = Math.Round((288.15 / 0.0065) * (1 - ((HexZuDouble(messdaten.Substring(i, 4)) / 10) / 1013.25)) * 0.190294957, 2),
+                        Hoehe = Math.Round((288.15 / 0.0065) * (1 - Math.Pow(((HexZuDouble(messdaten.Substring(i, 4)) / 10) / 1013.25), 0.190294957)), 2),
                         BeschleunigungX = CalculateAccelerationFromHex(messdaten.Substring(i + 4, 4)),
                         BeschleunigungY = CalculateAccelerationFromHex(messdaten.Substring(i + 8, 4)),
                         BeschleunigungZ = CalculateAccelerationFromHex(messdaten.Substring(i + 12, 4)),
@@ -3173,7 +3174,7 @@ namespace DataViewer_1._0._0._0
             return (double)intValue;
         }
 
-        private double CalculateAccelerationFromHex(string hexData)
+        /*private double CalculateAccelerationFromHex(string hexData)
         {
             double acceleration;
 
@@ -3197,6 +3198,24 @@ namespace DataViewer_1._0._0._0
                 return Math.Round(acceleration, 3);
             }
         }
+        */
+        private double CalculateAccelerationFromHex(string hexData)
+        {
+            if (hexData.Length > 4)
+                throw new ArgumentException("Der Hexadezimal-String darf maximal vier Zeichen lang sein.");
+
+            // 1) Hex → signed 16-Bit (LIS3DH liefert sign-extended Werte)
+            short raw16 = Convert.ToInt16(hexData, 16);
+
+            // 2) 10-Bit Zweierkomplement extrahieren (links­bündig → 6 Bit nach rechts)
+            int raw10 = raw16 >> 6;
+
+            // 3) Skalierung laut Datenblatt: 48 mg / digit = 0.048 g / LSB
+            double acceleration_g = raw10 * 0.048;
+
+            return Math.Round(acceleration_g, 3);
+        }
+
 
         //################################################################################################################################
         //                                                   AUSLÖSEMETHODEN FÜR EVENTS
