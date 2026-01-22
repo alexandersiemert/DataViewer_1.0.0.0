@@ -3086,7 +3086,25 @@ namespace DataViewer_1._0._0._0
 
                 // Extraktion und Verarbeitung der Messdaten
                 int messdatenStartIndex = 24;
-                int messdatenEndIndex = reihe.IndexOf("FFFF", StringComparison.Ordinal);
+                int messdatenEndIndex = -1;
+                int searchIndex = messdatenStartIndex;
+                while (searchIndex >= 0 && searchIndex < reihe.Length)
+                {
+                    int candidateIndex = reihe.IndexOf("FFFF", searchIndex, StringComparison.Ordinal);
+                    if (candidateIndex < 0)
+                    {
+                        break;
+                    }
+
+                    if (candidateIndex % 4 == 0)
+                    {
+                        messdatenEndIndex = candidateIndex;
+                        break;
+                    }
+
+                    searchIndex = candidateIndex + 1;
+                }
+
                 if (messdatenEndIndex < 0 || messdatenEndIndex <= messdatenStartIndex)
                 {
                     continue;
