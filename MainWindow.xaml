@@ -186,7 +186,7 @@
                         </ToggleButton.Resources>
                     </ToggleButton>
 
-                    <ToggleButton Content="Crosshair" Width="70" Margin="5,0,0,0" Checked="toggleButtonCrosshair_Checked" Unchecked="toggleButtonCrosshair_Unchecked">
+                    <ToggleButton x:Name="toggleButtonCrosshair" Content="Crosshair" Width="70" Margin="5,0,0,0" Checked="toggleButtonCrosshair_Checked" Unchecked="toggleButtonCrosshair_Unchecked">
                         <ToggleButton.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
@@ -194,7 +194,7 @@
                         </ToggleButton.Resources>
                     </ToggleButton>
 
-                    <ToggleButton Content="Marker" Width="60" Margin="5,0,0,0" Checked="toggleButtonMarker_Checked" Unchecked="toggleButtonMarker_Unchecked">
+                    <ToggleButton x:Name="toggleButtonMarker" Content="Marker" Width="60" Margin="5,0,0,0" Checked="toggleButtonMarker_Checked" Unchecked="toggleButtonMarker_Unchecked">
                         <ToggleButton.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
@@ -202,7 +202,7 @@
                         </ToggleButton.Resources>
                     </ToggleButton>
 
-                    <ToggleButton Content="Legend" Width="60" Margin="5,0,0,0" Checked="toggleButtonLegend_Checked" Unchecked="toggleButtonLegend_Unchecked">
+                    <ToggleButton x:Name="toggleButtonLegend" Content="Legend" Width="60" Margin="5,0,0,0" Checked="toggleButtonLegend_Checked" Unchecked="toggleButtonLegend_Unchecked">
                         <ToggleButton.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>

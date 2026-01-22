@@ -1339,6 +1339,14 @@ namespace DataViewer_1._0._0._0
         //                                                   FUNKTIONEN
         //################################################################################################################################
 
+        private void ResetPlotTools()
+        {
+            if (toggleButtonMeasuringCursor != null) toggleButtonMeasuringCursor.IsChecked = false;
+            if (toggleButtonCrosshair != null) toggleButtonCrosshair.IsChecked = false;
+            if (toggleButtonMarker != null) toggleButtonMarker.IsChecked = false;
+            if (toggleButtonLegend != null) toggleButtonLegend.IsChecked = false;
+        }
+
         // Daten plotten
         private void PlotData(List<Messreihe> _messreihe, int index)
         {
@@ -1348,6 +1356,8 @@ namespace DataViewer_1._0._0._0
                 MessageBox.Show("No data to plot.");
                 return;
             }
+
+            ResetPlotTools();
 
             SetPlotVisibility(true);
             WpfPlot1.Plot.Clear();
@@ -2878,9 +2888,14 @@ namespace DataViewer_1._0._0._0
             // Methode zur linearen Interpolation für den Measuring Cursor um Y-Koordinate des Plots aus X-Koordinate des Messcursors zu bekommen
         private double InterpolateY(double[] xData, double[] yData, double xValue)
         {
-            if (xValue < 0 || xData == null || yData == null || xData.Length == 0 || xData.Length != yData.Length)
+            if (xData == null || yData == null || xData.Length == 0 || xData.Length != yData.Length)
             {
-                return double.NaN; // Fr?hzeitige R?ckkehr bei negativem xValue oder ung?ltigen Eingabedaten
+                return double.NaN; // Fr?hzeitige R?ckkehr bei ung?ltigen Eingabedaten
+            }
+
+            if (xValue <= xData[0])
+            {
+                return yData[0];
             }
 
             if (xValue >= xData[xData.Length - 1])
@@ -3033,8 +3048,10 @@ namespace DataViewer_1._0._0._0
                 return null;
             }
 
+            Debug.WriteLine("Decode packet " + portName + ": len=" + datenpaket.Length + " preview=" + BuildPacketPreview(datenpaket));
+
             //Pr?fe ob ?berhaupt der Beginn einer Aufnahme da ist mittels Anfangskodierung AAAA. Wenn nicht, ist keine g?ltige Aufnahme in den Daten vorhanden
-            int splitStartIndex = datenpaket.IndexOf("AAAA", StringComparison.Ordinal);
+            int splitStartIndex = FindAlignedMarker(datenpaket, "AAAA", 4);
             if (splitStartIndex < 0)
             {
                 //Breche die Dekodierung ab und gebe null zur?ck
@@ -3061,7 +3078,9 @@ namespace DataViewer_1._0._0._0
                 var messreihe = new Messreihe();
                 // Anfangsdatenfolge
                 string anfangsdaten = reihe.Substring(0, 24); // L?nge der Anfangsdaten
-                messreihe.Startzeit = ParseDatumUndZeit(anfangsdaten.Substring(2, 14));
+                string startZeitHex = anfangsdaten.Substring(2, 14);
+                Debug.WriteLine("ParseDatumUndZeit start " + portName + ": " + startZeitHex);
+                messreihe.Startzeit = ParseDatumUndZeit(startZeitHex);
                 messreihe.StartTemperatur = (HexZuDouble(anfangsdaten.Substring(16, 4)) - 500) / 10;
                 messreihe.StartDruck = HexZuDouble(anfangsdaten.Substring(20, 4)) / 10;
 
@@ -3123,7 +3142,9 @@ namespace DataViewer_1._0._0._0
                 {
                     messreihe.Status = abschlussdaten.Substring(0, 4);
                     messreihe.Spannung = abschlussdaten.Substring(4, 4);
-                    messreihe.Endzeit = ParseDatumUndZeit(abschlussdaten.Substring(10, 14));
+                    string endZeitHex = abschlussdaten.Substring(10, 14);
+                    Debug.WriteLine("ParseDatumUndZeit end " + portName + ": " + endZeitHex);
+                    messreihe.Endzeit = ParseDatumUndZeit(endZeitHex);
                     messreihe.EndTemperatur = HexZuDouble(abschlussdaten.Substring(24, 4));
                     messreihe.EndDruck = HexZuDouble(abschlussdaten.Substring(28, 4));
                 }
@@ -3138,6 +3159,32 @@ namespace DataViewer_1._0._0._0
             }
 
             return messreihen;
+        }
+
+        private int FindAlignedMarker(string data, string marker, int modulus)
+        {
+            if (string.IsNullOrEmpty(data) || string.IsNullOrEmpty(marker) || modulus <= 0)
+            {
+                return -1;
+            }
+
+            int searchIndex = 0;
+            while (true)
+            {
+                int index = data.IndexOf(marker, searchIndex, StringComparison.Ordinal);
+                if (index < 0)
+                {
+                    return -1;
+                }
+
+                if (index % modulus == 0)
+                {
+                    return index;
+                }
+
+                Debug.WriteLine("Marker misaligned: marker=" + marker + " index=" + index + " mod=" + modulus);
+                searchIndex = index + 1;
+            }
         }
 
         private DateTime ParseDatumUndZeit(string hexDatumZeit)
@@ -4468,12 +4515,38 @@ namespace DataViewer_1._0._0._0
 
         /*############################   COM PORT EVENTS        ###################################################*/
 
+        private string BuildPacketPreview(string packet, int maxLength = 200)
+        {
+            if (string.IsNullOrEmpty(packet))
+            {
+                return "<empty>";
+            }
+
+            if (packet.Length <= maxLength)
+            {
+                return packet;
+            }
+
+            return packet.Substring(0, maxLength) + "...(len=" + packet.Length + ")";
+        }
+
         //Evenhandler für DataReceived
         private void OnDataReceived(string portName, string[] data)
         {
             if (string.IsNullOrWhiteSpace(portName))
             {
                 return;
+            }
+
+            Debug.WriteLine("OnDataReceived " + portName + ": packets=" + (data?.Length ?? 0));
+            if (data != null && data.Length > 0)
+            {
+                Debug.WriteLine("Packet[0] len=" + data[0]?.Length + " preview=" + BuildPacketPreview(data[0]));
+            }
+
+            if (data != null && data.Length > 3)
+            {
+                Debug.WriteLine("Packet[3] len=" + data[3]?.Length + " preview=" + BuildPacketPreview(data[3]));
             }
 
             if (serialPortManagers.TryGetValue(portName, out SerialPortManager manager))
@@ -4507,7 +4580,9 @@ namespace DataViewer_1._0._0._0
 
                         logger.comPort = portName;
                         logger.checkSum = data[0].Substring(3, 2) + data[0].Substring(1, 2);
-                        logger.serialNumber = int.Parse(data[0].Substring(49, 4), NumberStyles.HexNumber).ToString();
+                        string serialHex = data[0].Substring(49, 4);
+                        Debug.WriteLine("Header parse " + portName + ": serialHex=" + serialHex + " headerLen=" + data[0].Length);
+                        logger.serialNumber = int.Parse(serialHex, NumberStyles.HexNumber).ToString();
 
                         switch (data[0].Substring(53, 2))
                         {
