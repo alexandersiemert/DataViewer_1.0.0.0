@@ -508,6 +508,57 @@ namespace DataViewer_1._0._0._0
             }
         }
 
+        private string LoadRawPacketFromFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                return null;
+            }
+
+            string content = File.ReadAllText(filePath);
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return null;
+            }
+
+            string hexStream = ExtractHexStream(content);
+            if (string.IsNullOrWhiteSpace(hexStream))
+            {
+                return null;
+            }
+
+            int startIndex = FindAlignedMarker(hexStream, "AAAA", 4);
+            if (startIndex < 0)
+            {
+                startIndex = hexStream.IndexOf("AAAA", StringComparison.Ordinal);
+                if (startIndex < 0)
+                {
+                    return null;
+                }
+            }
+
+            return startIndex > 0 ? hexStream.Substring(startIndex) : hexStream;
+        }
+
+        private static string ExtractHexStream(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(content.Length);
+            foreach (char ch in content)
+            {
+                if (Uri.IsHexDigit(ch))
+                {
+                    builder.Append(char.ToUpperInvariant(ch));
+                }
+            }
+
+            return builder.ToString();
+        }
+
         private static string CreateFilePortName(string filePath)
         {
             string baseName = System.IO.Path.GetFileNameWithoutExtension(filePath);
@@ -3847,6 +3898,79 @@ namespace DataViewer_1._0._0._0
             TreeViewManager.SetSeriesStates(showAltitude, showTemperature, showAccAbs, showAccX, showAccY, showAccZ);
             UpdateSeriesMenuChecks();
             WpfPlot1.Refresh();
+        }
+
+        private void menuItemImportRaw_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = "Raw Logger Data (*.raw;*.txt;*.log;*.dat)|*.raw;*.txt;*.log;*.dat|All files (*.*)|*.*",
+                Multiselect = true
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            foreach (string filePath in dialog.FileNames)
+            {
+                try
+                {
+                    string rawPacket = LoadRawPacketFromFile(filePath);
+                    if (string.IsNullOrWhiteSpace(rawPacket))
+                    {
+                        MessageBox.Show("Invalid raw file: " + filePath);
+                        continue;
+                    }
+
+                    string portName = CreateFilePortName(filePath);
+                    string fileName = System.IO.Path.GetFileName(filePath);
+                    string fileBaseName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+
+                    DataLogger logger = new DataLogger
+                    {
+                        id = "RAW",
+                        serialNumber = string.IsNullOrWhiteSpace(fileBaseName) ? "Unknown" : fileBaseName
+                    };
+
+                    DataLoggerManager.AddLogger(logger, portName);
+
+                    string displayName = $"{logger.id ?? "Raw"} No. {logger.serialNumber ?? "Unknown"} (File: {fileName})";
+                    TreeViewManager.AddTreeViewItem(portName, displayName);
+                    TreeViewItem treeItem = TreeViewManager.FindTreeViewItem(portName);
+                    if (treeItem != null)
+                    {
+                        treeItem.ContextMenu = CreateFileItemContextMenu(portName);
+                    }
+
+                    List<Messreihe> seriesList = DekodiereDatenpaket(rawPacket, portName);
+                    if (seriesList == null || seriesList.Count == 0)
+                    {
+                        MessageBox.Show("No data found in file: " + filePath);
+                        TreeViewManager.RemoveTreeViewItem(portName);
+                        DataLoggerManager.RemoveLogger(portName);
+                        continue;
+                    }
+
+                    measurementSeriesByPort[portName] = seriesList;
+                    filePortNames.Add(portName);
+
+                    if (string.IsNullOrWhiteSpace(currentPortName) || currentSeriesIndex < 0)
+                    {
+                        currentPortName = portName;
+                        currentSeriesIndex = 0;
+                        PlotData(seriesList, 0);
+                        UpdateDeviceInfo(portName);
+                        TreeViewManager.SelectSubItem(portName, 0);
+                        SyncSeriesStateFromTreeView(portName, 0);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Raw file import failed: " + ex.Message);
+                }
+            }
         }
 
         private void menuItemOpen_Click(object sender, RoutedEventArgs e)
