@@ -710,6 +710,7 @@ namespace DataViewer_1._0._0._0
             if (hoverLabel != null)
             {
                 hoverLabel.LabelFontSize = HoverTooltipFontSize;
+                hoverLabel.LabelLineSpacing = HoverTooltipFontSize * 1.2f;
             }
         }
 
@@ -2395,7 +2396,12 @@ namespace DataViewer_1._0._0._0
                 ? y.ToString("F2")
                 : $"{y:F2} {unit}";
 
-            return $"{seriesName}\nValue: {yLabel}\nTime: {FormatXAxisLabel(x)}";
+            return string.Join(Environment.NewLine, new[]
+            {
+                seriesName,
+                $"Value: {yLabel}",
+                $"Time: {FormatXAxisLabel(x)}"
+            });
         }
 
         private void UpdateHoverLabelPlacement(ScottPlot.Pixel anchorPixel)
@@ -2700,6 +2706,7 @@ namespace DataViewer_1._0._0._0
                 hoverLabel.LabelBorderColor = Colors.DimGray;
                 hoverLabel.LabelBorderWidth = 1;
                 hoverLabel.LabelFontSize = HoverTooltipFontSize;
+                hoverLabel.LabelLineSpacing = HoverTooltipFontSize * 1.2f;
                 hoverLabel.OffsetX = 8;
                 hoverLabel.OffsetY = -8;
                 hoverLabel.IsVisible = false;
