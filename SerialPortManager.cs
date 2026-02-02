@@ -9,11 +9,32 @@ using System.Threading;
 using System.Windows.Threading;
 using System.Windows;
 using System.Timers;
+using System.Globalization;
 
 namespace DataViewer_1._0._0._0
 {
     public class SerialPortManager : IDisposable
     {
+        public sealed class LoggerReadProgress
+        {
+            public LoggerReadProgress(char command, long receivedHexChars, long expectedHexChars, bool isIndeterminate, bool isComplete, bool isError)
+            {
+                Command = command;
+                ReceivedHexChars = receivedHexChars;
+                ExpectedHexChars = expectedHexChars;
+                IsIndeterminate = isIndeterminate;
+                IsComplete = isComplete;
+                IsError = isError;
+            }
+
+            public char Command { get; }
+            public long ReceivedHexChars { get; }
+            public long ExpectedHexChars { get; }
+            public bool IsIndeterminate { get; }
+            public bool IsComplete { get; }
+            public bool IsError { get; }
+        }
+
         //Neuen SerialPort anlegen
         private SerialPort serialPort;
 
@@ -28,6 +49,17 @@ namespace DataViewer_1._0._0._0
 
         //Verlinkung zum DataReceived Event der Instanz des SerialPorts im Main Code mit Übergabe der complete Message
         public event Action<string, string[]> DataReceived;
+        public event Action<string, LoggerReadProgress> LoggerReadProgressChanged;
+
+        private const int LoggerAddressCount = 0x4000;
+        private const int LoggerBytesPerAddress = 128;
+        private char? activeEchoCommand;
+        private bool loggerReadActive;
+        private bool loggerHeaderParsed;
+        private int loggerPayloadStartIndex = -1;
+        private int loggerLastCountedIndex;
+        private long loggerExpectedHexChars;
+        private long loggerReceivedHexChars;
  
         //Initialisiere SerialPort
         public SerialPortManager(string portName)
@@ -82,7 +114,9 @@ namespace DataViewer_1._0._0._0
         {
             try
             {
+                ResetReceiveState();
                 serialPort.Write(command);
+                PrepareReceiveState(command);
                 StartDataReception();
             }
             catch
@@ -104,6 +138,20 @@ namespace DataViewer_1._0._0._0
                 StartDataReception();
 
                 // Bestimmen des Echo-Befehls und Setzen der erwarteten Paketzahl
+                if (activeEchoCommand == null && receivedData.Length > 0)
+                {
+                    activeEchoCommand = receivedData[0];
+                }
+
+                if (activeEchoCommand == 'G' || activeEchoCommand == 'S')
+                {
+                    if (ProcessLoggerData())
+                    {
+                        FinishReceive();
+                    }
+                    return;
+                }
+
                 if (receivedData.Length > 0 && expectedPacketCount == 0)
                 {
                     char echoCommand = receivedData[0];
@@ -111,12 +159,6 @@ namespace DataViewer_1._0._0._0
                     {
                         case 'I':
                             expectedPacketCount = 2;
-                            break;
-                        case 'S':
-                            expectedPacketCount = 4;
-                            break;
-                        case 'G':
-                            expectedPacketCount = 4;
                             break;
                         default:
                             // Umgang mit unbekanntem Echo-Befehl
@@ -134,14 +176,7 @@ namespace DataViewer_1._0._0._0
                     }
                     if (packets.Length >= expectedPacketCount) // -1, weil das letzte Element leer sein könnte
                     {
-                        // Stoppe Timeout Timer bei komplettem Datenempfang
-                        StopDataReception();
-                        // Zurücksetzen des empfangenen Datenstrings
-                        receivedData = "";
-                        // Zurücksetzen für den nächsten Empfang
-                        expectedPacketCount = 0;
-                        // Verlinke das komplette Datenpaket an das Data Received Event der jeweiligen Instanz des SerialPorts
-                        DataReceived?.Invoke(serialPort.PortName, packets);
+                        FinishReceive(packets);
                     }
                 }
             }
@@ -164,10 +199,209 @@ namespace DataViewer_1._0._0._0
             dataReceiveTimer.Stop();
         }
 
+        private void PrepareReceiveState(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                return;
+            }
+
+            activeEchoCommand = command[0];
+            if (activeEchoCommand == 'G' || activeEchoCommand == 'S')
+            {
+                loggerReadActive = true;
+                loggerHeaderParsed = false;
+                loggerPayloadStartIndex = -1;
+                loggerLastCountedIndex = 0;
+                loggerExpectedHexChars = 0;
+                loggerReceivedHexChars = 0;
+                NotifyLoggerProgress(activeEchoCommand.Value, 0, 0, true, false, false);
+            }
+        }
+
+        private bool ProcessLoggerData()
+        {
+            if (!loggerReadActive)
+            {
+                return false;
+            }
+
+            if (!loggerHeaderParsed)
+            {
+                if (!TryParseLoggerHeader(out int payloadStartIndex, out long expectedHexChars))
+                {
+                    return false;
+                }
+
+                loggerHeaderParsed = true;
+                loggerPayloadStartIndex = payloadStartIndex;
+                loggerExpectedHexChars = expectedHexChars;
+                loggerReceivedHexChars = CountHexChars(receivedData, payloadStartIndex, receivedData.Length);
+                loggerLastCountedIndex = receivedData.Length;
+            }
+            else if (loggerLastCountedIndex < receivedData.Length)
+            {
+                loggerReceivedHexChars += CountHexChars(receivedData, loggerLastCountedIndex, receivedData.Length);
+                loggerLastCountedIndex = receivedData.Length;
+            }
+
+            bool isComplete = loggerExpectedHexChars > 0 && loggerReceivedHexChars >= loggerExpectedHexChars;
+            NotifyLoggerProgress(activeEchoCommand ?? '?', loggerReceivedHexChars, loggerExpectedHexChars, loggerExpectedHexChars <= 0, isComplete, false);
+            return isComplete;
+        }
+
+        private bool TryParseLoggerHeader(out int payloadStartIndex, out long expectedHexChars)
+        {
+            payloadStartIndex = -1;
+            expectedHexChars = 0;
+
+            int line1End = receivedData.IndexOf("\r\n", StringComparison.Ordinal);
+            if (line1End < 0)
+            {
+                return false;
+            }
+
+            int line2Start = line1End + 2;
+            int line2End = receivedData.IndexOf("\r\n", line2Start, StringComparison.Ordinal);
+            if (line2End < 0)
+            {
+                return false;
+            }
+
+            string line1 = receivedData.Substring(0, line1End).Trim();
+            string line2 = receivedData.Substring(line2Start, line2End - line2Start).Trim();
+
+            if (!TryParseStartAddress(line1, out int startAddress))
+            {
+                return false;
+            }
+
+            if (!TryParseEndAddress(line2, out int endAddress))
+            {
+                return false;
+            }
+
+            long addressCount = startAddress <= endAddress
+                ? (endAddress - startAddress + 1L)
+                : (LoggerAddressCount - startAddress) + (endAddress + 1L);
+
+            long bytesExpected = addressCount * LoggerBytesPerAddress;
+            expectedHexChars = bytesExpected * 2L;
+            payloadStartIndex = line2End + 2;
+            return true;
+        }
+
+        private static bool TryParseStartAddress(string line, out int address)
+        {
+            address = 0;
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return false;
+            }
+
+            string trimmed = line.Trim();
+            int startIndex = 0;
+            if (trimmed.Length >= 5 && (trimmed[0] == 'G' || trimmed[0] == 'S'))
+            {
+                startIndex = 1;
+            }
+
+            if (trimmed.Length < startIndex + 4)
+            {
+                return false;
+            }
+
+            string hex = trimmed.Substring(startIndex, 4);
+            return int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out address);
+        }
+
+        private static bool TryParseEndAddress(string line, out int address)
+        {
+            address = 0;
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return false;
+            }
+
+            string trimmed = line.Trim();
+            if (trimmed.Length < 4)
+            {
+                return false;
+            }
+
+            string hex = trimmed.Substring(0, 4);
+            return int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out address);
+        }
+
+        private static long CountHexChars(string data, int startIndex, int endIndex)
+        {
+            if (string.IsNullOrEmpty(data) || startIndex >= endIndex)
+            {
+                return 0;
+            }
+
+            int safeStart = Math.Max(0, startIndex);
+            int safeEnd = Math.Min(data.Length, endIndex);
+            long count = 0;
+            for (int i = safeStart; i < safeEnd; i++)
+            {
+                char c = data[i];
+                if ((c >= '0' && c <= '9') ||
+                    (c >= 'A' && c <= 'F') ||
+                    (c >= 'a' && c <= 'f'))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private void NotifyLoggerProgress(char command, long receivedHexChars, long expectedHexChars, bool isIndeterminate, bool isComplete, bool isError)
+        {
+            LoggerReadProgressChanged?.Invoke(serialPort.PortName, new LoggerReadProgress(command, receivedHexChars, expectedHexChars, isIndeterminate, isComplete, isError));
+        }
+
+        private void FinishReceive()
+        {
+            var packets = receivedData.ToString().Split(new[] { "\r\n" }, StringSplitOptions.None);
+            foreach (var packet in packets)
+            {
+                Debug.WriteLine(packet);
+            }
+            FinishReceive(packets);
+        }
+
+        private void FinishReceive(string[] packets)
+        {
+            StopDataReception();
+            receivedData = "";
+            expectedPacketCount = 0;
+            activeEchoCommand = null;
+            loggerReadActive = false;
+            loggerHeaderParsed = false;
+            loggerPayloadStartIndex = -1;
+            loggerLastCountedIndex = 0;
+            loggerExpectedHexChars = 0;
+            loggerReceivedHexChars = 0;
+            DataReceived?.Invoke(serialPort.PortName, packets);
+        }
+
             // Event wenn Timeout Timer abgelaufen
         private void DataReceiveTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (loggerReadActive && loggerHeaderParsed && loggerReceivedHexChars > 0 && receivedData.EndsWith("\r\n"))
+            {
+                // Treat timeout after a clean line ending as end-of-data.
+                FinishReceive();
+                return;
+            }
+
             ShowError("Timeout: " + serialPort.PortName + " not responding.", "COM-Port Error");
+            if (loggerReadActive)
+            {
+                NotifyLoggerProgress(activeEchoCommand ?? '?', loggerReceivedHexChars, loggerExpectedHexChars, loggerExpectedHexChars <= 0, false, true);
+            }
             // Timeout Timer anhalten
             ResetReceiveState();
         }
@@ -176,6 +410,13 @@ namespace DataViewer_1._0._0._0
         {
             receivedData = "";
             expectedPacketCount = 0;
+            activeEchoCommand = null;
+            loggerReadActive = false;
+            loggerHeaderParsed = false;
+            loggerPayloadStartIndex = -1;
+            loggerLastCountedIndex = 0;
+            loggerExpectedHexChars = 0;
+            loggerReceivedHexChars = 0;
             StopDataReception();
         }
 

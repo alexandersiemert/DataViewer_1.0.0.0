@@ -294,11 +294,25 @@
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20"/>
+                    <RowDefinition Height="20"/>
                     <RowDefinition/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
+                <Border Grid.Row="0" BorderBrush="Black" BorderThickness="0.4" Background="#FFF1F4F9">
+                    <Grid Margin="6,0,6,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="textBlockLoggerStatus" Text="Ready" VerticalAlignment="Center"/>
+                        <ProgressBar x:Name="progressBarLogger" Grid.Column="1" Height="12" Minimum="0" Maximum="100" Value="0" Margin="8,0,8,0"/>
+                        <TextBlock x:Name="textBlockLoggerPercent" Grid.Column="2" Text="" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="1" BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <fa:ImageAwesome Icon="Crosshairs" Margin="5,3,0,3" Rotation="90"/>
                         <TextBlock Text="Crosshair" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -318,9 +332,9 @@
                     </StackPanel>
                 </Border>
 
-                <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Row="1"/>
+                <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Row="2"/>
 
-                <Border Grid.Row="2" BorderBrush="Transparent" BorderThickness="0.4">
+                <Border Grid.Row="3" BorderBrush="Transparent" BorderThickness="0.4">
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <GroupBox Height="Auto" Header="Altitude Axis">
                             <StackPanel Orientation="Horizontal">

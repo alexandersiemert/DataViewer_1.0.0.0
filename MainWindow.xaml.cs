@@ -2855,6 +2855,7 @@ namespace DataViewer_1._0._0._0
             foreach (SerialPortManager manager in serialPortManagers.Values)
             {
                 manager.DataReceived -= OnDataReceived;
+                manager.LoggerReadProgressChanged -= HandleLoggerReadProgress;
                 manager.Dispose();
             }
             serialPortManagers.Clear();
@@ -2875,7 +2876,197 @@ namespace DataViewer_1._0._0._0
             }
 
             manager.OpenPort();
+            if (string.Equals(command, "G", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(command, "S", StringComparison.OrdinalIgnoreCase))
+            {
+                BeginLoggerReadStatus(portName, command[0]);
+            }
             manager.SendCommand(command);
+        }
+
+        private void BeginLoggerReadStatus(string portName, char command)
+        {
+            string label = GetLoggerCommandLabel(command);
+            if (textBlockLoggerStatus != null)
+            {
+                textBlockLoggerStatus.Text = string.IsNullOrWhiteSpace(label)
+                    ? $"Reading {portName}..."
+                    : $"{label} {portName}...";
+            }
+
+            if (progressBarLogger != null)
+            {
+                progressBarLogger.IsIndeterminate = true;
+                progressBarLogger.Value = 0;
+            }
+
+            if (textBlockLoggerPercent != null)
+            {
+                textBlockLoggerPercent.Text = "";
+            }
+        }
+
+        private void HandleLoggerReadProgress(string portName, SerialPortManager.LoggerReadProgress progress)
+        {
+            if (progress == null)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                UpdateLoggerProgressUi(portName, progress);
+            }));
+        }
+
+        private void UpdateLoggerProgressUi(string portName, SerialPortManager.LoggerReadProgress progress)
+        {
+            if (progressBarLogger == null || textBlockLoggerStatus == null || textBlockLoggerPercent == null)
+            {
+                return;
+            }
+
+            string label = GetLoggerCommandLabel(progress.Command);
+            if (progress.IsError)
+            {
+                progressBarLogger.IsIndeterminate = false;
+                progressBarLogger.Value = 0;
+                textBlockLoggerPercent.Text = "Error";
+                textBlockLoggerStatus.Text = string.IsNullOrWhiteSpace(label)
+                    ? $"Read failed ({portName})."
+                    : $"{label} {portName} failed.";
+                return;
+            }
+
+            if (progress.IsIndeterminate || progress.ExpectedHexChars <= 0)
+            {
+                progressBarLogger.IsIndeterminate = true;
+                progressBarLogger.Value = 0;
+                textBlockLoggerPercent.Text = "";
+                textBlockLoggerStatus.Text = string.IsNullOrWhiteSpace(label)
+                    ? $"Reading {portName}..."
+                    : $"{label} {portName}...";
+                return;
+            }
+
+            double percent = progress.ExpectedHexChars > 0
+                ? (double)progress.ReceivedHexChars / progress.ExpectedHexChars * 100.0
+                : 0.0;
+
+            if (percent > 100.0)
+            {
+                percent = 100.0;
+            }
+            else if (percent < 0.0)
+            {
+                percent = 0.0;
+            }
+
+            progressBarLogger.IsIndeterminate = false;
+            progressBarLogger.Value = percent;
+            textBlockLoggerPercent.Text = $"{percent:0}%";
+
+            long receivedBytes = progress.ReceivedHexChars / 2;
+            long expectedBytes = progress.ExpectedHexChars / 2;
+            string receivedLabel = FormatBytes(receivedBytes);
+            string expectedLabel = FormatBytes(expectedBytes);
+            textBlockLoggerStatus.Text = string.IsNullOrWhiteSpace(label)
+                ? $"{portName}: {receivedLabel} / {expectedLabel}"
+                : $"{label} {portName}: {receivedLabel} / {expectedLabel}";
+        }
+
+        private void SetLoggerReadComplete(string portName, char command, int seriesCount)
+        {
+            if (progressBarLogger == null || textBlockLoggerStatus == null || textBlockLoggerPercent == null)
+            {
+                return;
+            }
+
+            string label = GetLoggerCommandLabel(command);
+            progressBarLogger.IsIndeterminate = false;
+            progressBarLogger.Value = 100;
+            textBlockLoggerPercent.Text = "100%";
+
+            if (seriesCount <= 0)
+            {
+                textBlockLoggerStatus.Text = string.IsNullOrWhiteSpace(label)
+                    ? $"{portName}: no data."
+                    : $"{label} {portName}: no data.";
+            }
+            else
+            {
+                textBlockLoggerStatus.Text = string.IsNullOrWhiteSpace(label)
+                    ? $"{portName}: read complete ({seriesCount} series)."
+                    : $"{label} {portName}: read complete ({seriesCount} series).";
+            }
+        }
+
+        private static string GetLoggerCommandLabel(char command)
+        {
+            switch (char.ToUpperInvariant(command))
+            {
+                case 'G':
+                    return "Read all";
+                case 'S':
+                    return "Read last";
+                default:
+                    return null;
+            }
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            const double kilo = 1024.0;
+            const double mega = 1024.0 * 1024.0;
+
+            if (bytes >= mega)
+            {
+                return (bytes / mega).ToString("F2") + " MB";
+            }
+
+            if (bytes >= kilo)
+            {
+                return (bytes / kilo).ToString("F1") + " KB";
+            }
+
+            return bytes + " B";
+        }
+
+        private static string ExtractLoggerPayload(string[] packets)
+        {
+            if (packets == null || packets.Length < 3)
+            {
+                return null;
+            }
+
+            StringBuilder builder = new StringBuilder();
+            int startIndex = 2;
+            for (int i = 2; i < packets.Length; i++)
+            {
+                string packet = packets[i];
+                if (string.IsNullOrEmpty(packet))
+                {
+                    continue;
+                }
+
+                if (packet.IndexOf("AAAA", StringComparison.Ordinal) >= 0)
+                {
+                    startIndex = i;
+                    break;
+                }
+            }
+
+            for (int i = startIndex; i < packets.Length; i++)
+            {
+                string packet = packets[i];
+                if (string.IsNullOrEmpty(packet))
+                {
+                    continue;
+                }
+                builder.Append(packet);
+            }
+
+            return builder.ToString();
         }
 
         private void UpdateDeviceInfo(string portName)
@@ -4415,6 +4606,7 @@ namespace DataViewer_1._0._0._0
                     if (serialPortManagers.TryGetValue(removedPort, out SerialPortManager manager))
                     {
                         manager.DataReceived -= OnDataReceived;
+                        manager.LoggerReadProgressChanged -= HandleLoggerReadProgress;
                         manager.Dispose();
                         serialPortManagers.Remove(removedPort);
                     }
@@ -4437,6 +4629,7 @@ namespace DataViewer_1._0._0._0
                     // Erstelle Port f?r den gefundenen Logger
                     SerialPortManager manager = new SerialPortManager(addedPort);
                     manager.DataReceived += OnDataReceived;
+                    manager.LoggerReadProgressChanged += HandleLoggerReadProgress;
                     serialPortManagers[addedPort] = manager;
 
                     manager.OpenPort();
@@ -4626,13 +4819,14 @@ namespace DataViewer_1._0._0._0
                         break;
                     case 'S': // Letzte Aufnahme auslesen
                     case 'G': // Gesamten Speicher auslesen
-                        if (data.Length <= 3 || string.IsNullOrEmpty(data[3]))
+                        string payload = ExtractLoggerPayload(data);
+                        if (string.IsNullOrEmpty(payload))
                         {
                             MessageBox.Show("Invalid data response from " + portName);
                             break;
                         }
 
-                        List<Messreihe> series = DekodiereDatenpaket(data[3], portName);
+                        List<Messreihe> series = DekodiereDatenpaket(payload, portName);
 
                         //Pr?fe ob Daten enthalten sind (keine Daten => series = null)
                         if (series != null && series.Count > 0)
@@ -4650,6 +4844,7 @@ namespace DataViewer_1._0._0._0
                             MessageBox.Show("No data!");
                         }
 
+                        SetLoggerReadComplete(portName, echoCommand, series?.Count ?? 0);
                         break;
                     default:
                         // Umgang mit unbekanntem Echo-Befehl
