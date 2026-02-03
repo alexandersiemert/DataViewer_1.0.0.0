@@ -22,5 +22,17 @@ namespace DataViewer_1._0._0._0.Properties {
                 return defaultInstance;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool PromptSaveRawData {
+            get {
+                return ((bool)(this["PromptSaveRawData"]));
+            }
+            set {
+                this["PromptSaveRawData"] = value;
+            }
+        }
     }
 }

@@ -154,6 +154,11 @@
                         <MenuItem x:Name="menuItemSeriesAccY" Header="Acc Y" IsCheckable="True" IsChecked="True" Tag="AccY" Click="menuItemSeries_Click"/>
                         <MenuItem x:Name="menuItemSeriesAccZ" Header="Acc Z" IsCheckable="True" IsChecked="True" Tag="AccZ" Click="menuItemSeries_Click"/>
                     </MenuItem>
+                    <Separator/>
+                    <MenuItem x:Name="menuItemPromptSaveRawData"
+                              Header="Prompt to save raw data"
+                              IsCheckable="True"
+                              Click="menuItemPromptSaveRawData_Click"/>
                 </MenuItem>
                 <MenuItem Header="Help">
                     <MenuItem Header="Docs" Click="menuItemHelpDocs_Click">

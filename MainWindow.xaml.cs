@@ -229,6 +229,7 @@ namespace DataViewer_1._0._0._0
             //Timer initialisieren
             InitTimer();
 
+            UpdatePromptSaveRawDataMenuItem();
             UpdateUnitMenuChecks();
             UpdateUnitTextBlocks();
             UpdateSmoothingTextBoxes();
@@ -3775,6 +3776,157 @@ namespace DataViewer_1._0._0._0
             WpfPlot1.Refresh();
         }
 
+        private void menuItemPromptSaveRawData_Click(object sender, RoutedEventArgs e)
+        {
+            if (menuItemPromptSaveRawData == null)
+            {
+                return;
+            }
+
+            Properties.Settings.Default.PromptSaveRawData = menuItemPromptSaveRawData.IsChecked;
+            Properties.Settings.Default.Save();
+        }
+
+        private void UpdatePromptSaveRawDataMenuItem()
+        {
+            if (menuItemPromptSaveRawData == null)
+            {
+                return;
+            }
+
+            menuItemPromptSaveRawData.IsChecked = Properties.Settings.Default.PromptSaveRawData;
+        }
+
+        private void PromptToSaveRawDataIfNeeded(string portName, string payload, int seriesCount)
+        {
+            if (!Properties.Settings.Default.PromptSaveRawData)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                return;
+            }
+
+            string message = BuildRawDataPromptMessage(portName, payload, seriesCount);
+            SaveRawDataDialog dialog = new SaveRawDataDialog(message)
+            {
+                Owner = this
+            };
+            dialog.ShowDialog();
+
+            switch (dialog.Result)
+            {
+                case SaveRawDataDialogResult.Yes:
+                    SaveRawLoggerData(payload, portName);
+                    break;
+                case SaveRawDataDialogResult.DontAskAgain:
+                    Properties.Settings.Default.PromptSaveRawData = false;
+                    Properties.Settings.Default.Save();
+                    UpdatePromptSaveRawDataMenuItem();
+                    break;
+            }
+        }
+
+        private string BuildRawDataPromptMessage(string portName, string payload, int seriesCount)
+        {
+            string baseMessage = string.IsNullOrWhiteSpace(portName)
+                ? "Rohdaten aus dem Logger speichern?"
+                : $"Rohdaten aus {portName} speichern?";
+
+            StringBuilder builder = new StringBuilder(baseMessage);
+            if (seriesCount > 0)
+            {
+                builder.AppendLine();
+                builder.Append("Serien: ");
+                builder.Append(seriesCount);
+            }
+
+            long byteCount = Math.Max(0, payload.Length / 2);
+            if (byteCount > 0)
+            {
+                builder.AppendLine();
+                builder.Append("Groesse: ");
+                builder.Append(FormatBytes(byteCount));
+            }
+
+            return builder.ToString();
+        }
+
+        private void SaveRawLoggerData(string payload, string portName)
+        {
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                MessageBox.Show("No raw data to save.");
+                return;
+            }
+
+            DataLogger logger = DataLoggerManager.GetLogger(portName);
+            string fileName = BuildRawDataFileName(logger);
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = "Logger raw data (*.lgd)|*.lgd",
+                FileName = fileName,
+                DefaultExt = ".lgd",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            string filePath = EnsureLgdExtension(dialog.FileName);
+            if (!string.Equals(filePath, dialog.FileName, StringComparison.OrdinalIgnoreCase) &&
+                File.Exists(filePath))
+            {
+                MessageBoxResult overwrite = MessageBox.Show(
+                    "File already exists. Overwrite?",
+                    "Save raw data",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (overwrite != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            try
+            {
+                File.WriteAllText(filePath, payload, Encoding.ASCII);
+                MessageBox.Show("Raw data saved.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Save failed: " + ex.Message);
+            }
+        }
+
+        private string BuildRawDataFileName(DataLogger logger)
+        {
+            string model = SanitizeFileName(logger?.id ?? "UnknownModel");
+            string serialNumber = SanitizeFileName(logger?.serialNumber ?? "UnknownSerial");
+            string suffix = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            return $"{model}_{serialNumber}_Raw_{suffix}.lgd";
+        }
+
+        private static string EnsureLgdExtension(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                return filePath;
+            }
+
+            if (filePath.EndsWith(".lgd", StringComparison.OrdinalIgnoreCase))
+            {
+                return filePath;
+            }
+
+            return Path.ChangeExtension(filePath, ".lgd");
+        }
+
         private void TreeViewManager_SeriesToggleChanged(string seriesKey, bool isChecked)
         {
             switch (seriesKey)
@@ -4829,7 +4981,8 @@ namespace DataViewer_1._0._0._0
                         List<Messreihe> series = DekodiereDatenpaket(payload, portName);
 
                         //Pr?fe ob Daten enthalten sind (keine Daten => series = null)
-                        if (series != null && series.Count > 0)
+                        bool hasSeries = series != null && series.Count > 0;
+                        if (hasSeries)
                         {
                             measurementSeriesByPort[portName] = series;
                             currentPortName = portName;
@@ -4845,6 +4998,10 @@ namespace DataViewer_1._0._0._0
                         }
 
                         SetLoggerReadComplete(portName, echoCommand, series?.Count ?? 0);
+                        if (hasSeries)
+                        {
+                            PromptToSaveRawDataIfNeeded(portName, payload, series.Count);
+                        }
                         break;
                     default:
                         // Umgang mit unbekanntem Echo-Befehl

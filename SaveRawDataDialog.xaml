@@ -1,0 +1,37 @@
+<Window x:Class="DataViewer_1._0._0._0.SaveRawDataDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Rohdaten speichern"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
+        MinWidth="380">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="textBlockMessage"
+                   Text="Rohdaten aus dem Logger speichern?"
+                   TextWrapping="Wrap"
+                   Width="360" />
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Ja"
+                    Width="90"
+                    Margin="0,0,8,0"
+                    IsDefault="True"
+                    Click="Yes_Click" />
+            <Button Content="Nein"
+                    Width="90"
+                    Margin="0,0,8,0"
+                    IsCancel="True"
+                    Click="No_Click" />
+            <Button Content="Nicht mehr fragen"
+                    Width="140"
+                    Click="DontAsk_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
