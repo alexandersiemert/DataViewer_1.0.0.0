@@ -3904,7 +3904,7 @@ namespace DataViewer_1._0._0._0
         {
             OpenFileDialog dialog = new OpenFileDialog
             {
-                Filter = "Raw Logger Data (*.raw;*.txt;*.log;*.dat)|*.raw;*.txt;*.log;*.dat|All files (*.*)|*.*",
+                Filter = "Raw Logger Data (*.lgd)|*.lgd|All files (*.*)|*.*",
                 Multiselect = true
             };
 
