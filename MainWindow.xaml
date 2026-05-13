@@ -10,15 +10,20 @@
         Title="SIEMERT DataViewer 1.0.0" Height="600" Width="1050" MinHeight="450" MinWidth="1050" Icon="/Icons/Icon.png" Closed="Window_Closed">
 
 
-    <Grid>
+    <Border Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource StrokeBrush}"
+            BorderThickness="1"
+            CornerRadius="16"
+            Margin="12">
+    <Grid Margin="10">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="64"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <DockPanel Background="White">
+        <DockPanel Background="Transparent">
             <Menu DockPanel.Dock="Top">
 
                 <MenuItem Header="File">
@@ -171,8 +176,13 @@
             </Menu>
         </DockPanel>
 
-        <Border Grid.Row="1" Background="#38383D" BorderBrush="#272539" BorderThickness="0.2">
-            <Grid>
+        <Border Grid.Row="1"
+                Background="{DynamicResource SurfaceHeaderBrush}"
+                BorderBrush="{DynamicResource StrokeBrush}"
+                BorderThickness="1"
+                CornerRadius="12"
+                Margin="12,8,12,8">
+            <Grid Background="{DynamicResource SurfaceAltBrush}" Margin="0,0,8,0">
                 <Image Source="/Pictures/dataviewer.png" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,8,8,8"/>
 
 
@@ -224,16 +234,19 @@
                 <ColumnDefinition Width="170"/>
             </Grid.ColumnDefinitions>
 
-            <Grid>
+            <Grid Background="{DynamicResource SurfaceAltBrush}" Margin="0,0,8,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="28"/>
                     <RowDefinition/>
-                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="28"/>
                     <RowDefinition Height="250"/>
                 </Grid.RowDefinitions>
 
-                <Border BorderThickness="0.2" BorderBrush="#272539">
-                    <Grid Background="#FFCCD8E6">
+                <Border BorderThickness="1"
+                        BorderBrush="{DynamicResource StrokeBrush}"
+                        CornerRadius="10,10,0,0"
+                        Padding="6,2">
+                    <Grid Background="{DynamicResource SurfaceHeaderBrush}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -260,7 +273,14 @@
                 <TreeView x:Name="deviceListTreeView" Grid.Row="1">
                 </TreeView>
 
-                <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6" VerticalAlignment="Top" Height="20" Grid.Row="2">
+                <Border BorderBrush="{DynamicResource StrokeBrush}"
+                        BorderThickness="1"
+                        Background="{DynamicResource SurfaceHeaderBrush}"
+                        VerticalAlignment="Top"
+                        Height="28"
+                        CornerRadius="10"
+                        Padding="6,2"
+                        Grid.Row="2">
                     <StackPanel Orientation="Horizontal">
                         <fa:ImageAwesome Icon="InfoCircle" Margin="5,3,0,3"/>
                         <TextBlock Text="Device Info" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -291,14 +311,18 @@
 
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch"/>
 
-            <Grid Grid.Column="2">
+            <Grid Grid.Column="2" Background="{DynamicResource SurfaceBrush}" Margin="0,0,8,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="28"/>
                     <RowDefinition/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
+                <Border BorderBrush="{DynamicResource StrokeBrush}"
+                        BorderThickness="1"
+                        Background="{DynamicResource SurfaceHeaderBrush}"
+                        CornerRadius="10"
+                        Padding="6,2">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <fa:ImageAwesome Icon="Crosshairs" Margin="5,3,0,3" Rotation="90"/>
                         <TextBlock Text="Crosshair" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -320,7 +344,13 @@
 
                 <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Row="1"/>
 
-                <Border Grid.Row="2" BorderBrush="Transparent" BorderThickness="0.4">
+                <Border Grid.Row="2"
+                        BorderBrush="{DynamicResource StrokeBrush}"
+                        BorderThickness="1"
+                        Background="{DynamicResource SurfaceAltBrush}"
+                        CornerRadius="12"
+                        Padding="8"
+                        Margin="0,8,0,0">
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <GroupBox Height="Auto" Header="Altitude Axis">
                             <StackPanel Orientation="Horizontal">
@@ -475,15 +505,24 @@
             </Grid>
 
 
-            <Border Grid.Column="3" BorderBrush="Black" BorderThickness="0.4" Margin="0,-0.4,0,-0.4">
+            <Border Grid.Column="3"
+                    BorderBrush="{DynamicResource StrokeBrush}"
+                    BorderThickness="1"
+                    Background="{DynamicResource SurfaceAltBrush}"
+                    CornerRadius="12"
+                    Margin="8,0,12,12">
 
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="28"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
 
-                    <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
+                    <Border BorderBrush="{DynamicResource StrokeBrush}"
+                            BorderThickness="1"
+                            Background="{DynamicResource SurfaceHeaderBrush}"
+                            CornerRadius="12,12,0,0"
+                            Padding="6,2">
                         <StackPanel Orientation="Horizontal">
                             <fa:ImageAwesome Icon="Tachometer" Margin="5,3,0,3" Rotation="90"/>
                             <TextBlock Text="Measuring Data" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -712,6 +751,7 @@
         </Grid>
 
     </Grid>
+    </Border>
 </Window>
 
 
