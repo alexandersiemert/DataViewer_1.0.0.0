@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Installer-Ausgaben (Releases gehören nicht ins Repo)
+installer_out/

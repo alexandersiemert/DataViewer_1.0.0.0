@@ -1,0 +1,14 @@
+SIEMERT DataViewer
+Copyright (c) 2023-2026 SIEMERT. Alle Rechte vorbehalten.
+
+Diese Software und der zugehörige Quellcode sind Eigentum der SIEMERT und
+urheberrechtlich geschützt. Ohne vorherige schriftliche Genehmigung der SIEMERT
+ist es nicht gestattet, diese Software oder Teile davon zu kopieren, zu
+verändern, zu verbreiten oder öffentlich zugänglich zu machen.
+
+Die in dieser Software verwendeten Komponenten von Drittanbietern unterliegen
+ihren jeweiligen Lizenzbedingungen; siehe Docs/ThirdParty_Notices.txt.
+
+--------------------------------------------------------------------------------
+Hinweis: Diese Lizenz ist eine Vorlage. Bitte an die tatsächlichen rechtlichen
+Vorgaben der SIEMERT anpassen (z. B. kommerzielle EULA oder Open-Source-Lizenz).

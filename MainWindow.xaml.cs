@@ -94,6 +94,9 @@ namespace DataViewer_1._0._0._0
         const float HoverTooltipFontSize = 16f;
         const double MaxSmoothingSeconds = 300;
 
+        //Platzhalter für leere Anzeigewerte (statt "NaN")
+        const string EmptyValueText = "–";
+
         const double FeetPerMeter = 3.28083989501312;
         const double CelsiusToFahrenheitScale = 9.0 / 5.0;
         UnitMode currentUnitMode = UnitMode.Metric;
@@ -226,6 +229,13 @@ namespace DataViewer_1._0._0._0
         {
             InitializeComponent();
 
+            //Fenstertitel immer konsistent aus der Assembly-Version ableiten
+            System.Version appVersion = Assembly.GetExecutingAssembly().GetName().Version;
+            if (appVersion != null)
+            {
+                Title = $"SIEMERT DataViewer {appVersion.Major}.{appVersion.Minor}.{appVersion.Build}";
+            }
+
             //Timer initialisieren
             InitTimer();
 
@@ -239,7 +249,10 @@ namespace DataViewer_1._0._0._0
 
             //TreeView initialisieren für DeviceList
             TreeViewManager.Initialize(deviceListTreeView);
+            deviceListTreeView.SelectedItemChanged += DeviceTree_SelectedItemChanged;
+            UpdateDeviceActionButtons();
             TreeViewManager.RequestCommand += HandlePortCommand;
+            TreeViewManager.RequestExportSeries += TreeViewManager_RequestExportSeries;
             TreeViewManager.SeriesToggleChanged += TreeViewManager_SeriesToggleChanged;
             TreeViewManager.SetSeriesStates(showAltitude, showTemperature, showAccAbs, showAccX, showAccY, showAccZ);
 
@@ -723,6 +736,42 @@ namespace DataViewer_1._0._0._0
         private void SetPlotVisibility(bool hasData)
         {
             WpfPlot1.Visibility = hasData ? Visibility.Visible : Visibility.Collapsed;
+            //Empty-State anzeigen solange keine Aufnahme geladen ist
+            if (emptyStatePanel != null)
+            {
+                emptyStatePanel.Visibility = hasData ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            //Werkzeuge und Schnellaktionen nur anbieten, wenn Daten geladen sind
+            if (toggleButtonMeasuringCursor != null)
+            {
+                toggleButtonMeasuringCursor.IsEnabled = hasData;
+            }
+            if (toggleButtonCrosshair != null)
+            {
+                toggleButtonCrosshair.IsEnabled = hasData;
+            }
+            if (toggleButtonMarker != null)
+            {
+                toggleButtonMarker.IsEnabled = hasData;
+            }
+            if (toggleButtonLegend != null)
+            {
+                toggleButtonLegend.IsEnabled = hasData;
+            }
+            if (buttonSaveQuick != null)
+            {
+                buttonSaveQuick.IsEnabled = hasData;
+            }
+            if (buttonExportCsvQuick != null)
+            {
+                buttonExportCsvQuick.IsEnabled = hasData;
+            }
+            if (axisControlsPanel != null)
+            {
+                axisControlsPanel.IsEnabled = hasData;
+                axisControlsPanel.Opacity = hasData ? 1.0 : 0.55;
+            }
         }
 
         private void SetAxisFontSizes(ScottPlot.IAxis axis, float labelSize, float tickSize)
@@ -2224,23 +2273,23 @@ namespace DataViewer_1._0._0._0
             }
 
             //Textboxen f?r Crosshair aktualisieren
-            textBoxCrossAlt.Text = InterpolateY(xh, yh, crosshairX.X).ToString("F2");
-            textBoxCrossTemp.Text = InterpolateY(xt, yt, crosshairX.X).ToString("F2");
-            textBoxCrossAcc.Text = InterpolateY(xa, ya, crosshairX.X).ToString("F2");
-            textBoxCrossAccX.Text = InterpolateY(xax, yax, crosshairX.X).ToString("F2");
-            textBoxCrossAccY.Text = InterpolateY(xay, yay, crosshairX.X).ToString("F2");
-            textBoxCrossAccZ.Text = InterpolateY(xaz, yaz, crosshairX.X).ToString("F2");
+            textBoxCrossAlt.Text = FormatMeasurementValue(InterpolateY(xh, yh, crosshairX.X));
+            textBoxCrossTemp.Text = FormatMeasurementValue(InterpolateY(xt, yt, crosshairX.X));
+            textBoxCrossAcc.Text = FormatMeasurementValue(InterpolateY(xa, ya, crosshairX.X));
+            textBoxCrossAccX.Text = FormatMeasurementValue(InterpolateY(xax, yax, crosshairX.X));
+            textBoxCrossAccY.Text = FormatMeasurementValue(InterpolateY(xay, yay, crosshairX.X));
+            textBoxCrossAccZ.Text = FormatMeasurementValue(InterpolateY(xaz, yaz, crosshairX.X));
         }
 
         //Textboxen für Crosshair leeren
         private void ClearCrosshairTextBoxes()
         {
-            textBoxCrossAlt.Text = double.NaN.ToString();
-            textBoxCrossTemp.Text = double.NaN.ToString();
-            textBoxCrossAcc.Text = double.NaN.ToString();
-            textBoxCrossAccX.Text = double.NaN.ToString();
-            textBoxCrossAccY.Text = double.NaN.ToString();
-            textBoxCrossAccZ.Text = double.NaN.ToString();
+            textBoxCrossAlt.Text = EmptyValueText;
+            textBoxCrossTemp.Text = EmptyValueText;
+            textBoxCrossAcc.Text = EmptyValueText;
+            textBoxCrossAccX.Text = EmptyValueText;
+            textBoxCrossAccY.Text = EmptyValueText;
+            textBoxCrossAccZ.Text = EmptyValueText;
         }
 
         private void UpdateCrosshairState()
@@ -2504,8 +2553,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccCursor1X.Text = double.NaN.ToString();
-                textBoxMeasAccCursor2X.Text = double.NaN.ToString();
+                textBoxMeasAccCursor1X.Text = EmptyValueText;
+                textBoxMeasAccCursor2X.Text = EmptyValueText;
             }
 
             if (xay != null && yay != null)
@@ -2515,8 +2564,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccCursor1Y.Text = double.NaN.ToString();
-                textBoxMeasAccCursor2Y.Text = double.NaN.ToString();
+                textBoxMeasAccCursor1Y.Text = EmptyValueText;
+                textBoxMeasAccCursor2Y.Text = EmptyValueText;
             }
 
             if (xaz != null && yaz != null)
@@ -2526,8 +2575,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccCursor1Z.Text = double.NaN.ToString();
-                textBoxMeasAccCursor2Z.Text = double.NaN.ToString();
+                textBoxMeasAccCursor1Z.Text = EmptyValueText;
+                textBoxMeasAccCursor2Z.Text = EmptyValueText;
             }
 
             /*
@@ -2550,48 +2599,48 @@ namespace DataViewer_1._0._0._0
         //Textboxen für Messungen leeren
         private void ClearMeasuringTextBoxes()
         {
-            textBoxMeasAltCursor1.Text = double.NaN.ToString();
-            textBoxMeasAltCursor2.Text = double.NaN.ToString();
-            textBoxMeasAltMin.Text = double.NaN.ToString();
-            textBoxMeasAltMax.Text = double.NaN.ToString();
-            textBoxMeasAltDelta.Text = double.NaN.ToString();
-            textBoxMeasAltAverage.Text = double.NaN.ToString();
-            textBoxMeasAltSpeed.Text = double.NaN.ToString();
+            textBoxMeasAltCursor1.Text = EmptyValueText;
+            textBoxMeasAltCursor2.Text = EmptyValueText;
+            textBoxMeasAltMin.Text = EmptyValueText;
+            textBoxMeasAltMax.Text = EmptyValueText;
+            textBoxMeasAltDelta.Text = EmptyValueText;
+            textBoxMeasAltAverage.Text = EmptyValueText;
+            textBoxMeasAltSpeed.Text = EmptyValueText;
 
-            textBoxMeasTempCursor1.Text = double.NaN.ToString();
-            textBoxMeasTempCursor2.Text = double.NaN.ToString();
-            textBoxMeasTempMin.Text = double.NaN.ToString();
-            textBoxMeasTempMax.Text = double.NaN.ToString();
-            textBoxMeasTempDelta.Text = double.NaN.ToString();
-            textBoxMeasTempAverage.Text = double.NaN.ToString();
+            textBoxMeasTempCursor1.Text = EmptyValueText;
+            textBoxMeasTempCursor2.Text = EmptyValueText;
+            textBoxMeasTempMin.Text = EmptyValueText;
+            textBoxMeasTempMax.Text = EmptyValueText;
+            textBoxMeasTempDelta.Text = EmptyValueText;
+            textBoxMeasTempAverage.Text = EmptyValueText;
 
-            textBoxMeasAccCursor1.Text = double.NaN.ToString();
-            textBoxMeasAccCursor2.Text = double.NaN.ToString();
-            textBoxMeasAccMin.Text = double.NaN.ToString();
-            textBoxMeasAccMax.Text = double.NaN.ToString();
-            textBoxMeasAccDelta.Text = double.NaN.ToString();
-            textBoxMeasAccAverage.Text = double.NaN.ToString();
+            textBoxMeasAccCursor1.Text = EmptyValueText;
+            textBoxMeasAccCursor2.Text = EmptyValueText;
+            textBoxMeasAccMin.Text = EmptyValueText;
+            textBoxMeasAccMax.Text = EmptyValueText;
+            textBoxMeasAccDelta.Text = EmptyValueText;
+            textBoxMeasAccAverage.Text = EmptyValueText;
 
-            textBoxMeasAccCursor1X.Text = double.NaN.ToString();
-            textBoxMeasAccCursor2X.Text = double.NaN.ToString();
-            textBoxMeasAccMinX.Text = double.NaN.ToString();
-            textBoxMeasAccMaxX.Text = double.NaN.ToString();
-            textBoxMeasAccDeltaX.Text = double.NaN.ToString();
-            textBoxMeasAccAverageX.Text = double.NaN.ToString();
+            textBoxMeasAccCursor1X.Text = EmptyValueText;
+            textBoxMeasAccCursor2X.Text = EmptyValueText;
+            textBoxMeasAccMinX.Text = EmptyValueText;
+            textBoxMeasAccMaxX.Text = EmptyValueText;
+            textBoxMeasAccDeltaX.Text = EmptyValueText;
+            textBoxMeasAccAverageX.Text = EmptyValueText;
 
-            textBoxMeasAccCursor1Y.Text = double.NaN.ToString();
-            textBoxMeasAccCursor2Y.Text = double.NaN.ToString();
-            textBoxMeasAccMinY.Text = double.NaN.ToString();
-            textBoxMeasAccMaxY.Text = double.NaN.ToString();
-            textBoxMeasAccDeltaY.Text = double.NaN.ToString();
-            textBoxMeasAccAverageY.Text = double.NaN.ToString();
+            textBoxMeasAccCursor1Y.Text = EmptyValueText;
+            textBoxMeasAccCursor2Y.Text = EmptyValueText;
+            textBoxMeasAccMinY.Text = EmptyValueText;
+            textBoxMeasAccMaxY.Text = EmptyValueText;
+            textBoxMeasAccDeltaY.Text = EmptyValueText;
+            textBoxMeasAccAverageY.Text = EmptyValueText;
 
-            textBoxMeasAccCursor1Z.Text = double.NaN.ToString();
-            textBoxMeasAccCursor2Z.Text = double.NaN.ToString();
-            textBoxMeasAccMinZ.Text = double.NaN.ToString();
-            textBoxMeasAccMaxZ.Text = double.NaN.ToString();
-            textBoxMeasAccDeltaZ.Text = double.NaN.ToString();
-            textBoxMeasAccAverageZ.Text = double.NaN.ToString();
+            textBoxMeasAccCursor1Z.Text = EmptyValueText;
+            textBoxMeasAccCursor2Z.Text = EmptyValueText;
+            textBoxMeasAccMinZ.Text = EmptyValueText;
+            textBoxMeasAccMaxZ.Text = EmptyValueText;
+            textBoxMeasAccDeltaZ.Text = EmptyValueText;
+            textBoxMeasAccAverageZ.Text = EmptyValueText;
         }
 
         private void UpdateMeasuringState()
@@ -2650,8 +2699,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccMinX.Text = double.NaN.ToString();
-                textBoxMeasAccMaxX.Text = double.NaN.ToString();
+                textBoxMeasAccMinX.Text = EmptyValueText;
+                textBoxMeasAccMaxX.Text = EmptyValueText;
             }
 
             if (yay != null)
@@ -2662,8 +2711,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccMinY.Text = double.NaN.ToString();
-                textBoxMeasAccMaxY.Text = double.NaN.ToString();
+                textBoxMeasAccMinY.Text = EmptyValueText;
+                textBoxMeasAccMaxY.Text = EmptyValueText;
             }
 
             if (yaz != null)
@@ -2674,8 +2723,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccMinZ.Text = double.NaN.ToString();
-                textBoxMeasAccMaxZ.Text = double.NaN.ToString();
+                textBoxMeasAccMinZ.Text = EmptyValueText;
+                textBoxMeasAccMaxZ.Text = EmptyValueText;
             }
 
             UpdateMeasuringCalculations();
@@ -2709,8 +2758,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccDeltaX.Text = double.NaN.ToString();
-                textBoxMeasAccAverageX.Text = double.NaN.ToString();
+                textBoxMeasAccDeltaX.Text = EmptyValueText;
+                textBoxMeasAccAverageX.Text = EmptyValueText;
             }
 
             if (yay != null)
@@ -2722,8 +2771,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccDeltaY.Text = double.NaN.ToString();
-                textBoxMeasAccAverageY.Text = double.NaN.ToString();
+                textBoxMeasAccDeltaY.Text = EmptyValueText;
+                textBoxMeasAccAverageY.Text = EmptyValueText;
             }
 
             if (yaz != null)
@@ -2735,8 +2784,8 @@ namespace DataViewer_1._0._0._0
             }
             else
             {
-                textBoxMeasAccDeltaZ.Text = double.NaN.ToString();
-                textBoxMeasAccAverageZ.Text = double.NaN.ToString();
+                textBoxMeasAccDeltaZ.Text = EmptyValueText;
+                textBoxMeasAccAverageZ.Text = EmptyValueText;
             }
         }
 
@@ -3286,7 +3335,7 @@ namespace DataViewer_1._0._0._0
         private string FormatMeasurementValue(double value)
         {
             return double.IsNaN(value) || double.IsInfinity(value)
-                ? double.NaN.ToString()
+                ? EmptyValueText
                 : value.ToString("F2");
         }
 
@@ -3968,6 +4017,7 @@ namespace DataViewer_1._0._0._0
                 }
                 catch (Exception ex)
                 {
+                    Logger.Error("Raw-Import fehlgeschlagen: " + filePath, ex);
                     MessageBox.Show("Raw file import failed: " + ex.Message);
                 }
             }
@@ -4037,6 +4087,7 @@ namespace DataViewer_1._0._0._0
                 }
                 catch (Exception ex)
                 {
+                    Logger.Error("Datei öffnen fehlgeschlagen: " + filePath, ex);
                     MessageBox.Show("File open failed: " + ex.Message);
                 }
             }
@@ -4105,6 +4156,7 @@ namespace DataViewer_1._0._0._0
             }
             catch (Exception ex)
             {
+                Logger.Error("Speichern fehlgeschlagen.", ex);
                 MessageBox.Show("Save failed: " + ex.Message);
             }
         }
@@ -4146,6 +4198,7 @@ namespace DataViewer_1._0._0._0
             }
             catch (Exception ex)
             {
+                Logger.Error("Speichern fehlgeschlagen.", ex);
                 MessageBox.Show("Save failed: " + ex.Message);
             }
         }
@@ -4153,6 +4206,31 @@ namespace DataViewer_1._0._0._0
         private void menuItemExportCsv_Click(object sender, RoutedEventArgs e)
         {
             if (!TryGetCurrentSeries(out Messreihe series, out string portName, out _))
+            {
+                MessageBox.Show("No data to export.");
+                return;
+            }
+
+            ExportSeriesToCsvInteractive(portName, series);
+        }
+
+        // Ausgelöst über das Kontextmenü einer Messreihe im Device-Tree
+        private void TreeViewManager_RequestExportSeries(string portName, int index)
+        {
+            if (string.IsNullOrWhiteSpace(portName) ||
+                !measurementSeriesByPort.TryGetValue(portName, out List<Messreihe> seriesList) ||
+                seriesList == null || index < 0 || index >= seriesList.Count)
+            {
+                MessageBox.Show("No data to export.");
+                return;
+            }
+
+            ExportSeriesToCsvInteractive(portName, seriesList[index]);
+        }
+
+        private void ExportSeriesToCsvInteractive(string portName, Messreihe series)
+        {
+            if (series == null)
             {
                 MessageBox.Show("No data to export.");
                 return;
@@ -4185,6 +4263,7 @@ namespace DataViewer_1._0._0._0
             }
             catch (Exception ex)
             {
+                Logger.Error("CSV-Export fehlgeschlagen.", ex);
                 MessageBox.Show("Export failed: " + ex.Message);
             }
         }
@@ -4212,6 +4291,116 @@ namespace DataViewer_1._0._0._0
             }
         }
 
+        private void menuItemClose_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        //################################################################################################################################
+        //                                                   SCHNELLAKTIONEN (sichtbare Buttons)
+        //################################################################################################################################
+
+        // Ermittelt den Ziel-Logger für die Read-Buttons: Auswahl im Tree, sonst das einzige angeschlossene Gerät
+        private bool TryGetReadTargetPort(out string portName)
+        {
+            if (TryGetSelectedLogger(out portName) && serialPortManagers.ContainsKey(portName))
+            {
+                return true;
+            }
+
+            if (serialPortManagers.Count == 1)
+            {
+                portName = serialPortManagers.Keys.First();
+                return true;
+            }
+
+            portName = null;
+            return false;
+        }
+
+        private void UpdateDeviceActionButtons()
+        {
+            bool hasTarget = TryGetReadTargetPort(out _);
+            if (buttonReadAll != null)
+            {
+                buttonReadAll.IsEnabled = hasTarget;
+            }
+            if (buttonReadLast != null)
+            {
+                buttonReadLast.IsEnabled = hasTarget;
+            }
+        }
+
+        private void DeviceTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            UpdateDeviceActionButtons();
+        }
+
+        private void buttonReadAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (TryGetReadTargetPort(out string portName))
+            {
+                HandlePortCommand(portName, "G");
+            }
+            else
+            {
+                MessageBox.Show("Select a connected logger in the device list first.", "Read", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void buttonReadLast_Click(object sender, RoutedEventArgs e)
+        {
+            if (TryGetReadTargetPort(out string portName))
+            {
+                HandlePortCommand(portName, "S");
+            }
+            else
+            {
+                MessageBox.Show("Select a connected logger in the device list first.", "Read", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void buttonSaveQuick_Click(object sender, RoutedEventArgs e)
+        {
+            menuItemSave_Click(sender, e);
+        }
+
+        private void buttonExportCsvQuick_Click(object sender, RoutedEventArgs e)
+        {
+            menuItemExportCsv_Click(sender, e);
+        }
+
+        private void buttonEmptyOpen_Click(object sender, RoutedEventArgs e)
+        {
+            menuItemOpen_Click(sender, e);
+        }
+
+        private void buttonEmptyImport_Click(object sender, RoutedEventArgs e)
+        {
+            menuItemImportRaw_Click(sender, e);
+        }
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+        //Titelleiste an das dunkle App-Chrome anpassen (Win10: Dark Mode, Win11: exakte Farbe)
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            try
+            {
+                IntPtr hwnd = new WindowInteropHelper(this).Handle;
+                int useDark = 1;
+                DwmSetWindowAttribute(hwnd, 20, ref useDark, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
+                int captionColor = 0x001D1610; // COLORREF (BGR) = #10161D
+                DwmSetWindowAttribute(hwnd, 35, ref captionColor, sizeof(int)); // DWMWA_CAPTION_COLOR (Win11)
+            }
+            catch
+            {
+                // Ältere Windows-Versionen unterstützen die Attribute nicht - Standard-Titelleiste behalten.
+            }
+        }
+
         private void menuItemHelpAbout_Click(object sender, RoutedEventArgs e)
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -4228,6 +4417,12 @@ namespace DataViewer_1._0._0._0
         //Measuring Cursor enable / disable
         private void toggleButtonMeasuringCursor_Checked(object sender, RoutedEventArgs e)
         {
+            //Hinweis im Measuring-Panel ausblenden, sobald das Werkzeug aktiv ist
+            if (measuringHintText != null)
+            {
+                measuringHintText.Visibility = Visibility.Collapsed;
+            }
+
             var limits = WpfPlot1.Plot.Axes.GetLimits();
             double span = limits.Right - limits.Left;
             double x1 = limits.Left + (span / 4);
@@ -4245,6 +4440,11 @@ namespace DataViewer_1._0._0._0
         }
         private void toggleButtonMeasuringCursor_Unchecked(object sender, RoutedEventArgs e)
         {
+            if (measuringHintText != null)
+            {
+                measuringHintText.Visibility = Visibility.Visible;
+            }
+
             if (measuringSpan != null)
             {
                 WpfPlot1.Plot.Remove(measuringSpan);
@@ -4261,6 +4461,12 @@ namespace DataViewer_1._0._0._0
         //Crosshair enable
         private void toggleButtonCrosshair_Checked(object sender, RoutedEventArgs e)
         {
+            //Readout-Leiste nur zeigen, wenn das Crosshair aktiv ist
+            if (crosshairReadoutBar != null)
+            {
+                crosshairReadoutBar.Visibility = Visibility.Visible;
+            }
+
             var limits = WpfPlot1.Plot.Axes.GetLimits();
             double xCenter = limits.Left + ((limits.Right - limits.Left) / 2);
             double yCenter = limits.Bottom + ((limits.Top - limits.Bottom) / 2);
@@ -4313,6 +4519,11 @@ namespace DataViewer_1._0._0._0
         //Crosshair disable
         private void toggleButtonCrosshair_Unchecked(object sender, RoutedEventArgs e)
         {
+            if (crosshairReadoutBar != null)
+            {
+                crosshairReadoutBar.Visibility = Visibility.Collapsed;
+            }
+
             if (crosshairX != null)
             {
                 WpfPlot1.Plot.Remove(crosshairX);
@@ -4778,6 +4989,7 @@ namespace DataViewer_1._0._0._0
                     buttonRefreshDeviceList.IsEnabled = true;
                 }
 
+                UpdateDeviceActionButtons();
                 isRefreshingDevices = false;
             }
         }
@@ -4981,6 +5193,7 @@ namespace DataViewer_1._0._0._0
         private void Window_Closed(object sender, EventArgs e)
         {
             TreeViewManager.RequestCommand -= HandlePortCommand;
+            TreeViewManager.RequestExportSeries -= TreeViewManager_RequestExportSeries;
             TreeViewManager.TriggerPlotData -= TriggerPlotData;
             TreeViewManager.SeriesToggleChanged -= TreeViewManager_SeriesToggleChanged;
             StopDeviceMonitoring();

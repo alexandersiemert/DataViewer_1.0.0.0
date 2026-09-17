@@ -6,15 +6,18 @@ Overview
 - Use Device List to select a device and recording to plot.
 
 Quick start
-1) File > Open: load *.sdvlog files.
-2) Device List: select a recording to plot.
-3) Settings > Series: show or hide series.
+1) Connect a SIEMERT logger via USB - it appears in the DEVICES panel.
+2) Press 'Read Last' (fast, latest recording) or 'Read All' (complete memory).
+   Alternative: File > Open to load *.sdvlog files, or the buttons shown in the plot area.
+3) Double-click a recording in the device tree to plot it.
+4) Settings > Series or the checkboxes in the tree: show or hide series.
 
-Plot and tools
-- Measuring Cursor: drag the span to get min/max/delta/average.
-- Crosshair: move the cursor to read values.
+Plot and tools (toolbar above the plot)
+- Measure: drag the span to get min/max/delta/average (values in the right panel).
+- Crosshair: move the cursor to read values (readout bar appears above the plot).
 - Marker: place or remove a marker.
 - Legend: toggle the legend display.
+- Save / Export CSV: quick access to save the current recording.
 
 Data management
 - File > Save: save a selected recording.

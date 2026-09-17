@@ -20,6 +20,7 @@ namespace DataViewer_1._0._0._0
     {
         // Definiere ein statisches Event um das Plotten von Daten in der Main anzustoßen
         public static event Action<string, int> TriggerPlotData;
+        public static event Action<string, int> RequestExportSeries;
         public static event Action<string, string> RequestCommand;
         public static event Action<string, bool> SeriesToggleChanged;
 
@@ -501,14 +502,8 @@ namespace DataViewer_1._0._0._0
                 RequestCommand?.Invoke(comPortName, "S");
             };
 
-            MenuItem menuItem3 = new MenuItem { Header = "Aktion einfügen" };
-            menuItem3.Click += (s, e) => { /* Logik für Aktion 3 */ };
-
             contextMenu.Items.Add(menuItem1);
             contextMenu.Items.Add(menuItem2);
-            contextMenu.Items.Add(menuItem3);
-
-            // Weitere Menüpunkte und Logik basierend auf dem itemType hinzufügen
 
             return contextMenu;
         }
@@ -521,55 +516,62 @@ namespace DataViewer_1._0._0._0
             MenuItem menuItem1 = new MenuItem { Header = "Plot Data" };
             menuItem1.Click += (s, e) =>
             {
-                if (s is MenuItem menuItem)
+                if (TryResolveSubItem(s, out string portName, out int index))
                 {
-                    // Finde das ContextMenu des MenuItems
-                    ContextMenu _contextMenu = menuItem.Parent as ContextMenu;
-                    if (_contextMenu != null)
-                    {
-                        // Finde das TreeViewItem, das das ContextMenu geöffnet hat
-                        TreeViewItem subItem = _contextMenu.PlacementTarget as TreeViewItem;
-
-                        TreeViewItem parentItem = LogicalTreeHelper.GetParent(subItem) as TreeViewItem;
-                        if (parentItem != null)
-                        {
-                            
-                            // Event auslösen
-                            string portName = null;
-                            if (subItem?.Tag != null)
-                            {
-                                dynamic tag = subItem.Tag;
-                                portName = tag.PortName;
-                            }
-                            if (string.IsNullOrWhiteSpace(portName) && parentItem.Tag != null)
-                            {
-                                dynamic parentTag = parentItem.Tag;
-                                portName = parentTag.PortName ?? parentTag.Name;
-                            }
-
-                            TriggerPlotData?.Invoke(portName, parentItem.Items.IndexOf(subItem));
-                        }
-                    }
+                    TriggerPlotData?.Invoke(portName, index);
                 }
-
             };
 
-            MenuItem menuItem2 = new MenuItem { Header = "Export Data" };
+            MenuItem menuItem2 = new MenuItem { Header = "Export CSV..." };
             menuItem2.Click += (s, e) =>
             {
-                /* Logik für Aktion 2 */
+                if (TryResolveSubItem(s, out string portName, out int index))
+                {
+                    RequestExportSeries?.Invoke(portName, index);
+                }
             };
-
-            MenuItem menuItem3 = new MenuItem { Header = "Aktion einfügen" };
-            menuItem3.Click += (s, e) => { /* Logik für Aktion 3 */ };
 
             contextMenu.Items.Add(menuItem1);
             contextMenu.Items.Add(menuItem2);
-            contextMenu.Items.Add(menuItem3);
-    
-        // Weitere Menüpunkte und Logik basierend auf dem itemType hinzufügen
 
             return contextMenu;
+        }
+
+        // Ermittelt Port-Name und Messreihen-Index aus dem angeklickten Kontextmenü-Eintrag
+        private static bool TryResolveSubItem(object sender, out string portName, out int index)
+        {
+            portName = null;
+            index = -1;
+
+            if (!(sender is MenuItem menuItem) || !(menuItem.Parent is ContextMenu contextMenu))
+            {
+                return false;
+            }
+
+            if (!(contextMenu.PlacementTarget is TreeViewItem subItem))
+            {
+                return false;
+            }
+
+            if (!(LogicalTreeHelper.GetParent(subItem) is TreeViewItem parentItem))
+            {
+                return false;
+            }
+
+            if (subItem.Tag != null)
+            {
+                dynamic tag = subItem.Tag;
+                portName = tag.PortName;
+            }
+
+            if (string.IsNullOrWhiteSpace(portName) && parentItem.Tag != null)
+            {
+                dynamic parentTag = parentItem.Tag;
+                portName = parentTag.PortName ?? parentTag.Name;
+            }
+
+            index = parentItem.Items.IndexOf(subItem);
+            return !string.IsNullOrWhiteSpace(portName) && index >= 0;
         }
 
 

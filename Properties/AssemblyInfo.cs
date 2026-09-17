@@ -7,12 +7,12 @@ using System.Windows;
 // Allgemeine Informationen über eine Assembly werden über die folgenden
 // Attribute gesteuert. Ändern Sie diese Attributwerte, um die Informationen zu ändern,
 // die einer Assembly zugeordnet sind.
-[assembly: AssemblyTitle("DataViewer_1.0.0.0")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("SIEMERT DataViewer")]
+[assembly: AssemblyDescription("Auslesen und Auswerten von SIEMERT Datenlogger-Aufnahmen (Höhe, Temperatur, Beschleunigung).")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("DataViewer_1.0.0.0")]
-[assembly: AssemblyCopyright("Copyright ©  2023")]
+[assembly: AssemblyCompany("SIEMERT")]
+[assembly: AssemblyProduct("SIEMERT DataViewer")]
+[assembly: AssemblyCopyright("Copyright © SIEMERT 2023-2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

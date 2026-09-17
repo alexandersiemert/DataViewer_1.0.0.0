@@ -7,47 +7,75 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="SIEMERT DataViewer 1.0.0" Height="600" Width="1050" MinHeight="450" MinWidth="1050" Icon="/Icons/Icon.png" Closed="Window_Closed">
+        Title="SIEMERT DataViewer 1.0.0"
+        Height="780" Width="1320" MinHeight="620" MinWidth="1150"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        Background="{StaticResource ChromeBrush}"
+        Icon="/Icons/Icon.png" Closed="Window_Closed">
 
+    <Window.Resources>
+        <!-- Chip für Crosshair-Readouts -->
+        <Style x:Key="ReadoutChip" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8,2,8,2"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+        </Style>
+        <Style x:Key="ReadoutChipLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
 
     <Grid>
-
         <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <DockPanel Background="White">
-            <Menu DockPanel.Dock="Top">
-
+        <!-- ======================= Kopfzeile: Branding + Menü ======================= -->
+        <Border Grid.Row="0" Background="{StaticResource ChromeDarkBrush}"
+                BorderBrush="{StaticResource ChromeBorderBrush}" BorderThickness="0,0,0,1">
+            <DockPanel Height="40" Margin="12,0,12,0">
+                <Image Source="/Pictures/dataviewer.png" Height="15" DockPanel.Dock="Left" VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <Image Source="/Pictures/siemert.png" Height="13" DockPanel.Dock="Right" VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <Menu Margin="18,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <MenuItem Header="File">
-                    <MenuItem Header="Open" Click="menuItemOpen_Click">
+                    <MenuItem Header="Open..." Click="menuItemOpen_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="FolderOpen" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Import Raw" Click="menuItemImportRaw_Click">
+                    <MenuItem Header="Import Raw..." Click="menuItemImportRaw_Click">
                         <MenuItem.Icon>
-                            <fa:FontAwesome Icon="FolderOpen" VerticalAlignment="Center"/>
+                            <fa:FontAwesome Icon="Download" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Save" Click="menuItemSave_Click">
-                        <MenuItem.Icon>
-                            <fa:FontAwesome Icon="Save" VerticalAlignment="Center"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="Save All" Click="menuItemSaveAll_Click">
+                    <Separator/>
+                    <MenuItem Header="Save..." Click="menuItemSave_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="Save" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Export csv" Click="menuItemExportCsv_Click">
+                    <MenuItem Header="Save All..." Click="menuItemSaveAll_Click">
+                        <MenuItem.Icon>
+                            <fa:FontAwesome Icon="Save" VerticalAlignment="Center"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Export CSV..." Click="menuItemExportCsv_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="Share" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="Close">
+                    <Separator/>
+                    <MenuItem Header="Close" Click="menuItemClose_Click">
                         <MenuItem.Icon>
                             <fa:FontAwesome Icon="Close" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
@@ -160,6 +188,7 @@
                         <MenuItem x:Name="menuItemSeriesAccZ" Header="Acc Z" IsCheckable="True" IsChecked="True" Tag="AccZ" Click="menuItemSeries_Click"/>
                     </MenuItem>
                 </MenuItem>
+
                 <MenuItem Header="Help">
                     <MenuItem Header="Docs" Click="menuItemHelpDocs_Click">
                         <MenuItem.Icon>
@@ -171,583 +200,717 @@
                             <fa:FontAwesome Icon="InfoCircle" VerticalAlignment="Center"/>
                         </MenuItem.Icon>
                     </MenuItem>
-
                 </MenuItem>
-            </Menu>
-        </DockPanel>
-
-        <Border Grid.Row="1" Background="#38383D" BorderBrush="#272539" BorderThickness="0.2">
-            <Grid>
-                <Image Source="/Pictures/dataviewer.png" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,8,8,8"/>
-
-
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,5,5,5">
-
-                    <ToggleButton x:Name="toggleButtonMeasuringCursor" Content="Measuring Cursor" Width="120" VerticalAlignment="Center" Checked="toggleButtonMeasuringCursor_Checked" Unchecked="toggleButtonMeasuringCursor_Unchecked">
-                        <ToggleButton.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="5"/>
-                            </Style>
-                        </ToggleButton.Resources>
-                    </ToggleButton>
-
-                    <ToggleButton x:Name="toggleButtonCrosshair" Content="Crosshair" Width="70" Margin="5,0,0,0" Checked="toggleButtonCrosshair_Checked" Unchecked="toggleButtonCrosshair_Unchecked">
-                        <ToggleButton.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="5"/>
-                            </Style>
-                        </ToggleButton.Resources>
-                    </ToggleButton>
-
-                    <ToggleButton x:Name="toggleButtonMarker" Content="Marker" Width="60" Margin="5,0,0,0" Checked="toggleButtonMarker_Checked" Unchecked="toggleButtonMarker_Unchecked">
-                        <ToggleButton.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="5"/>
-                            </Style>
-                        </ToggleButton.Resources>
-                    </ToggleButton>
-
-                    <ToggleButton x:Name="toggleButtonLegend" Content="Legend" Width="60" Margin="5,0,0,0" Checked="toggleButtonLegend_Checked" Unchecked="toggleButtonLegend_Unchecked">
-                        <ToggleButton.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="5"/>
-                            </Style>
-                        </ToggleButton.Resources>
-                    </ToggleButton>
-
-                </StackPanel>
-                <Image Source="/Pictures/siemert.png" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,8,8,8"/>
-            </Grid>
+                </Menu>
+            </DockPanel>
         </Border>
 
-
-        <Grid Grid.Row="2">
+        <!-- ======================= Hauptbereich ======================= -->
+        <Grid Grid.Row="1" Margin="10,10,10,10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition MinWidth="150" MaxWidth="200" Width="150"/>
-                <ColumnDefinition Width="3"/>
+                <ColumnDefinition Width="240" MinWidth="210" MaxWidth="340"/>
+                <ColumnDefinition Width="8"/>
                 <ColumnDefinition/>
-                <ColumnDefinition Width="170"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="238" MinWidth="215" MaxWidth="320"/>
             </Grid.ColumnDefinitions>
 
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="20"/>
-                    <RowDefinition/>
-                    <RowDefinition Height="20"/>
-                    <RowDefinition Height="250"/>
-                </Grid.RowDefinitions>
-
-                <Border BorderThickness="0.2" BorderBrush="#272539">
-                    <Grid Background="#FFCCD8E6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Element links ausrichten -->
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Stretch">
-                            <fa:ImageAwesome Icon="CodeFork" Margin="5,3,0,3" Rotation="90" HorizontalAlignment="Left"/>
-                            <TextBlock Text="Device List" Margin="8,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                        </StackPanel>
-
-                        <!-- Element ganz rechts ausrichten -->
-                        <Button x:Name="buttonRefreshDeviceList" Grid.Column="2" Content="Refresh" Click="buttonRefreshDeviceList_Click" HorizontalAlignment="Right" Margin="0,0,5,0" Height="18" Width="50">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-                    </Grid>
-                </Border>
-
-                <TreeView x:Name="deviceListTreeView" Grid.Row="1">
-                </TreeView>
-
-                <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6" VerticalAlignment="Top" Height="20" Grid.Row="2">
-                    <StackPanel Orientation="Horizontal">
-                        <fa:ImageAwesome Icon="InfoCircle" Margin="5,3,0,3"/>
-                        <TextBlock Text="Device Info" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-
-
-                <StackPanel Grid.Row="3" Orientation="Vertical">
-                    <StackPanel Orientation="Vertical">
-                        <TextBlock Text="Model" Width="Auto" FontWeight="Bold" HorizontalAlignment="Left"/>
-                        <TextBox x:Name="textBoxModel" Text="-" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Vertical" HorizontalAlignment="Left">
-                        <TextBlock Text="Serial No." Width="Auto" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxSerialNumber" Text="-" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Vertical" HorizontalAlignment="Left">
-                        <TextBlock Text="Date of production" Width="Auto" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxProductionDate" Text="-" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Vertical" HorizontalAlignment="Left">
-                        <TextBlock Text="Checksum" Width="Auto" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxChecksum" Text="-" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                    </StackPanel>
-                </StackPanel>
-
-            </Grid>
-
-            <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch"/>
-
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="20"/>
-                    <RowDefinition Height="20"/>
-                    <RowDefinition/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <Border Grid.Row="0" BorderBrush="Black" BorderThickness="0.4" Background="#FFF1F4F9">
-                    <Grid Margin="6,0,6,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="textBlockLoggerStatus" Text="Ready" VerticalAlignment="Center"/>
-                        <ProgressBar x:Name="progressBarLogger" Grid.Column="1" Height="12" Minimum="0" Maximum="100" Value="0" Margin="8,0,8,0"/>
-                        <TextBlock x:Name="textBlockLoggerPercent" Grid.Column="2" Text="" VerticalAlignment="Center"/>
-                    </Grid>
-                </Border>
-
-                <Border Grid.Row="1" BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <fa:ImageAwesome Icon="Crosshairs" Margin="5,3,0,3" Rotation="90"/>
-                        <TextBlock Text="Crosshair" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Alt" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxCrossAlt" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
-                        <TextBlock Text="Temp" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxCrossTemp" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
-                        <TextBlock Text="Acc" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxCrossAcc" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
-                        <TextBlock Text="Acc-X" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxCrossAccX" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
-                        <TextBlock Text="Acc-Y" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxCrossAccY" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
-                        <TextBlock Text="Acc-Z" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <TextBox x:Name="textBoxCrossAccZ" Text="NaN" Margin="8,0,0,0" VerticalAlignment="Center" IsReadOnly="True" Height="18"/>
-                        
-                    </StackPanel>
-                </Border>
-
-                <ScottPlot:WpfPlot Name="WpfPlot1" Grid.Row="2"/>
-
-                <Border Grid.Row="3" BorderBrush="Transparent" BorderThickness="0.4">
-                    <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <GroupBox Height="Auto" Header="Altitude Axis">
-                            <StackPanel Orientation="Horizontal">
-                                <StackPanel Orientation="Vertical">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="max" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxAltMax" KeyDown="textBoxAltMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock x:Name="textBlockAltAxisMaxUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="min" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxAltMin" KeyDown="textBoxAltMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock x:Name="textBlockAltAxisMinUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                </StackPanel>
-                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
-                                    <Button x:Name="buttonLimitAltUp" Width="20" Height="15" PreviewMouseDown="buttonLimitAltUp_PreviewMouseDown" PreviewMouseUp="buttonLimitAltUp_PreviewMouseUp">
-                                        <Button.Background>
-                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
-                                        </Button.Background>
-                                    </Button>
-                                    <Button x:Name="buttonLimitAltDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5" PreviewMouseDown="buttonLimitAltDown_PreviewMouseDown" PreviewMouseUp="buttonLimitAltDown_PreviewMouseUp">
-                                        <Button.RenderTransform>
-                                            <TransformGroup>
-                                                <ScaleTransform ScaleY="-1"/>
-                                                
-                                            </TransformGroup>
-                                        </Button.RenderTransform>
-                                        <Button.Background>
-                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform" TileMode="None"/>
-                                        </Button.Background>
-                                    </Button>
-                                </StackPanel>
-                            </StackPanel>
-                        </GroupBox>
-                        <GroupBox Height="Auto" Header="Temperature Axis">
-                            <StackPanel Orientation="Horizontal">
-                                <StackPanel Orientation="Vertical">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="max" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxTempMax" KeyDown="textBoxTempMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock x:Name="textBlockTempAxisMaxUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="min" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxTempMin" KeyDown="textBoxTempMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock x:Name="textBlockTempAxisMinUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                </StackPanel>
-                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
-                                    <Button x:Name="buttonLimitTempUp" Width="20" Height="15" PreviewMouseDown="buttonLimitTempUp_PreviewMouseDown" PreviewMouseUp="buttonLimitTempUp_PreviewMouseUp">
-                                        <Button.Background>
-                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
-                                        </Button.Background>
-                                    </Button>
-                                    <Button x:Name="buttonLimitTempDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5" PreviewMouseDown="buttonLimitTempDown_PreviewMouseDown" PreviewMouseUp="buttonLimitTempDown_PreviewMouseUp">
-                                        <Button.RenderTransform>
-                                            <TransformGroup>
-                                                <ScaleTransform ScaleY="-1"/>
-
-                                            </TransformGroup>
-                                        </Button.RenderTransform>
-                                        <Button.Background>
-                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform" TileMode="None"/>
-                                        </Button.Background>
-                                    </Button>
-                                </StackPanel>
-                            </StackPanel>
-                        </GroupBox>
-                        <GroupBox Height="Auto" Header="Acceleration Axis">
-                            <StackPanel Orientation="Horizontal">
-                                <StackPanel Orientation="Vertical">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="max" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxAccMax" KeyDown="textBoxAccMax_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="min" Width="25" Margin="5,0,5,0" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxAccMin" KeyDown="textBoxAccMin_KeyDown" AcceptsReturn="False" Width="60" HorizontalContentAlignment="Right"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                </StackPanel>
-                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
-                                    <Button x:Name="buttonLimitAccUp" Width="20" Height="15" PreviewMouseDown="buttonLimitAccUp_PreviewMouseDown" PreviewMouseUp="buttonLimitAccUp_PreviewMouseUp">
-                                        <Button.Background>
-                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform"/>
-                                        </Button.Background>
-                                    </Button>
-                                    <Button x:Name="buttonLimitAccDown" Width="20" Height="15" RenderTransformOrigin="0.5,0.5" PreviewMouseDown="buttonLimitAccDown_PreviewMouseDown" PreviewMouseUp="buttonLimitAccDown_PreviewMouseUp">
-                                        <Button.RenderTransform>
-                                            <TransformGroup>
-                                                <ScaleTransform ScaleY="-1"/>
-
-                                            </TransformGroup>
-                                        </Button.RenderTransform>
-                                        <Button.Background>
-                                            <ImageBrush ImageSource="/Pictures/up-arrow.png" Stretch="Uniform" TileMode="None"/>
-                                        </Button.Background>
-                                    </Button>
-                                </StackPanel>
-                            </StackPanel>
-                        </GroupBox>
-                        <GroupBox Height="Auto" Header="Smoothing (s)" Margin="8,0,0,0">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="Alt" Width="45" Margin="5,0,5,0" FontWeight="Bold"/>
-                                    <TextBox x:Name="textBoxSmoothAlt" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="Alt"/>
-                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="Temp" Width="45" Margin="5,0,5,0" FontWeight="Bold"/>
-                                    <TextBox x:Name="textBoxSmoothTemp" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="Temp"/>
-                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="Acc" Width="45" Margin="5,0,5,0" FontWeight="Bold"/>
-                                    <TextBox x:Name="textBoxSmoothAccAbs" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="AccAbs"/>
-                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="Acc-X" Width="45" Margin="10,0,5,0" FontWeight="Bold"/>
-                                    <TextBox x:Name="textBoxSmoothAccX" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="AccX"/>
-                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="Acc-Y" Width="45" Margin="10,0,5,0" FontWeight="Bold"/>
-                                    <TextBox x:Name="textBoxSmoothAccY" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="AccY"/>
-                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="Acc-Z" Width="45" Margin="10,0,5,0" FontWeight="Bold"/>
-                                    <TextBox x:Name="textBoxSmoothAccZ" Width="50" HorizontalContentAlignment="Right" KeyDown="textBoxSmoothing_KeyDown" Tag="AccZ"/>
-                                    <TextBlock Text="s" Margin="5,0,0,0" FontWeight="Bold"/>
-                                </StackPanel>
-                            </Grid>
-                        </GroupBox>
-                    </WrapPanel>
-                </Border>
-
-            </Grid>
-
-
-            <Border Grid.Column="3" BorderBrush="Black" BorderThickness="0.4" Margin="0,-0.4,0,-0.4">
-
+            <!-- =========== Linke Card: Geräte =========== -->
+            <Border Style="{StaticResource Card}">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Border BorderBrush="Black" BorderThickness="0.4" Background="#FFCCD8E6">
+                    <Border Style="{StaticResource CardHeaderBorder}">
+                        <DockPanel>
+                            <fa:ImageAwesome Icon="CodeFork" Rotation="90" Width="10" Height="10"
+                                             Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <Button x:Name="buttonRefreshDeviceList" Content="Refresh" Style="{StaticResource ToolButton}"
+                                    ToolTip="Nach angeschlossenen Loggern suchen" Click="buttonRefreshDeviceList_Click"
+                                    DockPanel.Dock="Right" Height="19"/>
+                            <TextBlock Text="DEVICES" Style="{StaticResource CardHeaderText}" Margin="7,0,0,0"/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Primäre Aktionen: Gerät auslesen -->
+                    <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
+                            Padding="8,7,8,7">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="buttonReadLast" Style="{StaticResource ActionButton}"
+                                    ToolTip="Letzte Aufnahme vom Logger lesen (schnell)"
+                                    Click="buttonReadLast_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:FontAwesome Icon="Bolt" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Read Last" Margin="6,0,0,0"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="buttonReadAll" Grid.Column="2" Style="{StaticResource ActionButton}"
+                                    ToolTip="Gesamten Logger-Speicher lesen (kann mehrere Minuten dauern)"
+                                    Click="buttonReadAll_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:FontAwesome Icon="Download" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Read All" Margin="6,0,0,0"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="2">
+                        <TreeView x:Name="deviceListTreeView"
+                                  Background="Transparent" BorderThickness="0" Padding="3"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <TreeView.Resources>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#D9E7F6"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#22303E"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#E7EEF6"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#22303E"/>
+                            </TreeView.Resources>
+                        </TreeView>
+
+                        <!-- Selbsterklärender Hinweis bei leerer Geräteliste -->
+                        <StackPanel Margin="14,24,14,0" IsHitTestVisible="False">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasItems, ElementName=deviceListTreeView}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <fa:ImageAwesome Icon="Usb" Width="26" Height="26" Foreground="#C9D4DF" HorizontalAlignment="Center"/>
+                            <TextBlock Text="No logger found" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,8,0,2"/>
+                            <TextBlock Text="Connect a SIEMERT logger via USB and press Refresh."
+                                       FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                                       TextWrapping="Wrap" TextAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Grid.Row="3" Style="{StaticResource CardHeaderBorder}" CornerRadius="0"
+                            BorderThickness="0,1,0,1">
                         <StackPanel Orientation="Horizontal">
-                            <fa:ImageAwesome Icon="Tachometer" Margin="5,3,0,3" Rotation="90"/>
-                            <TextBlock Text="Measuring Data" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            <fa:ImageAwesome Icon="InfoCircle" Width="10" Height="10"
+                                             Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="DEVICE INFO" Style="{StaticResource CardHeaderText}" Margin="7,0,0,0"/>
                         </StackPanel>
                     </Border>
 
-                    <ScrollViewer Grid.Row="1">
-                        <StackPanel Width="Auto" Height="Auto" Orientation="Vertical" ScrollViewer.VerticalScrollBarVisibility="Visible">
-                            <GroupBox Height="Auto" Header="Altitude">
-                                <StackPanel Orientation="Vertical">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAltCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasAltCursor1Unit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAltCursor2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasAltCursor2Unit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAltMin" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasAltMinUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAltMax" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasAltMaxUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAltDelta" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasAltDeltaUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAltAverage" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasAltAverageUnit" Text="m" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Speed" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAltSpeed" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasAltSpeedUnit" Text="m/sec" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </GroupBox>
+                    <StackPanel Grid.Row="4" Margin="10,8,10,10">
+                        <DockPanel Height="20">
+                            <TextBlock Text="Model" Style="{StaticResource FieldLabel}" Width="86"/>
+                            <TextBox x:Name="textBoxModel" Text="–" Style="{StaticResource ValueText}"/>
+                        </DockPanel>
+                        <DockPanel Height="20">
+                            <TextBlock Text="Serial No." Style="{StaticResource FieldLabel}" Width="86"/>
+                            <TextBox x:Name="textBoxSerialNumber" Text="–" Style="{StaticResource ValueText}"/>
+                        </DockPanel>
+                        <DockPanel Height="20">
+                            <TextBlock Text="Production Date" Style="{StaticResource FieldLabel}" Width="86"/>
+                            <TextBox x:Name="textBoxProductionDate" Text="–" Style="{StaticResource ValueText}"/>
+                        </DockPanel>
+                        <DockPanel Height="20">
+                            <TextBlock Text="Checksum" Style="{StaticResource FieldLabel}" Width="86"/>
+                            <TextBox x:Name="textBoxChecksum" Text="–" Style="{StaticResource ValueText}"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-                            <GroupBox Height="Auto" Header="Temperature">
-                                <StackPanel Orientation="Vertical">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasTempCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasTempCursor1Unit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasTempCursor2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasTempCursor2Unit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasTempMin" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasTempMinUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasTempMax" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasTempMaxUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasTempDelta" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasTempDeltaUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasTempAverage" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock x:Name="textBlockMeasTempAverageUnit" Text="&#176;C" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </GroupBox>
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch" Width="8"/>
 
-                            <GroupBox Height="Auto" Header="Acceleration">
-                                <StackPanel Orientation="Vertical">
-                                    <TextBlock Text="Absolute" Margin="5"/>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccCursor1" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccCursor2" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccMin" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccMax" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccDelta" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccAverage" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
+            <!-- =========== Mittlere Card: Plot-Arbeitsbereich =========== -->
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                                    <TextBlock Text="X-Axis" Margin="5"/>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccCursor1X" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccCursor2X" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccMinX" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccMaxX" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccDeltaX" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccAverageX" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
+                    <!-- Plot-Werkzeuge + Status + Schnellaktionen -->
+                    <Border Style="{StaticResource CardHeaderBorder}" Height="38">
+                        <Grid VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                                    <TextBlock Text="Y-Axis" Margin="5"/>
+                            <StackPanel Orientation="Horizontal">
+                                <ToggleButton x:Name="toggleButtonMeasuringCursor" Style="{StaticResource PlotToolToggle}"
+                                              ToolTip="Messbereich aufziehen: Min / Max / Delta / Mittelwert"
+                                              Checked="toggleButtonMeasuringCursor_Checked" Unchecked="toggleButtonMeasuringCursor_Unchecked">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccCursor1Y" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <fa:FontAwesome Icon="ArrowsH" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Measure" Margin="5,0,0,0"/>
                                     </StackPanel>
+                                </ToggleButton>
+                                <ToggleButton x:Name="toggleButtonCrosshair" Style="{StaticResource PlotToolToggle}" Margin="6,0,0,0"
+                                              ToolTip="Fadenkreuz zum Ablesen einzelner Werte"
+                                              Checked="toggleButtonCrosshair_Checked" Unchecked="toggleButtonCrosshair_Unchecked">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccCursor2Y" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <fa:FontAwesome Icon="Crosshairs" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Crosshair" Margin="5,0,0,0"/>
                                     </StackPanel>
+                                </ToggleButton>
+                                <ToggleButton x:Name="toggleButtonMarker" Style="{StaticResource PlotToolToggle}" Margin="6,0,0,0"
+                                              ToolTip="Marker im Plot setzen"
+                                              Checked="toggleButtonMarker_Checked" Unchecked="toggleButtonMarker_Unchecked">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccMinY" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <fa:FontAwesome Icon="MapMarker" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Marker" Margin="5,0,0,0"/>
                                     </StackPanel>
+                                </ToggleButton>
+                                <ToggleButton x:Name="toggleButtonLegend" Style="{StaticResource PlotToolToggle}" Margin="6,0,0,0"
+                                              ToolTip="Legende ein-/ausblenden"
+                                              Checked="toggleButtonLegend_Checked" Unchecked="toggleButtonLegend_Unchecked">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccMaxY" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
+                                        <fa:FontAwesome Icon="ListUl" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Legend" Margin="5,0,0,0"/>
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccDeltaY" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccAverageY" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
+                                </ToggleButton>
+                            </StackPanel>
 
-                                    <TextBlock Text="Z-Axis" Margin="5"/>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 1" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccCursor1Z" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Cursor 2" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccCursor2Z" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Min" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccMinZ" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Max" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccMaxZ" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Delta" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccDeltaZ" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Average" Width="60" FontWeight="Bold"/>
-                                        <TextBox x:Name="textBoxMeasAccAverageZ" Text="????" VerticalAlignment="Center" IsReadOnly="True" BorderBrush="Transparent"/>
-                                        <TextBlock Text="g" Margin="5,0,0,0" FontWeight="Bold"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </GroupBox>
+                            <Grid Grid.Column="1" Margin="16,0,16,0" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="textBlockLoggerStatus" Text="Ready"
+                                           FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center"/>
+                                <ProgressBar x:Name="progressBarLogger" Grid.Column="1" Style="{StaticResource SlimProgressBar}"
+                                             Minimum="0" Maximum="100" Value="0" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="textBlockLoggerPercent" Grid.Column="2" Text=""
+                                           FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                                           MinWidth="34" TextAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
 
+                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <Button x:Name="buttonSaveQuick" Style="{StaticResource ToolButton}" Height="24"
+                                        ToolTip="Aufnahme als .sdvlog speichern" Click="buttonSaveQuick_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:FontAwesome Icon="Save" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Save" Margin="5,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="buttonExportCsvQuick" Style="{StaticResource ToolButton}" Height="24" Margin="6,0,0,0"
+                                        ToolTip="Aktuelle Aufnahme als CSV exportieren" Click="buttonExportCsvQuick_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:FontAwesome Icon="Share" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Export CSV" Margin="5,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Crosshair-Readouts (nur sichtbar bei aktivem Crosshair) -->
+                    <Border x:Name="crosshairReadoutBar" Grid.Row="1" Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
+                            Padding="10,5,10,5" Visibility="Collapsed">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <fa:ImageAwesome Icon="Crosshairs" Width="10" Height="10"
+                                                 Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="CROSSHAIR" Style="{StaticResource CardHeaderText}" Margin="7,0,2,0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Style="{StaticResource ReadoutChip}">
+                                    <DockPanel>
+                                        <TextBlock Text="ALT" Style="{StaticResource ReadoutChipLabel}" Foreground="{StaticResource SeriesAltBrush}"/>
+                                        <TextBox x:Name="textBoxCrossAlt" Text="–" Style="{StaticResource ValueTextRight}" MinWidth="48" Margin="7,0,0,0"/>
+                                    </DockPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReadoutChip}">
+                                    <DockPanel>
+                                        <TextBlock Text="TEMP" Style="{StaticResource ReadoutChipLabel}" Foreground="{StaticResource SeriesTempBrush}"/>
+                                        <TextBox x:Name="textBoxCrossTemp" Text="–" Style="{StaticResource ValueTextRight}" MinWidth="48" Margin="7,0,0,0"/>
+                                    </DockPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReadoutChip}">
+                                    <DockPanel>
+                                        <TextBlock Text="ACC" Style="{StaticResource ReadoutChipLabel}" Foreground="{StaticResource SeriesAccAbsBrush}"/>
+                                        <TextBox x:Name="textBoxCrossAcc" Text="–" Style="{StaticResource ValueTextRight}" MinWidth="48" Margin="7,0,0,0"/>
+                                    </DockPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReadoutChip}">
+                                    <DockPanel>
+                                        <TextBlock Text="ACC-X" Style="{StaticResource ReadoutChipLabel}" Foreground="{StaticResource SeriesAccXBrush}"/>
+                                        <TextBox x:Name="textBoxCrossAccX" Text="–" Style="{StaticResource ValueTextRight}" MinWidth="48" Margin="7,0,0,0"/>
+                                    </DockPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReadoutChip}">
+                                    <DockPanel>
+                                        <TextBlock Text="ACC-Y" Style="{StaticResource ReadoutChipLabel}" Foreground="{StaticResource SeriesAccYBrush}"/>
+                                        <TextBox x:Name="textBoxCrossAccY" Text="–" Style="{StaticResource ValueTextRight}" MinWidth="48" Margin="7,0,0,0"/>
+                                    </DockPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReadoutChip}">
+                                    <DockPanel>
+                                        <TextBlock Text="ACC-Z" Style="{StaticResource ReadoutChipLabel}" Foreground="{StaticResource SeriesAccZBrush}"/>
+                                        <TextBox x:Name="textBoxCrossAccZ" Text="–" Style="{StaticResource ValueTextRight}" MinWidth="48" Margin="7,0,0,0"/>
+                                    </DockPanel>
+                                </Border>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Plot + Empty-State -->
+                    <Grid Grid.Row="2" Background="{StaticResource SurfaceBrush}">
+                        <ScottPlot:WpfPlot Name="WpfPlot1" Margin="2"/>
+                        <StackPanel x:Name="emptyStatePanel" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <fa:ImageAwesome Icon="AreaChart" Width="46" Height="46"
+                                             Foreground="#C9D4DF" HorizontalAlignment="Center"/>
+                            <TextBlock Text="No recording loaded" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,12,0,4"/>
+                            <TextBlock Text="Read a connected logger from the device panel — or open a saved file."
+                                       FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                                <Button Style="{StaticResource ActionButton}" Height="28" Click="buttonEmptyOpen_Click"
+                                        ToolTip="Gespeicherte .sdvlog-Datei öffnen">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:FontAwesome Icon="FolderOpen" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Open File..." Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource ToolButton}" Height="28" Margin="10,0,0,0" Click="buttonEmptyImport_Click"
+                                        ToolTip="Rohdaten-Datei (.lgd) importieren">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa:FontAwesome Icon="Download" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Import Raw..." Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Grid.Row="3" Style="{StaticResource CardDivider}"/>
+
+                    <!-- Achsen- und Smoothing-Steuerung: flache Fußleiste, farbcodiert je Serie -->
+                    <Border x:Name="axisControlsPanel" Grid.Row="4" Background="{StaticResource SurfaceAltBrush}"
+                            BorderBrush="{StaticResource LineBrush}" BorderThickness="0"
+                            Padding="14,8,14,10" CornerRadius="0,0,7,7">
+                        <WrapPanel Orientation="Horizontal">
+
+                            <!-- Altitude -->
+                            <StackPanel Margin="0,2,0,2">
+                                <TextBlock Text="ALTITUDE" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource SeriesAltBrush}" Margin="0,0,0,5"/>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="22"/>
+                                        <RowDefinition Height="22"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="26"/>
+                                        <ColumnDefinition Width="56"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="max" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox x:Name="textBoxAltMax" Grid.Column="1" Style="{StaticResource InputBox}" KeyDown="textBoxAltMax_KeyDown" AcceptsReturn="False"/>
+                                    <TextBlock x:Name="textBlockAltAxisMaxUnit" Grid.Column="2" Text="m" Style="{StaticResource UnitLabel}" MinWidth="16"/>
+                                    <TextBlock Grid.Row="1" Text="min" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox x:Name="textBoxAltMin" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" KeyDown="textBoxAltMin_KeyDown" AcceptsReturn="False"/>
+                                    <TextBlock x:Name="textBlockAltAxisMinUnit" Grid.Row="1" Grid.Column="2" Text="m" Style="{StaticResource UnitLabel}" MinWidth="16"/>
+                                    <StackPanel Grid.Column="3" Grid.RowSpan="2" VerticalAlignment="Center" Margin="5,0,0,0">
+                                        <Button x:Name="buttonLimitAltUp" Style="{StaticResource ChevronButton}" Margin="0,0,0,3"
+                                                ToolTip="Achse nach oben verschieben"
+                                                PreviewMouseDown="buttonLimitAltUp_PreviewMouseDown" PreviewMouseUp="buttonLimitAltUp_PreviewMouseUp">
+                                            <Path Data="M 1,5 L 5,1 L 9,5" Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.6"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="None"/>
+                                        </Button>
+                                        <Button x:Name="buttonLimitAltDown" Style="{StaticResource ChevronButton}"
+                                                ToolTip="Achse nach unten verschieben"
+                                                PreviewMouseDown="buttonLimitAltDown_PreviewMouseDown" PreviewMouseUp="buttonLimitAltDown_PreviewMouseUp">
+                                            <Path Data="M 1,1 L 5,5 L 9,1" Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.6"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="None"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <Border Width="1" Background="{StaticResource LineBrush}" Margin="14,2,14,2"/>
+
+                            <!-- Temperature -->
+                            <StackPanel Margin="0,2,0,2">
+                                <TextBlock Text="TEMPERATURE" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource SeriesTempBrush}" Margin="0,0,0,5"/>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="22"/>
+                                        <RowDefinition Height="22"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="26"/>
+                                        <ColumnDefinition Width="56"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="max" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox x:Name="textBoxTempMax" Grid.Column="1" Style="{StaticResource InputBox}" KeyDown="textBoxTempMax_KeyDown" AcceptsReturn="False"/>
+                                    <TextBlock x:Name="textBlockTempAxisMaxUnit" Grid.Column="2" Text="&#176;C" Style="{StaticResource UnitLabel}" MinWidth="16"/>
+                                    <TextBlock Grid.Row="1" Text="min" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox x:Name="textBoxTempMin" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" KeyDown="textBoxTempMin_KeyDown" AcceptsReturn="False"/>
+                                    <TextBlock x:Name="textBlockTempAxisMinUnit" Grid.Row="1" Grid.Column="2" Text="&#176;C" Style="{StaticResource UnitLabel}" MinWidth="16"/>
+                                    <StackPanel Grid.Column="3" Grid.RowSpan="2" VerticalAlignment="Center" Margin="5,0,0,0">
+                                        <Button x:Name="buttonLimitTempUp" Style="{StaticResource ChevronButton}" Margin="0,0,0,3"
+                                                ToolTip="Achse nach oben verschieben"
+                                                PreviewMouseDown="buttonLimitTempUp_PreviewMouseDown" PreviewMouseUp="buttonLimitTempUp_PreviewMouseUp">
+                                            <Path Data="M 1,5 L 5,1 L 9,5" Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.6"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="None"/>
+                                        </Button>
+                                        <Button x:Name="buttonLimitTempDown" Style="{StaticResource ChevronButton}"
+                                                ToolTip="Achse nach unten verschieben"
+                                                PreviewMouseDown="buttonLimitTempDown_PreviewMouseDown" PreviewMouseUp="buttonLimitTempDown_PreviewMouseUp">
+                                            <Path Data="M 1,1 L 5,5 L 9,1" Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.6"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="None"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <Border Width="1" Background="{StaticResource LineBrush}" Margin="14,2,14,2"/>
+
+                            <!-- Acceleration -->
+                            <StackPanel Margin="0,2,0,2">
+                                <TextBlock Text="ACCELERATION" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource SeriesAccAbsBrush}" Margin="0,0,0,5"/>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="22"/>
+                                        <RowDefinition Height="22"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="26"/>
+                                        <ColumnDefinition Width="56"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="max" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox x:Name="textBoxAccMax" Grid.Column="1" Style="{StaticResource InputBox}" KeyDown="textBoxAccMax_KeyDown" AcceptsReturn="False"/>
+                                    <TextBlock Grid.Column="2" Text="g" Style="{StaticResource UnitLabel}" MinWidth="16"/>
+                                    <TextBlock Grid.Row="1" Text="min" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox x:Name="textBoxAccMin" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" KeyDown="textBoxAccMin_KeyDown" AcceptsReturn="False"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="g" Style="{StaticResource UnitLabel}" MinWidth="16"/>
+                                    <StackPanel Grid.Column="3" Grid.RowSpan="2" VerticalAlignment="Center" Margin="5,0,0,0">
+                                        <Button x:Name="buttonLimitAccUp" Style="{StaticResource ChevronButton}" Margin="0,0,0,3"
+                                                ToolTip="Achse nach oben verschieben"
+                                                PreviewMouseDown="buttonLimitAccUp_PreviewMouseDown" PreviewMouseUp="buttonLimitAccUp_PreviewMouseUp">
+                                            <Path Data="M 1,5 L 5,1 L 9,5" Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.6"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="None"/>
+                                        </Button>
+                                        <Button x:Name="buttonLimitAccDown" Style="{StaticResource ChevronButton}"
+                                                ToolTip="Achse nach unten verschieben"
+                                                PreviewMouseDown="buttonLimitAccDown_PreviewMouseDown" PreviewMouseUp="buttonLimitAccDown_PreviewMouseUp">
+                                            <Path Data="M 1,1 L 5,5 L 9,1" Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.6"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="None"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <Border Width="1" Background="{StaticResource LineBrush}" Margin="14,2,14,2"/>
+
+                            <!-- Smoothing: farbcodiert je Serie -->
+                            <StackPanel Margin="0,2,0,2" ToolTip="Gleitender Mittelwert in Sekunden pro Serie (0 = aus, Enter übernimmt)">
+                                <TextBlock Text="SMOOTHING (s)" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,5"/>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="22"/>
+                                        <RowDefinition Height="22"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="36"/>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="42"/>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="34"/>
+                                        <ColumnDefinition Width="40"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Alt" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SeriesAltBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="textBoxSmoothAlt" Grid.Column="1" Style="{StaticResource InputBox}" KeyDown="textBoxSmoothing_KeyDown" Tag="Alt"/>
+                                    <TextBlock Grid.Column="2" Text="Temp" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SeriesTempBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="textBoxSmoothTemp" Grid.Column="3" Style="{StaticResource InputBox}" KeyDown="textBoxSmoothing_KeyDown" Tag="Temp"/>
+                                    <TextBlock Grid.Column="4" Text="Acc" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccAbsBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="textBoxSmoothAccAbs" Grid.Column="5" Style="{StaticResource InputBox}" KeyDown="textBoxSmoothing_KeyDown" Tag="AccAbs"/>
+                                    <TextBlock Grid.Row="1" Text="X" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccXBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="textBoxSmoothAccX" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" KeyDown="textBoxSmoothing_KeyDown" Tag="AccX"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="Y" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccYBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="textBoxSmoothAccY" Grid.Row="1" Grid.Column="3" Style="{StaticResource InputBox}" KeyDown="textBoxSmoothing_KeyDown" Tag="AccY"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="4" Text="Z" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccZBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="textBoxSmoothAccZ" Grid.Row="1" Grid.Column="5" Style="{StaticResource InputBox}" KeyDown="textBoxSmoothing_KeyDown" Tag="AccZ"/>
+                                </Grid>
+                            </StackPanel>
+
+                        </WrapPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="3" ResizeDirection="Columns" HorizontalAlignment="Stretch" Width="8"/>
+
+            <!-- =========== Rechte Card: Messwerte =========== -->
+            <Border Grid.Column="4" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <Border Style="{StaticResource CardHeaderBorder}">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:ImageAwesome Icon="Tachometer" Width="10" Height="10"
+                                             Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="MEASURING DATA" Style="{StaticResource CardHeaderText}" Margin="7,0,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10,6,10,10">
+
+                            <!-- Hinweis solange der Messcursor aus ist -->
+                            <Border x:Name="measuringHintText" Background="{StaticResource AccentSoftBrush}"
+                                    CornerRadius="5" Padding="8,6,8,6" Margin="0,4,0,4">
+                                <TextBlock Text="Enable 'Measure' above the plot to analyze a time range."
+                                           FontSize="11" Foreground="{StaticResource AccentDeepBrush}" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <!-- Altitude -->
+                            <TextBlock Text="Altitude" Style="{StaticResource SectionTitle}" Foreground="{StaticResource SeriesAltBrush}" Margin="0,4,0,3"/>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 1" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasAltCursor1Unit" Text="m" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAltCursor1" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 2" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasAltCursor2Unit" Text="m" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAltCursor2" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Min" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasAltMinUnit" Text="m" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAltMin" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Max" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasAltMaxUnit" Text="m" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAltMax" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Delta" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasAltDeltaUnit" Text="m" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAltDelta" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Average" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasAltAverageUnit" Text="m" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAltAverage" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Speed" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasAltSpeedUnit" Text="m/sec" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAltSpeed" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+
+                            <Border Style="{StaticResource CardDivider}" Margin="0,8,0,8"/>
+
+                            <!-- Temperature -->
+                            <TextBlock Text="Temperature" Style="{StaticResource SectionTitle}" Foreground="{StaticResource SeriesTempBrush}" Margin="0,0,0,3"/>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 1" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasTempCursor1Unit" Text="&#176;C" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasTempCursor1" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 2" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasTempCursor2Unit" Text="&#176;C" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasTempCursor2" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Min" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasTempMinUnit" Text="&#176;C" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasTempMin" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Max" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasTempMaxUnit" Text="&#176;C" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasTempMax" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Delta" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasTempDeltaUnit" Text="&#176;C" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasTempDelta" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Average" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock x:Name="textBlockMeasTempAverageUnit" Text="&#176;C" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasTempAverage" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+
+                            <Border Style="{StaticResource CardDivider}" Margin="0,8,0,8"/>
+
+                            <!-- Acceleration -->
+                            <TextBlock Text="Acceleration" Style="{StaticResource SectionTitle}" Foreground="{StaticResource SeriesAccAbsBrush}" Margin="0,0,0,0"/>
+
+                            <TextBlock Text="Absolute" Style="{StaticResource SubSectionTitle}"/>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 1" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccCursor1" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 2" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccCursor2" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Min" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccMin" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Max" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccMax" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Delta" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccDelta" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Average" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccAverage" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+
+                            <TextBlock Text="X-Axis" Style="{StaticResource SubSectionTitle}" Foreground="{StaticResource SeriesAccXBrush}"/>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 1" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccCursor1X" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 2" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccCursor2X" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Min" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccMinX" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Max" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccMaxX" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Delta" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccDeltaX" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Average" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccAverageX" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+
+                            <TextBlock Text="Y-Axis" Style="{StaticResource SubSectionTitle}" Foreground="{StaticResource SeriesAccYBrush}"/>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 1" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccCursor1Y" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 2" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccCursor2Y" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Min" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccMinY" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Max" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccMaxY" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Delta" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccDeltaY" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Average" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccAverageY" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+
+                            <TextBlock Text="Z-Axis" Style="{StaticResource SubSectionTitle}" Foreground="{StaticResource SeriesAccZBrush}"/>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 1" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccCursor1Z" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Cursor 2" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccCursor2Z" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Min" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccMinZ" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Max" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccMaxZ" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Delta" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccDeltaZ" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Average" Style="{StaticResource FieldLabel}" Width="54"/>
+                                <TextBlock Text="g" Style="{StaticResource UnitLabel}" DockPanel.Dock="Right" Width="34"/>
+                                <TextBox x:Name="textBoxMeasAccAverageZ" Text="–" Style="{StaticResource ValueTextRight}"/>
+                            </DockPanel>
 
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
-
-
-
             </Border>
 
-
         </Grid>
-
     </Grid>
 </Window>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
