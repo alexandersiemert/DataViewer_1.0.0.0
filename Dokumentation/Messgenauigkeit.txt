@@ -1,0 +1,307 @@
+SIEMERT DataViewer: Messgenauigkeit und Grenzen der Auswertung
+===============================================================
+
+Dieses Dokument benennt, was die Auswertung leisten kann und was nicht. Es ist Teil des
+Lieferumfangs und sollte vor der ersten Verwendung gelesen werden, besonders dann, wenn
+Ergebnisse in eine Materialbeurteilung, einen Vorfallbericht oder einen Ausbildungsnachweis
+einfließen sollen.
+
+
+1. ZWECKBESTIMMUNG
+------------------
+
+Das Programm wertet Messdaten aus, die ein SIEMERT-Datenlogger während eines Sprungs
+aufgezeichnet hat. Es dient der nachträglichen Betrachtung für Ausbildung, Debriefing und
+Materialbeobachtung.
+
+Das Programm ist ausdrücklich NICHT:
+  - ein Höhenmesser,
+  - ein Sicherungsgerät oder ein Ersatz dafür,
+  - ein Hilfsmittel für Entscheidungen während des Sprungs,
+  - ein kalibriertes Messmittel im Sinne einer Prüfmittelüberwachung.
+
+
+2. HÖHE
+-------
+
+Der Logger misst Luftdruck, keine Höhe. Die Höhe wird daraus nach der Normatmosphäre (ISA)
+berechnet:
+
+    h = (288,15 K / 0,0065 K/m) · (1 − (p / p_ref)^0,190294957)
+
+Entscheidend ist der Bezugsdruck p_ref. Das Programm bietet vier Einstellungen:
+
+  a) Höhe über dem Landepunkt  (Voreinstellung, empfohlen)
+     Bezug ist der gemessene Luftdruck am Ende der Aufnahme. Braucht keine Eingabe.
+     Ein Fehler im angenommenen Tagesluftdruck wirkt im Wesentlichen wie ein Druckversatz
+     und fällt bei diesem Verfahren weitgehend heraus.
+     Verbleibender Fehler durch eine QNH-Abweichung von ±30 hPa: unter 1 % der Höhe.
+
+  b) Höhe über Grund  (QNH und Platzhöhe)
+     Erfordert die Eingabe des QNH und der Geländehöhe. Ein Fehler von 1 hPa im QNH
+     entspricht rund 8,3 m auf Meereshöhe und rund 12,5 m in 4000 m Höhe.
+
+  c) Höhe über Normalnull  (QNH)
+     Wie b), ohne Abzug der Geländehöhe.
+
+  d) Druckhöhe gegen die Normatmosphäre  (fest 1013,25 hPa)
+     Rohgröße des Geräts. Weder Höhe über NN noch über Grund. Entspricht dem Verhalten
+     der Programmversion 1.
+     WARNUNG: Bei einem Tagesluftdruck von 985 hPa liegt die so berechnete Höhe rund
+     230 m zu hoch, bei 1035 hPa rund 175 m zu niedrig. Für die Beurteilung von
+     Öffnungshöhen ist diese Einstellung ungeeignet.
+
+Der eingestellte Bezug wird dauerhaft über dem Diagramm angezeigt, in den Diagrammtitel
+geschrieben und in jede exportierte Datei übernommen. Eine Höhenangabe ohne Angabe ihres
+Bezugs ist nicht interpretierbar.
+
+Temperaturabweichung
+  Die Normatmosphäre unterstellt 15 °C auf Meereshöhe. Weicht die Luftsäule davon ab, ist
+  die berechnete Höhe um etwa 0,35 % je Kelvin falsch, in kalter Luft zu hoch, in warmer
+  zu niedrig. Bei 3000 m und 20 K Abweichung sind das rund 210 m. Das Programm bietet eine
+  optionale Korrektur anhand der gemessenen Temperatur; sie verbessert das Ergebnis, kann
+  den Fehler aber nicht vollständig beseitigen, weil nur die Temperatur am Gerät bekannt
+  ist und nicht das Profil der gesamten Luftsäule.
+
+Nicht korrigierbar
+  Die Anströmung des Druckanschlusses im Freifall erzeugt einen statischen Druckfehler,
+  dessen Größe von Einbaulage und Körperhaltung abhängt. Er verschwindet beim Öffnen
+  schlagartig und kann dort einen scheinbaren Höhensprung erzeugen. Diese Abweichung ist
+  aus der Software heraus nicht korrigierbar.
+
+
+3. ZEIT
+-------
+
+Der Logger tastet mit 4 Hz ab; die Zeitstempel werden aus dieser Rate abgeleitet. Ein
+Abgleich gegen die im Gerät gespeicherten Start- und Endzeitstempel ergab bei drei
+Aufnahmen unterschiedlicher Länge (50 s, 245 s und 1340 s) jeweils eine Abweichung von
+höchstens einer Sekunde.
+
+Ist die Uhr des Loggers nicht gestellt, liefert das Gerät nur eine Uhrzeit ohne Datum.
+Das Programm weist solche Aufnahmen ausdrücklich als "Uhr nicht gestellt" aus und zeigt
+kein Ersatzdatum an.
+
+
+4. BESCHLEUNIGUNG
+-----------------
+
+Sensor: MEMS-Beschleunigungssensor, Messbereich ±16 g, Auflösung 0,048 g je Schritt,
+Abtastung 4 Hz.
+
+WICHTIGE EINSCHRÄNKUNG: Öffnungsstoß
+  Ein Öffnungsstoß dauert je nach Schirm und Beladung etwa 0,2 bis 0,8 Sekunden. Bei einem
+  Abstand von 250 ms zwischen zwei Messpunkten fallen darauf nur etwa ein bis drei Werte,
+  und der tatsächliche Spitzenwert wird nur zufällig getroffen. Rechnerisch wird bei einer
+  Stoßdauer von 0,2 s im Mittel etwa die Hälfte des Spitzenwerts erfasst; im ungünstigen
+  Fall wird die Spitze gar nicht abgebildet.
+
+  Der angezeigte Höchstwert der Beschleunigung ist daher eine UNTERGRENZE, nicht der
+  gemessene Spitzenwert. Für eine Materialqualifikation nach einem harten Öffnungsstoß ist
+  er nicht geeignet. Dafür sind Kraftmessungen im Tragegurt mit deutlich höherer Abtastrate
+  erforderlich.
+
+Sättigung
+  Erreicht der Sensor seinen Messbereich, ist ein Wert von "16 g" nicht von "mindestens
+  16 g" zu unterscheiden. Das Programm erkennt solche Messpunkte, kennzeichnet sie im
+  Diagramm, in der Kennzahlenübersicht und in der CSV-Ausgabe (Spalte "Saettigung") und
+  weist ausdrücklich darauf hin, dass der tatsächliche Wert höher gelegen haben kann.
+
+Kein Schwereabzug
+  Angegeben wird der Betrag des gemessenen Beschleunigungsvektors einschließlich der
+  Erdbeschleunigung. Ein ruhendes Gerät zeigt daher rund 1 g.
+
+
+5. VERTIKALGESCHWINDIGKEIT
+--------------------------
+
+Die Sinkrate wird nicht als Differenz zweier benachbarter Höhenwerte berechnet, denn das würde
+das Messrauschen um den Faktor 1/Δt verstärken, sondern über eine gleitende lineare
+Regression über neun Messpunkte (2,25 s).
+
+Wirkung: Bei einer Druckauflösung von 0,1 hPa sinkt das Rauschen der Geschwindigkeit
+gegenüber der einfachen Differenz um etwa den Faktor 11. Der Preis ist eine Bandbreite von
+rund 0,2 Hz: Geschwindigkeitsänderungen, die schneller ablaufen als etwa zwei Sekunden,
+werden geglättet dargestellt. Für die Dynamik der Öffnung ist deshalb die Beschleunigungs-
+kurve maßgeblich, nicht die Sinkrate.
+
+
+6. SPRUNGPHASEN
+---------------
+
+Absprung, Öffnung und Landung werden aus dem Verlauf der Sinkrate abgeleitet. Die Erkennung
+ist bewusst zurückhaltend eingestellt: Liegt kein eindeutiges Sprungprofil vor, etwa bei
+einer Bodenaufzeichnung, werden keine Kennzahlen ausgegeben, sondern es wird ausdrücklich
+vermerkt, dass kein Sprung erkannt wurde. Eine plausibel aussehende, aber falsche
+Öffnungshöhe wäre schädlicher als gar keine Angabe.
+
+Die Schwellen sind: Sinkrate mindestens 12 m/s und Höhenänderung mindestens 100 m für die
+Annahme eines Sprungs; Absprung ab 5 m/s Sinkrate; Schirm als tragend ab einer Sinkrate
+unter 11 m/s.
+
+
+7. DATENINTEGRITÄT
+------------------
+
+Rohdaten
+  Jeder Auslesevorgang wird unmittelbar nach dem Empfang und VOR jeder Auswertung als
+  unveränderte Rohdatei gesichert (Menü "Datei", "Ordner mit Rohdaten öffnen"). Damit ist
+  ein Auslesevorgang nie durch einen Auswertungsfehler verloren.
+
+Archivformat
+  Gespeicherte Dateien (.sdvlog) enthalten die Rohdaten und deren SHA-256-Prüfsumme. Beim
+  Öffnen wird die Prüfsumme nachgerechnet; weicht sie ab, meldet das Programm dies. Damit
+  ist eine nachträgliche Veränderung der Messwerte erkennbar.
+  Weil die Rohdaten mitgeführt werden, lassen sich künftige Korrekturen an der Auswertung
+  auch auf bereits archivierte Aufzeichnungen anwenden.
+
+Übertragung
+  Das Gerät führt im Kopfdatensatz ein Prüfsummenfeld. Über welchen Datenbereich und mit
+  welchem Verfahren es gebildet wird, ist herstellerseitig nicht dokumentiert; es wird
+  daher angezeigt, aber nicht zur Prüfung herangezogen. Eine Prüfung des übertragenen
+  Datenstroms auf Einzelbitfehler ist mit dem derzeitigen Gerätestand nicht möglich.
+  Erkannt und gemeldet werden dagegen: Übertragungsfehler der seriellen Schnittstelle,
+  unvollständig übertragene Aufnahmen, unplausible Druckwerte und Versatz im Datenraster.
+
+Vollständigkeit
+  Das Gerät meldet zu Beginn einer Übertragung eine Adressspanne. Messungen an einem Gerät
+  ergaben, dass es regelmäßig mehr Daten sendet als darin angekündigt (beobachtet: 18 bis
+  500 Byte). Das Programm verwendet die angekündigte Menge deshalb ausschließlich für die
+  Fortschrittsanzeige und erkennt das Ende der Übertragung daran, dass die Leitung ruhig
+  wird.
+
+
+7a. FLUECHTIGER SPEICHER
+------------------------
+
+Der Logger haelt seine Aufnahmen in fluechtigem Speicher. Faellt die Versorgung aus -
+typischerweise durch eine leere Batterie - gehen alle gespeicherten Aufnahmen verloren,
+ebenso die Uhrzeit. Fuer eine Nachweisfuehrung heisst das: Eine Aufnahme gilt erst dann
+als gesichert, wenn sie ausgelesen und als Datei abgelegt ist.
+
+Das Geraet meldet im Abschlussdatensatz jeder Aufnahme ein Statuswort. Bit 3 (0x0008)
+bedeutet laut Herstellerdokumentation "Batteriespannung zu niedrig"; das Programm wertet
+dieses Bit aus und weist betroffene Aufnahmen aus.
+
+Ebenfalls im Abschlussdatensatz steht die Versorgungsspannung (VCC). Die Dokumentation
+nennt dafuer keinen Umrechnungsfaktor in Volt; der im Programm verwendete Faktor ist
+hergeleitet und als vorlaeufig gekennzeichnet. Waehrend eines Auslesevorgangs wird das
+Geraet ueber USB versorgt - ein zu dieser Zeit geschriebener Wert beschreibt daher nicht
+den Zustand der Batterie.
+
+Bestueckung: drei Zellen AG13 / LR44 in Reihe, 4,5 V Nennspannung.
+
+
+8. WAS AUS DEN DATEN NICHT HERVORGEHT
+-------------------------------------
+
+  - Position, Flugweg und Horizontalgeschwindigkeit (der Logger hat keinen Satellitenempfang)
+  - Gleitzahl
+  - Drehraten (kein Drehratensensor verbaut)
+  - Auslösungen eines Sicherungsgeräts
+  - Windrichtung und Windstärke
+
+
+9. ANGABEN ZUM VERWENDETEN GERÄT
+--------------------------------
+
+Die hier genannten Zahlen zur Abtastrate und zum Datenformat wurden an einem Gerät der
+Baureihe SI-TL1 überprüft. Herstellerseitige Angaben zu Genauigkeit, Drift und
+Temperaturgang des Drucksensors sowie zur Ganggenauigkeit der Zeitbasis liegen dieser
+Programmfassung nicht bei und sind bei SIEMERT zu erfragen. Solange sie fehlen, sind die
+absoluten Fehlergrenzen des Geräts nicht beziffert. Die hier beschriebenen Grenzen
+betreffen ausschließlich die Auswertung.
+
+WIE ABSPRUNG, ÖFFNUNG UND SCHIRMFAHRT BESTIMMT WERDEN
+-----------------------------------------------------
+
+Diese drei Angaben sind Ergebnis einer Erkennung, nicht einer Messung. Wer sie verwendet,
+sollte wissen, wie sie zustande kommen und wo ihre Grenzen liegen.
+
+Grundlage ist die Sinkrate. Sie wird nicht als Differenz zweier Nachbarpunkte gebildet, sondern
+als Steigung einer Ausgleichsgeraden über 9 Messpunkte, also über 2,25 Sekunden. Ohne diese
+Glättung wäre sie unbrauchbar: Bei 0,1 hPa Auflösung und 4 Hz erzeugt allein die Quantisierung
+über 1 m/s Rauschen.
+
+  Sprungprofil erkannt
+    Nur wenn beides zutrifft: größte Sinkrate mindestens 12 m/s UND Höhenänderung mindestens
+    100 m. Sonst gilt die Aufnahme als Bodenaufzeichnung und es werden keine Sprungkennzahlen
+    ausgewiesen. Lieber keine Zahl als eine plausibel aussehende falsche.
+
+  Absprung
+    Ausgangspunkt ist der Zeitpunkt der größten Sinkrate. Von dort wird rückwärts gegangen,
+    solange die Sinkrate über 5 m/s liegt. Der erste Punkt, an dem sie 5 m/s unterschreitet,
+    gilt als Absprung.
+
+  Öffnung
+    Vom selben Ausgangspunkt wird vorwärts gegangen, solange die Sinkrate über 11 m/s liegt.
+    Der erste Punkt darunter gilt als Öffnung.
+
+  Schirmfahrt
+    Von der Öffnung bis zur Landung. Als Landung gilt der letzte Messpunkt, an dem die
+    Sinkrate dem Betrag nach mindestens 0,5 m/s beträgt.
+
+  Öffnungsstoß
+    Größter Betrag der Beschleunigung in einem Fenster von plus/minus 3 Sekunden um den
+    erkannten Öffnungspunkt.
+
+  Mittlere Freifallrate
+    Höhendifferenz zwischen Absprung und Öffnung geteilt durch die Zeit dazwischen. Kein
+    Mittelwert der einzelnen Sinkraten.
+
+
+WAS DIESE VERFAHREN NICHT LEISTEN
+---------------------------------
+
+  Zeitliche Unschärfe. Die Sinkrate entsteht über ein Fenster von 2,25 Sekunden. Jeder
+  Phasenübergang ist dadurch um etwa eine Sekunde unscharf. Bei 50 m/s Sinkrate sind das rund
+  50 Meter Unsicherheit auf die ausgewiesene Öffnungshöhe. Diese Unschärfe ist systembedingt
+  und lässt sich nicht durch eine andere Glättung beseitigen, nur verschieben.
+
+  Feste Schwellen. Die Werte 5, 11 und 12 m/s sind festgelegt und nicht einstellbar. Sie
+  passen zu einem gewöhnlichen Sprung mit Flächenschirm. Ein Schirm, der schneller als 11 m/s
+  sinkt, wird als noch nicht geöffnet geführt; ein ungewöhnlich langsamer Freifall, etwa mit
+  starkem Tracking oder großer Fläche, kann eine zu frühe Öffnung ergeben.
+
+  Die Öffnung wird an der Sinkrate festgemacht, nicht an der Beschleunigung. Der Öffnungsstoß
+  wäre physikalisch das eindeutigere Merkmal. Er wird derzeit nur ausgewertet, nachdem der
+  Öffnungspunkt bereits über die Sinkrate bestimmt wurde.
+
+  Die Landung ist eine Schwelle, kein Ereignis. Läuft der Logger am Boden weiter und
+  schwankt der Druck, kann die Landung zu spät erkannt werden und die Schirmfahrt zu lang
+  ausfallen.
+
+  Der Höhenbezug verschiebt den Nullpunkt und verändert dabei auch den Maßstab, weil die
+  barometrische Formel nicht linear ist. Nachgemessen: zwischen 1013,25 und 1000,0 hPa als
+  Bezug unterscheidet sich eine Höhendifferenz von 2900 m um 7,3 m, also 0,25 Prozent. Für
+  die Praxis ist das unerheblich, für eine Fehlerrechnung gehört es genannt.
+
+  Für eine Beurteilung, bei der es auf Meter ankommt, sind diese Zahlen deshalb nicht
+  geeignet. Für den Vergleich mehrerer Sprünge desselben Springers mit demselben Gerät und
+  demselben Verfahren sind sie es sehr wohl.
+
+BATTERIESPANNUNG
+----------------
+
+Der Logger legt in jedem Abschlussdatensatz einen Rohwert der Versorgungsspannung ab. Er
+stammt aus einem 10-Bit-Umsetzer mit 2,5 V Referenz, davor ein Spannungsteiler 1:2:
+
+    Spannung = Rohwert / 1024 * 2,5 V * 2 = Rohwert * 5 / 1024
+
+Der Vollausschlag liegt damit bei 5,0 V. Versorgt wird das Gerät aus drei Zellen AG13 oder
+LR44 in Reihe, also nominal 4,5 V.
+
+Zur Einordnung: Ein Rohwert von 619 ergibt 3,02 V, das sind 1,01 V je Zelle. Eine AG13 gilt
+unterhalb von etwa 1,1 V als erschöpft. Ein Gerät mit diesem Wert verliert Uhrzeit und
+Speicherinhalt, sobald es vom Adapter getrennt wird.
+
+Zwei Einschränkungen:
+
+  Der Wert stammt aus dem Abschlussdatensatz einer Aufnahme. Hing das Gerät während der
+  Aufnahme am USB-Adapter, wurde es von dort versorgt; der Wert sagt dann nichts über den
+  Ladezustand der Batterie aus.
+
+  Der angezeigte Ladezustand ist eine grobe Schätzung aus der Spannung zwischen 1,6 V (frisch)
+  und 1,1 V (erschöpft) je Zelle. Die Entladekurve einer Knopfzelle ist flach; eine Angabe in
+  Prozent ist deshalb nur als Größenordnung zu lesen. Maßgeblich ist das Statusbit, das das
+  Gerät selbst setzt.

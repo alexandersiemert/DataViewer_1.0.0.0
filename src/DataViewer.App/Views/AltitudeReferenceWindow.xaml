@@ -1,0 +1,134 @@
+<Window x:Class="Siemert.DataViewer.App.Views.AltitudeReferenceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:Siemert.DataViewer.App.Controls"
+        Title="Höhenbezug einstellen"
+        Width="620" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        FontFamily="{StaticResource UiFont}"
+        Background="{StaticResource SurfaceBrush}">
+
+    <StackPanel Margin="22">
+
+        <TextBlock Text="Worauf soll sich die angezeigte Höhe beziehen?"
+                   FontSize="{StaticResource FontSizeSubtitle}" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextPrimaryBrush}"/>
+
+        <Border Style="{StaticResource NoticeBox}" Margin="0,12,0,0">
+            <TextBlock TextWrapping="Wrap" FontSize="{StaticResource FontSizeBody}"
+                       Foreground="{StaticResource TextPrimaryBrush}">
+                Der Logger misst Luftdruck. Welche Höhe daraus wird, hängt davon ab, wogegen gerechnet
+                wird. Die Normatmosphäre mit 1013,25 hPa ist dafür nur in Ausnahmefällen die richtige
+                Wahl. bei einem Tagesluftdruck von 985 hPa liegt die so berechnete Höhe über 200 m
+                daneben.
+            </TextBlock>
+        </Border>
+
+        <RadioButton x:Name="OptGroundZero" Margin="0,18,0,0" GroupName="Mode" Checked="OnModeChanged">
+            <StackPanel Margin="6,0,0,0">
+                <TextBlock Text="Höhe über dem Landepunkt   (empfohlen)" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                <TextBlock TextWrapping="Wrap" Style="{StaticResource FieldLabel}" Margin="0,3,0,0">
+                    Nutzt den Luftdruck am Ende der Aufnahme als Nullpunkt. Braucht keine Eingabe und ist
+                    in der Praxis am genauesten, weil ein Fehler im Tagesluftdruck dabei herausfällt.
+                </TextBlock>
+            </StackPanel>
+        </RadioButton>
+
+        <RadioButton x:Name="OptStartZero" Margin="0,14,0,0" GroupName="Mode" Checked="OnModeChanged">
+            <StackPanel Margin="6,0,0,0">
+                <TextBlock Text="Höhe ab Aufnahmebeginn" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                <TextBlock TextWrapping="Wrap" Style="{StaticResource FieldLabel}" Margin="0,3,0,0">
+                    Nutzt den ersten gemessenen Druck als Nullpunkt. Sinnvoll, wenn der Logger am
+                    Absetzpunkt eingeschaltet wurde, oder wenn die Aufnahme nicht bis zur Landung
+                    reicht und der Enddruck deshalb kein Bodendruck ist.
+                </TextBlock>
+            </StackPanel>
+        </RadioButton>
+
+        <RadioButton x:Name="OptAgl" Margin="0,14,0,0" GroupName="Mode" Checked="OnModeChanged">
+            <StackPanel Margin="6,0,0,0">
+                <TextBlock Text="Höhe über Grund   (QNH und Platzhöhe)" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                <TextBlock TextWrapping="Wrap" Style="{StaticResource FieldLabel}" Margin="0,3,0,0">
+                    Rechnet mit dem eingetragenen QNH und zieht die Geländehöhe ab.
+                </TextBlock>
+            </StackPanel>
+        </RadioButton>
+
+        <RadioButton x:Name="OptMsl" Margin="0,14,0,0" GroupName="Mode" Checked="OnModeChanged">
+            <StackPanel Margin="6,0,0,0">
+                <TextBlock Text="Höhe über Normalnull   (QNH)" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                <TextBlock TextWrapping="Wrap" Style="{StaticResource FieldLabel}" Margin="0,3,0,0">
+                    Übliche Bezugsgröße der Luftfahrt.
+                </TextBlock>
+            </StackPanel>
+        </RadioButton>
+
+        <RadioButton x:Name="OptPressure" Margin="0,14,0,0" GroupName="Mode" Checked="OnModeChanged">
+            <StackPanel Margin="6,0,0,0">
+                <TextBlock Text="Druckhöhe gegen die Normatmosphäre" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                <TextBlock TextWrapping="Wrap" Style="{StaticResource FieldLabel}" Margin="0,3,0,0">
+                    Rohgröße des Geräts, fest gegen 1013,25 hPa. Weder Höhe über NN noch über Grund.
+                    Entspricht dem Verhalten der Programmversion 1.
+                </TextBlock>
+            </StackPanel>
+        </RadioButton>
+
+        <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6" Padding="14" Margin="0,18,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="QNH" Style="{StaticResource FieldLabel}"
+                           Width="94" VerticalAlignment="Center"/>
+                <TextBox x:Name="QnhBox" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputBox}"
+                         TextChanged="OnValueChanged"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="hPa" Style="{StaticResource FieldLabel}"
+                           Margin="8,0,0,0" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Platzhöhe" Style="{StaticResource FieldLabel}"
+                           Width="94" VerticalAlignment="Center" Margin="0,10,0,0"/>
+                <TextBox x:Name="ElevationBox" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}"
+                         Margin="0,10,0,0" TextChanged="OnValueChanged"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="m über NN" Style="{StaticResource FieldLabel}"
+                           Margin="8,10,0,0" VerticalAlignment="Center"/>
+
+                <CheckBox x:Name="TempCorrection" Grid.Row="2" Grid.ColumnSpan="4" Margin="0,14,0,0"
+                          Checked="OnValueChanged" Unchecked="OnValueChanged"
+                          Foreground="{StaticResource TextPrimaryBrush}"
+                          Content="Temperaturabweichung von der Normatmosphäre berücksichtigen"/>
+            </Grid>
+        </Border>
+
+        <Border x:Name="PreviewBox" Style="{StaticResource NoticeBox}" Margin="0,16,0,0"
+                Background="{StaticResource SuccessSoftBrush}">
+            <StackPanel>
+                <TextBlock Text="SO WIRD GERECHNET" Style="{StaticResource SectionHeader}"
+                           Foreground="{StaticResource SuccessBrush}"/>
+                <TextBlock x:Name="PreviewText" TextWrapping="Wrap" Margin="0,5,0,0"
+                           FontSize="{StaticResource FontSizeBody}"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Abbrechen" Style="{StaticResource ToolButton}" Height="30" Width="108"
+                    IsCancel="True"/>
+            <Button Content="Übernehmen" Style="{StaticResource ActionButton}" Width="126" Margin="8,0,0,0"
+                    IsDefault="True" Click="OnAccept"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

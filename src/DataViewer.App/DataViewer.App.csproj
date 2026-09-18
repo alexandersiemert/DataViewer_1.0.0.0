@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Siemert.DataViewer.App</RootNamespace>
+    <AssemblyName>SiemertDataViewer</AssemblyName>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+
+    <Product>SIEMERT DataViewer</Product>
+    <Company>SIEMERT</Company>
+    <Authors>SIEMERT</Authors>
+    <Copyright>Copyright © SIEMERT</Copyright>
+    <Version>2.0.0</Version>
+    <FileVersion>2.0.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+
+    <SatelliteResourceLanguages>en;de</SatelliteResourceLanguages>
+    <DebugType>embedded</DebugType>
+
+    <!--
+      Eigenstaendige Auslieferung wird beim Veroeffentlichen gesetzt, nicht hier
+      (siehe installer\build.ps1). Stuende es fest in der Projektdatei, wuerde bei jedem
+      Druck auf F5 die komplette Laufzeitumgebung mitkopiert - das kostet bei jedem
+      Debug-Durchlauf Zeit und Plattenplatz, ohne irgendeinen Nutzen.
+    -->
+    <PublishSelfContained>true</PublishSelfContained>
+    <PublishSingleFile>false</PublishSingleFile>
+
+    <!-- Ohne dies haengt der Git-Hash an der Version und erscheint in der Oberflaeche. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <!--
+      NU1701: ScottPlot.WPF zieht SkiaSharp.Views.WPF, das nur .NET-Framework-Assets liefert.
+      Der WPF-Aufsatz ist eine duenne Schicht ueber dem plattformneutralen SkiaSharp-Kern und
+      arbeitet ueber die Kompatibilitaetsschicht einwandfrei. Nachgewiesen durch den Selbsttest
+      der Anwendung, der den kompletten Zeichenpfad bis zur PNG-Ausgabe durchlaeuft.
+    -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ScottPlot.WPF" Version="5.1.59" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataViewer.Core\DataViewer.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Wortmarken des Hauses; muessen als Resource eingebettet sein, damit sie ueber
+         einen Pack-Pfad im XAML erreichbar sind. -->
+    <Resource Include="Assets\Pictures\*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Damit sich das Nachfuehren der Geraeteliste pruefen laesst. -->
+    <InternalsVisibleTo Include="DataViewer.Core.Tests" />
+  </ItemGroup>
+</Project>

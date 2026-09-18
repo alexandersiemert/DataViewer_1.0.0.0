@@ -1,0 +1,326 @@
+SIEMERT DataViewer: Bedienungsanleitung
+========================================
+
+Diese Anleitung beschreibt Aufgaben, nicht Schaltflächen. Wer wissen will, was ein einzelnes
+Bedienelement tut, findet das in den Kurzhinweisen, die beim Verweilen mit dem Mauszeiger
+erscheinen.
+
+Die Grenzen der Auswertung stehen in der Datei "Messgenauigkeit.txt" im selben Ordner. Bitte
+vor der ersten Verwendung lesen.
+
+
+INHALT
+------
+  1. Einen Sprung auslesen
+  2. Die wichtigste Einstellung: der Höhenbezug
+  3. Die Öffnungshöhe ablesen
+  4. Einen Sprung mit einem Schüler besprechen
+  5. Daten weitergeben: CSV, Bild, Archivdatei
+  6. Wenn etwas nicht funktioniert
+  7. Batterie und Datenverlust
+  8. Die Uhr des Loggers stellen
+  9. Wo das Programm Daten ablegt
+ 10. Tastaturbefehle
+
+
+1. EINEN SPRUNG AUSLESEN
+------------------------
+
+  1. Logger in den USB-Adapter stecken und den Adapter am Rechner anschließen. Der Logger
+     erscheint links unter "Geräte". Erscheint er nicht, auf das Aktualisieren-Symbol
+     drücken oder F5.
+
+     Zum Adapter: Die USB-Schnittstelle sitzt im Adapter, nicht im Logger. Das hält das
+     Gerät klein. Daraus folgt eine Eigenheit, die man kennen sollte: Zieht man den Logger
+     vom Adapter ab, merkt Windows davon nichts, weil der Adapter angeschlossen bleibt.
+     Die Geräteliste zeigt den Logger dann weiter an, obwohl er nicht mehr da ist.
+
+     Das Programm kommt damit zurecht. Es meldet sich vor jedem Zugriff beim Gerät an und
+     wiederholt das selbsttätig, wenn der Logger zwischendurch abgesteckt war. In der Regel
+     merkt man davon nichts. Antwortet wirklich kein Gerät, sagt das Programm das deutlich
+     und durchsucht die Anschlüsse erneut, sodass die Liste wieder stimmt.
+
+  2. Zum Auslesen des Geräts zwei Möglichkeiten:
+
+     "Neue"    holt alles, was seit dem letzten Auslesen aufgezeichnet wurde. Stehen
+               mehrere neue Sprünge im Speicher, kommen alle. Wurde seither nichts
+               aufgezeichnet, kommt nichts. Das dauert meist wenige Sekunden und ist
+               der Normalfall am Sprungtag.
+
+     "Alles"   holt den gesamten belegten Speicher. Die Dauer richtet sich nach der Menge
+               der gespeicherten Aufnahmen; bei einem gut gefüllten Speicher können das
+               mehrere Minuten sein. Der Fortschrittsbalken zeigt die geschätzte Restzeit.
+
+  3. "Live mitschreiben" ist der dritte Weg. Damit zeichnet nicht der Logger auf, sondern
+     das Programm: Es fragt das Gerät im Sekundentakt nach Druck, Temperatur und
+     Beschleunigung und schreibt die Antworten mit.
+
+     Das Ergebnis ist eine ganz gewöhnliche Aufnahme. Sie erscheint in der Liste und lässt
+     sich messen, glätten, als CSV oder Bild ausgeben und speichern wie jede andere.
+
+     Zwei Unterschiede zu einer Aufnahme aus dem Gerät sollte man kennen. Erstens ist der
+     Takt etwa viermal langsamer, weil jede Abfrage über das Kabel geht; für einen Sprung
+     ist das zu grob, zum Prüfen eines Geräts am Boden reicht es. Zweitens wird eine solche
+     Aufnahme nicht automatisch gesichert. Wer sie behalten will, muss sie speichern.
+
+     Gespeichert werden auch hier die unveränderten Antworten des Geräts, nicht die
+     ausgerechneten Werte (siehe Abschnitt 5).
+
+  4. Der Vorgang lässt sich jederzeit über "Abbrechen" oder die Esc-Taste beenden.
+
+     Hinweis: Das Gerät kennt keinen Abbruchbefehl. Nach einem Abbruch sendet es die
+     restlichen Daten noch zu Ende; das Programm liest sie weg und zeigt so lange
+     "Abbruch, das Gerät sendet den Rest noch zu Ende". Erst danach ist der nächste
+     Zugriff möglich. Am Gerät wird dabei nichts verändert und nichts gelöscht.
+
+  5. Die gelesenen Aufnahmen erscheinen links in der Liste, jeweils mit Dauer, größter
+     Höhe und Freifallzeit. Ein Klick wählt eine Aufnahme aus.
+
+
+2. DIE WICHTIGSTE EINSTELLUNG: DER HÖHENBEZUG
+---------------------------------------------
+
+Der Logger misst Luftdruck, keine Höhe. Welche Höhe daraus wird, hängt davon ab, wogegen
+gerechnet wird. Der aktuelle Bezug steht immer sichtbar über dem Diagramm und lässt sich
+dort über "Ändern…" umstellen.
+
+Voreingestellt ist "Höhe über dem Landepunkt". Diese Einstellung braucht keine Eingabe und
+ist in der Praxis die genaueste. Der Luftdruck am Ende der Aufnahme dient als Nullpunkt.
+Für die Frage "Auf welcher Höhe über Grund ging der Schirm auf?" ist das die richtige Wahl.
+
+Wer stattdessen gegen NN rechnen will, trägt das QNH des Tages ein; für die Höhe über Grund
+zusätzlich die Geländehöhe des Platzes.
+
+Die Einstellung "Druckhöhe gegen die Normatmosphäre" entspricht dem Verhalten der
+Programmversion 1. Sie ist für die Beurteilung von Öffnungshöhen ungeeignet und nur dann
+sinnvoll, wenn alte Auswertungen nachvollzogen werden sollen.
+
+
+3. DIE ÖFFNUNGSHÖHE ABLESEN
+---------------------------
+
+Nach der Auswahl einer Aufnahme steht sie rechts unter "Sprungübersicht", zusammen mit
+Absprunghöhe, Freifallzeit, Schirmfahrt und Spitzenbeschleunigung. Es ist keine weitere
+Bedienung nötig; die Werte werden beim Laden berechnet.
+
+Im Diagramm sind Absprung und Öffnung als senkrechte Linien eingezeichnet.
+
+Steht dort "Kein Sprungprofil erkannt", enthält die Aufnahme keinen Sprung, etwa weil der
+Logger am Boden lief. Das Programm gibt dann bewusst keine Kennzahlen aus, statt Werte zu
+erfinden.
+
+Erscheint eine Warnung zur Sättigung des Beschleunigungssensors, war der Sensor am Anschlag.
+Der angezeigte Spitzenwert ist dann eine Untergrenze. Für eine Materialbeurteilung ist er
+nicht belastbar.
+
+
+4. EINEN SPRUNG MIT EINEM SCHÜLER BESPRECHEN
+--------------------------------------------
+
+Bewährter Ablauf:
+
+  1. Höhenbezug auf "über dem Landepunkt" belassen, der Schüler denkt in Höhe über Grund.
+  2. Im Menü "Ansicht", "Geschwindigkeit" die gewohnte Einheit wählen (km/h ist für viele
+     anschaulicher als m/s).
+  3. Die Sprungübersicht rechts durchgehen: Absprunghöhe, Freifallzeit, Öffnungshöhe.
+  4. Im Diagramm auf die eingezeichnete Öffnungslinie zeigen und die Sinkrate davor und
+     danach vergleichen.
+  5. Über "Bild" das Diagramm als PNG speichern und dem Schüler mitgeben.
+
+Mit dem Mausrad wird gezoomt, mit gedrückter linker Maustaste verschoben. "Ansicht" setzt
+den Ausschnitt wieder auf das Ganze zurück.
+
+
+5. DATEN WEITERGEBEN: CSV, BILD, ARCHIVDATEI
+--------------------------------------------
+
+Archivdatei (.sdvlog)     Menü "Datei", "Speichern unter"
+  Das vollständige Archiv: der gesamte Auslesevorgang als Rohdaten, dazu Gerätedaten,
+  Höhenbezug und eine Prüfsumme. Beim Öffnen wird die Prüfsumme nachgerechnet und die
+  Auswertung aus den Rohdaten neu erzeugt. Diese Datei ist das Richtige für
+  Vorfallberichte und zur Langzeitablage.
+
+Einzelne Aufnahme         Rechtsklick auf die Aufnahme, "Nur diese Aufnahme speichern"
+  Für den Alltag: eine Datei für einen Sprung, klein genug zum Verschicken.
+
+  Wichtig ist, was darin steht, nämlich der unveränderte Rohausschnitt dieser einen
+  Aufnahme, zeichengenau aus dem Auslesevorgang herausgeschnitten. Es werden keine
+  ausgerechneten Höhen oder Geschwindigkeiten gespeichert. Das hat einen handfesten
+  Grund: Wird in der Auswertung später ein Fehler behoben, liest das Programm dieselbe
+  Datei neu ein und zeigt die berichtigten Werte. Wären ausgerechnete Werte gespeichert,
+  bliebe der Fehler für immer in der Datei.
+
+  Mitgespeichert werden außerdem der Gerätekopf und die Betriebsereignisse des
+  Auslesevorgangs, also ob und wann das Gerät am Rechner war und ob es Batteriewarnungen
+  gab. Das kostet weniger als ein Prozent an Umfang und beantwortet später Fragen wie
+  "war die Batterie da schon schwach?".
+
+  Dazu kommt ein Herkunftsnachweis: Name des Auslesevorgangs, dessen Prüfsumme und die
+  genaue Stelle, an der geschnitten wurde. Damit lässt sich jederzeit belegen, aus
+  welchem Auslesevorgang die Datei stammt.
+
+  Beim Öffnen weist das Programm ausdrücklich darauf hin, dass eine solche Datei nur eine
+  Aufnahme enthält und nicht den gesamten Gerätespeicher.
+
+  Der vollständige Auslesevorgang bleibt davon unberührt: Er liegt weiterhin unverändert
+  in der Rohdatenablage (siehe Abschnitt 9).
+
+CSV                       Menü "Datei", "Als CSV exportieren"
+  Zwei Formate stehen zur Wahl:
+    "CSV, international"       Punkt als Dezimaltrennzeichen, Komma als Feldtrenner.
+                               Für Auswerteprogramme und zum Austausch zwischen Standorten.
+    "CSV für deutsches Excel"  Semikolon und Komma. Für den Doppelklick in einem
+                               deutschsprachigen Excel.
+  In beiden Fällen stehen Gerät, Aufnahme, Höhenbezug und Einheiten in Kopfzeilen mit
+  vorangestelltem Rautezeichen in der Datei. Eine Höhenangabe ohne ihren Bezug wäre nicht
+  interpretierbar.
+
+Bild                      Schaltfläche "Bild" über dem Diagramm
+  Speichert die aktuelle Darstellung als PNG für Debriefing und Berichte.
+
+
+6. WENN ETWAS NICHT FUNKTIONIERT
+--------------------------------
+
+Der Logger erscheint nicht in der Liste
+  - Kabel und Anschluss prüfen, dann F5 drücken.
+  - Das Programm spricht zur Schonung anderer Geräte nur Anschlüsse mit passender
+    USB-Kennung an. Wird der Logger über einen ungewöhnlichen Adapter betrieben, hilft im
+    Menü "Gerät" die Einstellung "Alle seriellen Schnittstellen durchsuchen". Achtung: Dabei
+    werden auch fremde Geräte am Rechner angesprochen, was diese stören kann.
+  - Wurde soeben ein Auslesevorgang abgebrochen, sendet das Gerät noch. Einen Moment warten
+    und erneut suchen.
+
+Eine Aufnahme ist als unvollständig gekennzeichnet
+  Die Übertragung wurde unterbrochen, etwa durch ein gelöstes Kabel. Erneut auslesen. Die
+  angezeigten Werte beziehen sich nur auf den empfangenen Teil und sollten nicht
+  weiterverwendet werden.
+
+Der Logger steht in der Liste, antwortet aber nicht
+  Fast immer sitzt er nicht richtig im Adapter. Weil die USB-Schnittstelle im Adapter sitzt,
+  bleibt der Anschluss am Rechner auch dann bestehen, wenn der Logger abgezogen ist. Die
+  Liste kann das nicht von selbst bemerken. Logger fest aufstecken und den Vorgang
+  wiederholen; eine erneute Anmeldung ist nicht nötig, das erledigt das Programm.
+
+Eine Aufnahme zeigt "Uhr nicht gestellt"
+  Der Logger hatte kein gültiges Datum gespeichert. Die Uhrzeit bleibt verwendbar, die
+  Zeiten sind relativ zum Aufnahmebeginn zu lesen. Es wird bewusst kein Ersatzdatum
+  angezeigt. Damit künftige Aufnahmen wieder ein Datum tragen: Menü "Gerät", "Uhr des
+  Loggers stellen" (siehe Abschnitt 8). Bereits gespeicherte Aufnahmen bekommen dadurch
+  kein Datum mehr.
+
+Das Programm meldet einen unerwarteten Fehler
+  Die angezeigte Auswertung ist dann möglicherweise unvollständig und sollte nicht
+  weiterverwendet werden. Die Aufzeichnung erneut einlesen. Die Rohdaten sind erhalten
+  geblieben (siehe Abschnitt 9), es geht nichts verloren.
+  Für den Kundendienst: Menü "Datei", "Protokollordner öffnen".
+
+
+7. BATTERIE UND DATENVERLUST
+----------------------------
+
+WICHTIG: Der Logger speichert seine Aufnahmen fluechtig. Ist die Batterie leer, sind
+ALLE gespeicherten Aufnahmen verloren - und die Uhrzeit ebenfalls. Das Geraet beginnt
+danach wieder ohne Datum, und Aufnahmen erscheinen mit dem Hinweis "Uhr nicht gestellt".
+
+Daraus folgen zwei Regeln fuer die Praxis:
+
+  1. Aufnahmen zeitnah auslesen und als Datei sichern. Was nur im Geraet steht, ist
+     nicht gesichert.
+
+  2. Auf die Batteriewarnung achten. Meldet das Geraet in einer Aufnahme zu geringe
+     Spannung, erscheint in der Sprunguebersicht ein deutlicher Hinweis. Dann zuerst
+     auslesen, danach die Batterien wechseln - nicht umgekehrt.
+
+  3. Nach jedem Batteriewechsel die Uhr neu stellen (Abschnitt 8). Sonst zeichnet der
+     Logger nur eine Uhrzeit ohne Datum auf.
+
+
+8. DIE UHR DES LOGGERS STELLEN
+------------------------------
+
+Der Logger fuehrt eine eigene Uhr mit Datum. Sie liefert den Zeitstempel jeder Aufnahme.
+Ist sie nicht gestellt, bleiben die Aufnahmen ohne Datum und lassen sich spaeter nur noch
+ueber ihre Reihenfolge einordnen.
+
+So wird sie gestellt:
+
+  1. Logger anschliessen und in der Geraeteliste auswaehlen.
+
+  2. Menue "Geraet", "Uhr des Loggers stellen".
+
+  3. Das Fenster zeigt nebeneinander die Zeit des Loggers, die Zeit dieses Rechners und
+     die Abweichung zwischen beiden. Auf "Uhr stellen" druecken.
+
+  4. Das Programm wartet nun bis zum naechsten vollen Minutenwechsel und sendet den
+     Befehl genau in diesem Augenblick. Das dauert hoechstens eine Minute und ist kein
+     Fehler: Das Geraet setzt die Sekunden beim Stellen selbst auf null. Wuerde der
+     Befehl mitten in einer Minute abgesetzt, ginge die Loggeruhr anschliessend um bis
+     zu 59 Sekunden vor.
+
+     Waehrend dieser Zeit das Kabel nicht abziehen. "Abbrechen" ist jederzeit moeglich;
+     es wurde bis dahin nichts an das Geraet gesendet.
+
+  5. Danach liest das Programm die Uhr zurueck und zeigt den erreichten Stand an.
+
+Uebernommen wird die Ortszeit dieses Rechners. Wer im Ausland springt, stellt die Uhr
+sinnvollerweise dort - oder bleibt bewusst bei einer Zeitzone und rechnet spaeter um.
+
+Die Uhr laeuft nur, solange die Batterie Spannung liefert. Nach einem Batteriewechsel
+ist sie erneut zu stellen.
+
+Bestueckung: drei Knopfzellen AG13 beziehungsweise LR44 in Reihe, zusammen 4,5 Volt
+Nennspannung. Frisch liegen sie bei etwa 4,8 Volt, als erschoepft gelten sie unterhalb
+von rund 3,3 Volt.
+
+Die angezeigte Batteriespannung ist mit dem Zusatz "vorlaeufig" gekennzeichnet: Der
+Hersteller dokumentiert das Feld, nennt aber keinen Umrechnungsfaktor vom Rohwert in
+Volt. Der verwendete Faktor ist hergeleitet und wird durch eine Vergleichsmessung
+bestaetigt oder korrigiert. Der Statushinweis "Batterie zu niedrig" stammt dagegen
+unmittelbar vom Geraet und ist davon unabhaengig.
+
+Ein Hinweis zum Auslesen: Waehrend das Geraet am USB-Anschluss haengt, wird es von dort
+versorgt. Ein in dieser Zeit geschriebener Spannungswert sagt deshalb nichts ueber den
+Ladezustand der Batterie aus.
+
+
+9. WO DAS PROGRAMM DATEN ABLEGT
+-------------------------------
+
+Alles liegt im Benutzerprofil; Administratorrechte sind für den Betrieb nicht nötig.
+
+  Rohdaten    %LOCALAPPDATA%\SIEMERT\DataViewer\Rohdaten
+              Jeder Auslesevorgang wird hier unverändert und vor jeder Auswertung gesichert,
+              ohne Zutun und ohne Nachfrage. Das ist die maßgebliche Fassung: Was hier
+              liegt, ist genau das, was das Gerät gesendet hat. Alles andere im Programm
+              ist daraus abgeleitet. Diesen Ordner sollte man in die Datensicherung
+              aufnehmen.
+
+  Protokoll   %LOCALAPPDATA%\SIEMERT\DataViewer\Protokoll
+              Tagesprotokolle für den Kundendienst. Älter als 60 Tage wird automatisch
+              entfernt.
+
+  Einstellungen  %LOCALAPPDATA%\SIEMERT\DataViewer\einstellungen.json
+
+Das Programm sendet keine Daten nach außen und benötigt keine Internetverbindung.
+
+
+10. TASTATURBEFEHLE
+-------------------
+
+  F5          Geräte suchen
+  Strg+O      Aufzeichnung öffnen
+  Strg+S      Speichern unter
+  Strg+E      Als CSV exportieren
+  Esc         Auslesen abbrechen
+
+
+ANHANG: SELBSTTEST FÜR DEN KUNDENDIENST
+---------------------------------------
+
+Eine eingeschickte Rohdatei lässt sich ohne Bedienung der Oberfläche auswerten:
+
+    SiemertDataViewer.exe --selftest <Rohdatei> [Ziel.png]
+
+Das Programm gibt die erkannten Aufnahmen und Kennzahlen aus, schreibt ein Diagramm als PNG
+und prüft den Datei-Speicherpfad einschließlich Prüfsumme. Der Rückgabewert ist 0 bei Erfolg.

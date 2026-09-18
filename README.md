@@ -1,74 +1,108 @@
 # SIEMERT DataViewer
 
-Windows-Desktop-Anwendung (WPF, .NET Framework 4.8) zum Auslesen und Auswerten von
-SIEMERT-Datenlogger-Aufnahmen (Höhe, Temperatur, 3-Achsen-Beschleunigung).
+Windows-Anwendung zum Auslesen und Auswerten von Aufzeichnungen der SIEMERT-Datenlogger
+(Baureihe SI-TL1): Luftdruck, Temperatur und Beschleunigung in drei Achsen, abgetastet mit 4 Hz.
 
-## Funktionen
+> **Zweckbestimmung.** Das Programm dient der nachträglichen Auswertung für Ausbildung,
+> Debriefing und Materialbeobachtung. Es ist kein Höhenmesser, kein Sicherungsgerät und nicht für
+> Entscheidungen während des Sprungs bestimmt. Die Grenzen der Messung stehen in
+> [`Dokumentation/Messgenauigkeit.txt`](Dokumentation/Messgenauigkeit.txt) und sind vor der
+> Verwendung zu lesen.
 
-- **Geräteerkennung**: automatische Suche kompatibler Logger an den COM-Ports.
-- **Auslesen**: gesamten Speicher (*Read all*) oder letzte Aufnahme (*Read last*) über das
-  Kontextmenü eines Geräts im Device-Tree.
-- **Plot**: interaktive Darstellung via ScottPlot 5 mit getrennten Achsen für Höhe,
-  Temperatur und Beschleunigung (Betrag sowie X/Y/Z).
-- **Analyse-Werkzeuge**: Measuring Cursor (Min/Max/Delta/Mittelwert), Crosshair,
-  Marker, Hover-Tooltip, Legende.
-- **Darstellung**: Chart-Stile (Light/Dark/Slate), Serienfarben, Linienbreite/-muster,
-  Gitter, Achsenbeschriftungen, zeitbasiertes Smoothing pro Serie.
-- **Einheiten**: metrisch (m, °C) oder imperial (ft, °F).
-- **Dateien**: Speichern/Laden als `*.sdvlog` (XML), Import von Rohdaten `*.lgd`,
-  CSV-Export einzelner Aufnahmen (auch über das Kontextmenü der Aufnahme).
+---
 
-## Build
+## Aufbau
 
-Voraussetzungen: Visual Studio 2022+ mit .NET-Desktop-Workload (.NET Framework 4.8).
+| Projekt | Zweck |
+|---|---|
+| `src/DataViewer.Core` | Fachkern: Geräteprotokoll, Höhenrechnung, Signalverarbeitung, Sprungerkennung, Dateiformat, serielle Anbindung. Ohne Oberflächenbezug und vollständig testbar. |
+| `src/DataViewer.App` | WPF-Oberfläche (.NET 10), Diagramm über ScottPlot 5. |
+| `tests/DataViewer.Core.Tests` | 36 Tests gegen aufgezeichnete Gerätedaten, dazu 7 Tests gegen echte Hardware. |
+| `installer/` | Inno-Setup-Skript und Erzeugungsskript. |
+| `Dokumentation/` | Bedienungsanleitung, Messgenauigkeit, Lizenzbedingungen, Fremdlizenzen. |
+| `legacy/v1/` | Quellstand der Fassung 1, nicht mehr gepflegt. Siehe dortige README. |
+
+Der Fachkern kennt die Oberfläche nicht. Dadurch lässt sich jede Rechnung — Höhenbezug,
+Ableitung der Sinkrate, Sprungerkennung, Dekodierung — gegen bekannte Sollwerte prüfen, statt
+sich auf Sichtprüfung im laufenden Programm zu verlassen.
+
+## Voraussetzungen
+
+**Zum Bauen:** .NET-SDK 10 und Visual Studio 2022+ oder das SDK allein. Für das Setup zusätzlich
+[Inno Setup 6](https://jrsoftware.org/isinfo.php).
+
+**Beim Kunden:** nichts. Die Anwendung wird eigenständig ausgeliefert und bringt die Laufzeit mit.
+Die Installation kommt ohne Administratorrechte aus.
+
+## Bauen
 
 ```powershell
-# Release-Build
-msbuild DataViewer_1.0.0.0.sln /t:Build /p:Configuration=Release
+dotnet build SiemertDataViewer.sln
+dotnet test  SiemertDataViewer.sln --filter "Category!=Hardware"
 ```
 
-Das Ergebnis liegt unter `bin\Release\`.
-
-## Installer
-
-Der Installer wird mit [Inno Setup](https://jrsoftware.org/isinfo.php) aus
-`DataViewer_setup.iss` erzeugt und bündelt den Inhalt von `bin\Release\`.
+Auslieferbares Setup einschließlich Tests, Veröffentlichung und Selbsttest:
 
 ```powershell
-# Beispiel (Pfad zu ISCC.exe ggf. anpassen)
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" DataViewer_setup.iss
+powershell -ExecutionPolicy Bypass -File installer\build.ps1
 ```
 
-Die Ausgabe (`installer_out/`) ist bewusst **nicht** Teil des Repositories –
-Setups werden als Release-Artefakte verteilt.
+Das Skript bricht ab, wenn ein Test fehlschlägt. Ergebnis liegt in `installer_out/`.
 
-> **Hinweis Roll-out:** Für die Auslieferung an Kunden sollten `.exe` und Installer
-> mit einem Code-Signing-Zertifikat signiert werden, um SmartScreen-Warnungen
-> ("Unbekannter Herausgeber") zu vermeiden.
+## Tests gegen echte Hardware
 
-## Logs
+Setzen einen angeschlossenen Logger voraus:
 
-Zur Fehlersuche schreibt die Anwendung ein Tageslog nach:
-
-```
-%LocalAppData%\SIEMERT\DataViewer\logs\dataviewer-yyyyMMdd.log
+```powershell
+dotnet test SiemertDataViewer.sln --filter "Category=Hardware"
 ```
 
-Unbehandelte Fehler werden dort protokolliert, ohne die Anwendung zu beenden.
+Geprüft werden unter anderem: Erkennung über die USB-Kennung, Unversehrtheit einer laufenden
+Übertragung während einer Gerätesuche, Abbrechbarkeit, und dass das Gerät mehr Daten sendet als
+es ankündigt.
 
-## Projektstruktur (Kurzüberblick)
+## Selbsttest
 
-| Datei                     | Zweck                                                        |
-|---------------------------|-------------------------------------------------------------|
-| `MainWindow.xaml(.cs)`    | Hauptfenster, Plot, UI-Logik, Datei-Operationen             |
-| `SerialPortManager.cs`    | COM-Port-Kommunikation und Empfangs-/Fortschrittslogik      |
-| `ComPortChecker.cs`       | Erkennung kompatibler Geräte an den COM-Ports               |
-| `DataLogger(.Manager).cs` | Gerätemodell und Verwaltung je COM-Port                     |
-| `TreeViewManager.cs`      | Device-Tree, Kontextmenüs, Serien-Umschaltung               |
-| `SiemertDataViewerLog.cs` | DTOs für das `*.sdvlog`-Dateiformat                         |
-| `Logger.cs`               | Datei-Logging                                               |
-| `Theme/`                  | Zentrale WPF-Styles und Farbpalette                         |
+Wertet eine Rohdatei ohne Oberfläche aus — für den Kundendienst und als Bauprüfung:
 
-## Dritthersteller-Lizenzen
+```powershell
+SiemertDataViewer.exe --selftest <Rohdatei> [Ziel.png]
+```
 
-Siehe `Docs/ThirdParty_Notices.txt` (ScottPlot, ScottPlot.WPF, FontAwesome.WPF).
+Rückgabewert 0 bei Erfolg. Geprüft werden Dekodierung, Höhenrechnung, Sprungerkennung,
+Zeichenpfad und der Dateipfad einschließlich Prüfsumme.
+
+## Ablageorte beim Anwender
+
+Alles im Benutzerprofil, nichts davon braucht erhöhte Rechte:
+
+```
+%LOCALAPPDATA%\SIEMERT\DataViewer\Rohdaten\      jeder Auslesevorgang, unverändert
+%LOCALAPPDATA%\SIEMERT\DataViewer\Protokoll\     Tagesprotokolle, Aufbewahrung 60 Tage
+%LOCALAPPDATA%\SIEMERT\DataViewer\einstellungen.json
+```
+
+Das Programm arbeitet vollständig örtlich und übermittelt keine Daten.
+
+## Vor der Auslieferung zu erledigen
+
+- [ ] **Code-Signing-Zertifikat beschaffen und einbinden.** Ohne Signatur zeigt Windows beim
+      Setup „Unbekannter Herausgeber". In verwalteten Umgebungen wird die Installation dadurch
+      unter Umständen ganz blockiert. In `installer/SiemertDataViewer.iss` ist die Zeile
+      `SignTool=siemert` dafür vorbereitet.
+- [ ] **Lizenzbedingungen anwaltlich prüfen lassen.**
+      `Dokumentation/Lizenzbedingungen.txt` ist ein fachlich vorbereiteter Entwurf mit einem
+      deutlich gekennzeichneten Hinweisblock, der vor der Auslieferung zu entfernen ist.
+- [ ] **Gerätekennwerte ergänzen.** Genauigkeit, Drift und Temperaturgang des Drucksensors sowie
+      die Ganggenauigkeit der Zeitbasis fehlen in `Dokumentation/Messgenauigkeit.txt` noch. Ohne
+      diese Zahlen sind die absoluten Fehlergrenzen des Geräts nicht beziffert.
+- [ ] **Signaturschlüssel aus dem Arbeitsverzeichnis entfernen.** Im Wurzelverzeichnis liegen
+      mehrere `.pfx`-Dateien. Sie sind nicht in der Versionsverwaltung, gehören aber auf ein
+      Token oder in einen geschützten Speicher, nicht neben den Quelltext.
+- [ ] **Befehl zum Stellen der Loggeruhr nachreichen.** Die Funktion ist in der Oberfläche
+      angelegt und meldet bis dahin ehrlich, dass sie noch nicht freigeschaltet ist.
+
+## Fremdkomponenten
+
+ScottPlot 5 und ScottPlot.WPF (MIT), .NET 10 (MIT). Vollständige Lizenztexte in
+`Dokumentation/Fremdkomponenten_Lizenztexte.txt`.

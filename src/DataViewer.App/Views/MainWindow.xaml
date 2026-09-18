@@ -1,0 +1,934 @@
+<Window x:Class="Siemert.DataViewer.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:Siemert.DataViewer.App.Controls"
+        xmlns:sp="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        Title="SIEMERT DataViewer"
+        Height="900" Width="1420" MinHeight="680" MinWidth="1180"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        FontFamily="{StaticResource UiFont}"
+        Background="{StaticResource CanvasBrush}">
+
+    <Window.InputBindings>
+        <KeyBinding Key="O" Modifiers="Control" Command="{Binding OpenFileCommand}"/>
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveFileCommand}"/>
+        <KeyBinding Key="E" Modifiers="Control" Command="{Binding ExportCsvCommand}"/>
+        <KeyBinding Key="R" Modifiers="Control" Command="{Binding RefreshDevicesCommand}"/>
+        <KeyBinding Key="F5" Command="{Binding RefreshDevicesCommand}"/>
+        <KeyBinding Key="Escape" Command="{Binding CancelReadCommand}"/>
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= Kopfleiste ================= -->
+        <Border Grid.Row="0" Background="{StaticResource ChromeBrush}">
+            <DockPanel Height="46" Margin="14,0,14,0">
+
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <!-- Die Wortmarken des Hauses. Beide sind weiss auf transparent und deshalb
+                         fuer diese dunkle Leiste gemacht. -->
+                    <Image Source="/Assets/Pictures/siemert.png" Height="17" VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True"/>
+                    <Border Width="1" Background="#3A4653" Margin="13,11,13,11"/>
+                    <Image Source="/Assets/Pictures/dataviewer.png" Height="14" VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True"/>
+                </StackPanel>
+
+                <TextBlock x:Name="VersionLabel" DockPanel.Dock="Right" VerticalAlignment="Center"
+                           FontSize="{StaticResource FontSizeCaption}" Foreground="#8C99A8"/>
+
+                <Menu Margin="24,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
+                    <MenuItem Header="_Datei" Style="{StaticResource TopMenuItem}">
+                        <MenuItem Header="Aufzeichnung _öffnen…" InputGestureText="Strg+O"
+                                  Command="{Binding OpenFileCommand}"/>
+                        <MenuItem Header="_Rohdaten einlesen…" Command="{Binding ImportRawCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="_Alle Aufnahmen speichern…" InputGestureText="Strg+S"
+                                  Command="{Binding SaveFileCommand}"/>
+                        <MenuItem Header="_Nur diese Aufnahme speichern…" Click="OnSaveSingleContext"/>
+                        <MenuItem Header="Als _CSV exportieren…" InputGestureText="Strg+E"
+                                  Command="{Binding ExportCsvCommand}"/>
+                        <MenuItem Header="Diagramm als _Bild speichern…" Click="OnExportImage"/>
+                        <Separator/>
+                        <MenuItem Header="Ordner mit Rohdaten öffnen" Click="OnOpenRawFolder"/>
+                        <MenuItem Header="Protokollordner öffnen" Click="OnOpenLogFolder"/>
+                        <Separator/>
+                        <MenuItem Header="B_eenden" Click="OnExit"/>
+                    </MenuItem>
+
+                    <MenuItem Header="_Ansicht" Style="{StaticResource TopMenuItem}">
+                        <MenuItem Header="Einheiten">
+                            <MenuItem x:Name="MenuMetric" Header="Metrisch (m, °C)" IsCheckable="True"
+                                      Click="OnUnitsMetric"/>
+                            <MenuItem x:Name="MenuImperial" Header="Imperial (ft, °F)" IsCheckable="True"
+                                      Click="OnUnitsImperial"/>
+                        </MenuItem>
+                        <MenuItem Header="Geschwindigkeit">
+                            <MenuItem x:Name="MenuSpeedMs" Header="m/s" IsCheckable="True" Tag="MetersPerSecond"
+                                      Click="OnSpeedUnit"/>
+                            <MenuItem x:Name="MenuSpeedKmh" Header="km/h" IsCheckable="True" Tag="KilometersPerHour"
+                                      Click="OnSpeedUnit"/>
+                            <MenuItem x:Name="MenuSpeedMph" Header="mph" IsCheckable="True" Tag="MilesPerHour"
+                                      Click="OnSpeedUnit"/>
+                            <MenuItem x:Name="MenuSpeedFpm" Header="ft/min" IsCheckable="True" Tag="FeetPerMinute"
+                                      Click="OnSpeedUnit"/>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="_Höhenbezug einstellen…" Click="OnEditReference"/>
+                        <Separator/>
+                        <MenuItem Header="Ansicht zurücksetzen" Click="OnResetView"/>
+                    </MenuItem>
+
+                    <MenuItem Header="_Gerät" Style="{StaticResource TopMenuItem}">
+                        <MenuItem Header="Geräte _suchen" InputGestureText="F5"
+                                  Command="{Binding RefreshDevicesCommand}"/>
+                        <MenuItem x:Name="MenuProbeAll" Header="Alle seriellen Schnittstellen durchsuchen"
+                                  IsCheckable="True" Click="OnToggleProbeAll"
+                                  ToolTip="Spricht auch Anschlüsse ohne passende USB-Kennung an. Kann fremde Geräte am Rechner stören."/>
+                        <Separator/>
+                        <MenuItem Header="_Neue Aufnahmen lesen" Command="{Binding ReadNewCommand}"
+                                  ToolTip="Holt alles, was seit dem letzten Auslesen aufgezeichnet wurde."/>
+                        <MenuItem Header="Gesamten Speicher lesen" Command="{Binding ReadAllCommand}"/>
+                        <MenuItem Header="Auslesen abbrechen" InputGestureText="Esc"
+                                  Command="{Binding CancelReadCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="_Momentanwerte anzeigen…" Click="OnShowLive"
+                                  ToolTip="Fragt Druck, Temperatur und Beschleunigung im Sekundentakt ab."/>
+                        <MenuItem Header="Uhr des Loggers stellen…" Click="OnSetClock"/>
+                    </MenuItem>
+
+                    <MenuItem Header="_Hilfe" Style="{StaticResource TopMenuItem}">
+                        <MenuItem Header="_Bedienungsanleitung" Click="OnHelp"/>
+                        <MenuItem Header="Messgenauigkeit und Grenzen" Click="OnAccuracy"/>
+                        <Separator/>
+                        <MenuItem Header="Ü_ber SIEMERT DataViewer" Click="OnAbout"/>
+                    </MenuItem>
+                </Menu>
+            </DockPanel>
+        </Border>
+
+        <!-- ================= Arbeitsbereich ================= -->
+        <Grid Grid.Row="1" Margin="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="268" MinWidth="240" MaxWidth="360"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*" MinWidth="440"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="292" MinWidth="262" MaxWidth="380"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ========== Links: Geräte und Aufnahmen ========== -->
+            <Border Grid.Column="0" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource CardHeader}" CornerRadius="7,7,0,0">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                    Command="{Binding RefreshDevicesCommand}" ToolTip="Geräte suchen (F5)">
+                                <ctl:AppIcon Kind="Refresh"/>
+                            </Button>
+                            <ctl:AppIcon Kind="Usb" VerticalAlignment="Center"/>
+                            <TextBlock Text="GERÄTE" Style="{StaticResource SectionHeader}" Margin="8,0,0,0"/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Geräteliste -->
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Devices}"
+                             SelectedItem="{Binding SelectedDevice}"
+                             Background="Transparent" BorderThickness="0" Margin="6,6,6,0"
+                             HorizontalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             MaxHeight="150"
+                             ToolTip="Mehrere Logger gleichzeitig möglich. Der ausgewählte wird gelesen.">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,0,0,4"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Bd" CornerRadius="6" Padding="10,7,10,7"
+                                                    Background="{StaticResource SurfaceAltBrush}"
+                                                    BorderThickness="1" BorderBrush="Transparent">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="BorderBrush"
+                                                            Value="{StaticResource LineStrongBrush}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background"
+                                                            Value="{StaticResource AccentSoftBrush}"/>
+                                                    <Setter TargetName="Bd" Property="BorderBrush"
+                                                            Value="{StaticResource AccentBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Left" Width="7" Height="7" CornerRadius="4"
+                                            Margin="0,0,9,0" VerticalAlignment="Center"
+                                            Background="{StaticResource SuccessBrush}"
+                                            ToolTip="verbunden"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                                   FontSize="{StaticResource FontSizeBody}"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource FieldLabel}"
+                                                   Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- Kein Gerät -->
+                    <StackPanel Grid.Row="1" Margin="14,18,14,10"
+                                Visibility="{Binding Devices.Count, Converter={StaticResource CountToVisInv}}">
+                        <ctl:AppIcon Kind="Usb" Width="26" Height="26" HorizontalAlignment="Center"
+                                     Foreground="{StaticResource LineStrongBrush}"/>
+                        <TextBlock Text="Kein Logger verbunden" HorizontalAlignment="Center"
+                                   FontWeight="SemiBold" Margin="0,8,0,3"
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <TextBlock Text="Logger per USB anschließen und auf „Geräte suchen“ drücken."
+                                   TextWrapping="Wrap" TextAlignment="Center"
+                                   Style="{StaticResource FieldLabel}"/>
+                    </StackPanel>
+
+                    <!-- Leseaktionen -->
+                    <Grid Grid.Row="2" Margin="8,4,8,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Button Grid.Column="0" Style="{StaticResource ActionButton}"
+                                Command="{Binding ReadNewCommand}"
+                                ToolTip="Holt alles, was seit dem letzten Auslesen aufgezeichnet wurde. Dauert meist wenige Sekunden.">
+                            <StackPanel Orientation="Horizontal">
+                                <ctl:AppIcon Kind="Bolt" Foreground="{StaticResource TextOnAccentBrush}"/>
+                                <TextBlock Text="Neue" Margin="6,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Grid.Column="2" Style="{StaticResource ToolButton}" Height="30"
+                                Command="{Binding ReadAllCommand}"
+                                ToolTip="Gesamten belegten Speicher holen. Die Dauer richtet sich nach der Menge der Aufnahmen; der Vorgang ist jederzeit abbrechbar.">
+                            <StackPanel Orientation="Horizontal">
+                                <ctl:AppIcon Kind="Download"/>
+                                <TextBlock Text="Alles" Margin="6,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Live mitschreiben. Ergibt eine ganz gewoehnliche Aufnahme. -->
+                        <Button Grid.Row="2" Grid.ColumnSpan="3" Style="{StaticResource ToolButton}" Height="30"
+                                Command="{Binding ToggleLiveCommand}"
+                                ToolTip="Schreibt die Momentanwerte des Loggers im Sekundentakt mit. Das Ergebnis ist eine gewöhnliche Aufnahme und lässt sich speichern und auswerten wie jede andere.">
+                            <StackPanel Orientation="Horizontal">
+                                <ctl:AppIcon Kind="Chart"/>
+                                <TextBlock Text="{Binding LiveButtonText}" Margin="6,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <Border Grid.Row="3" Style="{StaticResource CardHeader}" CornerRadius="0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource FieldLabel}"
+                                       Text="{Binding Recordings.Count, StringFormat={}{0} Stück}"/>
+                            <ctl:AppIcon Kind="Chart" VerticalAlignment="Center"/>
+                            <TextBlock Text="AUFNAHMEN" Style="{StaticResource SectionHeader}" Margin="8,0,0,0"/>
+                        </DockPanel>
+                    </Border>
+
+                    <ListBox Grid.Row="4" ItemsSource="{Binding Recordings}"
+                             SelectedItem="{Binding SelectedRecording}"
+                             Background="Transparent" BorderThickness="0" Padding="6"
+                             HorizontalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,0,0,4"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Bd" CornerRadius="6" Padding="10,7,10,7"
+                                                    Background="Transparent" BorderThickness="1"
+                                                    BorderBrush="Transparent">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background"
+                                                            Value="{StaticResource SurfaceAltBrush}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background"
+                                                            Value="{StaticResource AccentSoftBrush}"/>
+                                                    <Setter TargetName="Bd" Property="BorderBrush"
+                                                            Value="{StaticResource AccentBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Diese Aufnahme als CSV exportieren…" Click="OnExportCsvContext"/>
+                                <MenuItem Header="Nur diese Aufnahme speichern…" Click="OnSaveSingleContext"/>
+                                <Separator/>
+                                <MenuItem Header="Alle Aufnahmen speichern…" Command="{Binding SaveFileCommand}"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel>
+                                    <ctl:AppIcon DockPanel.Dock="Right" Kind="Warning" Width="14" Height="14"
+                                                 VerticalAlignment="Top" Margin="6,2,0,0"
+                                                 Foreground="{StaticResource WarningBrush}"
+                                                 ToolTip="{Binding WarningText}"
+                                                 Visibility="{Binding HasWarning, Converter={StaticResource BoolToVis}}"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource FieldLabel}"
+                                                   Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel Grid.Row="4" Margin="14,20,14,0" VerticalAlignment="Top"
+                                Visibility="{Binding Recordings.Count, Converter={StaticResource CountToVisInv}}">
+                        <TextBlock Text="Noch keine Aufnahme geladen" HorizontalAlignment="Center"
+                                   FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <TextBlock Text="Vom Gerät lesen oder eine gespeicherte Datei öffnen."
+                                   TextWrapping="Wrap" TextAlignment="Center" Margin="0,4,0,0"
+                                   Style="{StaticResource FieldLabel}"/>
+                    </StackPanel>
+
+                    <!-- Geräteinfo -->
+                    <Expander Grid.Row="5" Header="Geräteinformationen" Margin="10,4,10,10"
+                              Foreground="{StaticResource TextSecondaryBrush}"
+                              FontSize="{StaticResource FontSizeCaption}"
+                              Visibility="{Binding LoadedDevice, Converter={StaticResource NullToVis}}">
+                        <StackPanel Margin="0,6,0,0">
+                            <DockPanel Height="19">
+                                <TextBlock Text="Modell" Style="{StaticResource FieldLabel}" Width="94"/>
+                                <TextBlock Text="{Binding LoadedDevice.Model}" Style="{StaticResource FieldValue}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Seriennummer" Style="{StaticResource FieldLabel}" Width="94"/>
+                                <TextBlock Text="{Binding LoadedDevice.SerialNumber}" Style="{StaticResource FieldValue}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Baudatum" Style="{StaticResource FieldLabel}" Width="94"/>
+                                <TextBlock Text="{Binding LoadedDevice.ProductionDate, StringFormat=dd.MM.yyyy}"
+                                           Style="{StaticResource FieldValue}"/>
+                            </DockPanel>
+                            <DockPanel Height="19">
+                                <TextBlock Text="Prüfsumme" Style="{StaticResource FieldLabel}" Width="94"/>
+                                <TextBlock Text="{Binding LoadedDevice.Checksum}" Style="{StaticResource FieldValue}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Expander>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="12" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+            <!-- ========== Mitte: Diagramm ========== -->
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Höhenbezug: dauerhaft sichtbar, nicht in einem Dialog versteckt -->
+                    <Border Grid.Row="0" Background="{StaticResource AccentSoftBrush}"
+                            CornerRadius="7,7,0,0" Padding="12,8,10,8">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Height="26"
+                                    Click="OnEditReference" Content="Ändern…"/>
+                            <ctl:AppIcon Kind="Shield" VerticalAlignment="Center"
+                                         Foreground="{StaticResource AccentPressedBrush}"/>
+                            <TextBlock Text="HÖHENBEZUG" Style="{StaticResource SectionHeader}"
+                                       Foreground="{StaticResource AccentPressedBrush}" Margin="8,0,10,0"/>
+                            <TextBlock Text="{Binding ReferenceText}" VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSizeBody}"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Werkzeugleiste -->
+                    <Border Grid.Row="1" Style="{StaticResource CardHeader}" CornerRadius="0">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button Style="{StaticResource ToolButton}" Command="{Binding SaveFileCommand}"
+                                        ToolTip="Aufzeichnung speichern (Strg+S)">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Save"/>
+                                        <TextBlock Text="Speichern" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource ToolButton}" Margin="6,0,0,0"
+                                        Command="{Binding ExportCsvCommand}" ToolTip="Als CSV exportieren (Strg+E)">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Export"/>
+                                        <TextBlock Text="CSV" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ToggleButton x:Name="ToolMeasure" Style="{StaticResource ToolToggle}"
+                                              Checked="OnToolChanged" Unchecked="OnToolChanged"
+                                              ToolTip="Zeitbereich aufziehen: Min, Max, Delta, Mittelwert und Dauer für alle sichtbaren Kurven">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Ruler"/>
+                                        <TextBlock Text="Messen" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </ToggleButton>
+                                <ToggleButton x:Name="ToolCrosshair" Style="{StaticResource ToolToggle}" Margin="4,0,0,0"
+                                              Checked="OnToolChanged" Unchecked="OnToolChanged"
+                                              ToolTip="Fadenkreuz: Werte an einer Zeitposition ablesen">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Crosshair"/>
+                                        <TextBlock Text="Fadenkreuz" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </ToggleButton>
+                                <ToggleButton x:Name="ToolMarker" Style="{StaticResource ToolToggle}" Margin="4,0,0,0"
+                                              Checked="OnToolChanged" Unchecked="OnToolChanged"
+                                              ToolTip="Marker setzen. Klick ins Diagramm setzt einen Marker, mehrere sind möglich.">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Marker"/>
+                                        <TextBlock Text="Marker" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </ToggleButton>
+
+                                <Border Style="{StaticResource VSeparator}"/>
+
+                                <ToggleButton x:Name="ToggleLegend" Style="{StaticResource ToolToggle}"
+                                              Checked="OnLegendToggled" Unchecked="OnLegendToggled"
+                                              ToolTip="Legende ein- und ausblenden">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Legend"/>
+                                        <TextBlock Text="Legende" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </ToggleButton>
+                                <Button Style="{StaticResource ToolButton}" Margin="4,0,0,0" Click="OnResetView"
+                                        ToolTip="Zoom und Verschiebung zurücksetzen, Marker entfernen">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Reset"/>
+                                        <TextBlock Text="Ansicht" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource ToolButton}" Margin="4,0,0,0" Click="OnExportImage"
+                                        ToolTip="Diagramm als PNG speichern, für Debriefing und Berichte">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Chart"/>
+                                        <TextBlock Text="Bild" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Diagramm -->
+                    <Grid Grid.Row="2" Background="{StaticResource SurfaceBrush}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Fadenkreuz-Ablesewerte, nur bei aktivem Fadenkreuz sichtbar -->
+                        <Border x:Name="CrosshairBar" Grid.Row="0" Visibility="Collapsed"
+                                Background="{StaticResource SurfaceAltBrush}"
+                                BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
+                                Padding="10,5,10,5">
+                            <DockPanel>
+                                <ctl:AppIcon Kind="Crosshair" VerticalAlignment="Center" Width="13" Height="13"/>
+                                <TextBlock x:Name="CrosshairTime" Style="{StaticResource SectionHeader}"
+                                           Margin="7,0,12,0" MinWidth="78"/>
+                                <ItemsControl x:Name="CrosshairValues">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </DockPanel>
+                        </Border>
+
+                        <sp:WpfPlot x:Name="Plot" Grid.Row="1" Margin="3"
+                                    Visibility="{Binding Recordings.Count, Converter={StaticResource CountToVis}}"
+                                    PreviewMouseLeftButtonDown="OnPlotMouseDown"
+                                    PreviewMouseMove="OnPlotMouseMove"
+                                    PreviewMouseLeftButtonUp="OnPlotMouseUp"
+                                    PreviewMouseDown="OnPlotMouseDownAny"
+                                    PreviewMouseWheel="OnPlotMouseWheel"
+                                    PreviewMouseUp="OnPlotMouseUpAny"
+                                    MouseLeave="OnPlotMouseLeave"/>
+
+                        <StackPanel x:Name="PlotEmptyState" Grid.Row="1"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Visibility="{Binding Recordings.Count, Converter={StaticResource CountToVisInv}}">
+                            <ctl:AppIcon Kind="Chart" Width="44" Height="44" HorizontalAlignment="Center"
+                                         Foreground="{StaticResource LineStrongBrush}"/>
+                            <TextBlock Text="Keine Aufzeichnung geladen" FontSize="{StaticResource FontSizeSubtitle}"
+                                       FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,4"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="Lesen Sie einen angeschlossenen Logger aus oder öffnen Sie eine Datei."
+                                       HorizontalAlignment="Center" Style="{StaticResource FieldLabel}"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                                <Button Style="{StaticResource ActionButton}" Command="{Binding OpenFileCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Folder" Foreground="{StaticResource TextOnAccentBrush}"/>
+                                        <TextBlock Text="Datei öffnen…" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource ToolButton}" Height="30" Margin="8,0,0,0"
+                                        Command="{Binding ImportRawCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ctl:AppIcon Kind="Download"/>
+                                        <TextBlock Text="Rohdaten einlesen…" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Fortschritt -->
+                    <Border Grid.Row="3" Background="{StaticResource SurfaceAltBrush}"
+                            BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0"
+                            CornerRadius="0,0,7,7" Padding="12,9,12,9"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding StatusText}" VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSizeBody}"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <ProgressBar Grid.Column="1" Style="{StaticResource SlimProgress}" Margin="14,0,14,0"
+                                         Minimum="0" Maximum="1"
+                                         Value="{Binding Progress, Mode=OneWay, FallbackValue=0, TargetNullValue=0}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding ProgressDetail}" VerticalAlignment="Center"
+                                       Style="{StaticResource FieldLabel}" Margin="0,0,12,0"/>
+                            <Button Grid.Column="3" Style="{StaticResource DangerButton}" Height="26"
+                                    Command="{Binding CancelReadCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ctl:AppIcon Kind="Cancel" Foreground="{StaticResource DangerBrush}"/>
+                                    <TextBlock Text="Abbrechen" Margin="6,0,0,0"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="3" Width="12" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+            <!-- ========== Rechts: Kennzahlen, Messwerte, Serien ========== -->
+            <Border Grid.Column="4" Style="{StaticResource Card}">
+                <TabControl x:Name="RightTabs" Background="Transparent" BorderThickness="0" Padding="0"
+                            SelectionChanged="OnRightTabChanged">
+
+                    <TabItem Header="Übersicht">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,10,12,12">
+                            <StackPanel x:Name="MetricsPanel"/>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem x:Name="MeasureTab" Header="Messen">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,10,12,12">
+                            <StackPanel x:Name="MeasurePanel"/>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Serien">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,10,12,12">
+                            <StackPanel>
+                                <TextBlock Text="DIAGRAMM" Style="{StaticResource SectionHeader}"/>
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Stil" Style="{StaticResource FieldLabel}" Width="56"/>
+                                    <ComboBox x:Name="ChartStyleBox" Grid.Column="1" Height="24"
+                                              SelectionChanged="OnChartStyleChanged">
+                                        <ComboBoxItem Content="Hell" Tag="Light"/>
+                                        <ComboBoxItem Content="Dunkel" Tag="Dark"/>
+                                        <ComboBoxItem Content="Schiefer" Tag="Slate"/>
+                                    </ComboBox>
+                                </Grid>
+                                <CheckBox x:Name="ShowGridBox" Content="Gitternetz anzeigen" Margin="0,8,0,0"
+                                          Foreground="{StaticResource TextPrimaryBrush}"
+                                          Checked="OnChromeToggled" Unchecked="OnChromeToggled"/>
+                                <CheckBox x:Name="AxisLabelsFollowBox" Margin="0,5,0,0"
+                                          Content="Achsenbeschriftung in Kurvenfarbe"
+                                          Foreground="{StaticResource TextPrimaryBrush}"
+                                          Checked="OnChromeToggled" Unchecked="OnChromeToggled"/>
+
+                                <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,14,0,12"/>
+
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Stil zurücksetzen"
+                                            Style="{StaticResource ToolButton}" Height="22"
+                                            Click="OnResetSeriesStyles"/>
+                                    <TextBlock Text="KURVEN" Style="{StaticResource SectionHeader}"/>
+                                </DockPanel>
+                                <TextBlock Text="Häkchen blendet ein und aus, die Schaltfläche rechts setzt Farbe, Breite und Muster."
+                                           Style="{StaticResource FieldLabel}" TextWrapping="Wrap" Margin="0,3,0,6"/>
+
+                                <DockPanel Margin="0,2,0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                            Width="30" Height="22" Tag="Altitude" Click="OnSeriesStyle"
+                                            ToolTip="Farbe, Linienbreite und Muster dieser Kurve">
+                                        <Border x:Name="SwAltitude" Width="16" Height="4" CornerRadius="2"
+                                                Background="{StaticResource SeriesAltitudeBrush}"/>
+                                    </Button>
+                                    <CheckBox x:Name="SeriesAltitude" VerticalAlignment="Center"
+                                              Foreground="{StaticResource SeriesAltitudeBrush}" FontWeight="SemiBold"
+                                              Checked="OnSeriesToggled" Unchecked="OnSeriesToggled">
+                                        <TextBlock><Run Text="Höhe"/></TextBlock>
+                                    </CheckBox>
+                                </DockPanel>
+                                <DockPanel Margin="0,2,0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                            Width="30" Height="22" Tag="Speed" Click="OnSeriesStyle"
+                                            ToolTip="Farbe, Linienbreite und Muster dieser Kurve">
+                                        <Border x:Name="SwSpeed" Width="16" Height="4" CornerRadius="2"
+                                                Background="{StaticResource SeriesSpeedBrush}"/>
+                                    </Button>
+                                    <CheckBox x:Name="SeriesSpeed" VerticalAlignment="Center"
+                                              Foreground="{StaticResource SeriesSpeedBrush}" FontWeight="SemiBold"
+                                              Checked="OnSeriesToggled" Unchecked="OnSeriesToggled">
+                                        <TextBlock><Run Text="Sinkrate"/></TextBlock>
+                                    </CheckBox>
+                                </DockPanel>
+                                <DockPanel Margin="0,2,0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                            Width="30" Height="22" Tag="Temperature" Click="OnSeriesStyle"
+                                            ToolTip="Farbe, Linienbreite und Muster dieser Kurve">
+                                        <Border x:Name="SwTemperature" Width="16" Height="4" CornerRadius="2"
+                                                Background="{StaticResource SeriesTemperatureBrush}"/>
+                                    </Button>
+                                    <CheckBox x:Name="SeriesTemperature" VerticalAlignment="Center"
+                                              Foreground="{StaticResource SeriesTemperatureBrush}" FontWeight="SemiBold"
+                                              Checked="OnSeriesToggled" Unchecked="OnSeriesToggled">
+                                        <TextBlock><Run Text="Temperatur"/>
+                                            <LineBreak/>
+                                            <Run x:Name="TemperatureHint" Text="aus dem Gerät nur alle 60 s" FontSize="10"
+                                                 FontWeight="Normal"
+                                                 Foreground="{StaticResource TextMutedBrush}"/></TextBlock>
+                                    </CheckBox>
+                                </DockPanel>
+                                <DockPanel Margin="0,2,0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                            Width="30" Height="22" Tag="AccMagnitude" Click="OnSeriesStyle"
+                                            ToolTip="Farbe, Linienbreite und Muster dieser Kurve">
+                                        <Border x:Name="SwAcc" Width="16" Height="4" CornerRadius="2"
+                                                Background="{StaticResource SeriesAccBrush}"/>
+                                    </Button>
+                                    <CheckBox x:Name="SeriesAcc" VerticalAlignment="Center"
+                                              Foreground="{StaticResource SeriesAccBrush}" FontWeight="SemiBold"
+                                              Checked="OnSeriesToggled" Unchecked="OnSeriesToggled">
+                                        <TextBlock><Run Text="Beschleunigung |a|"/></TextBlock>
+                                    </CheckBox>
+                                </DockPanel>
+                                <DockPanel Margin="0,2,0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                            Width="30" Height="22" Tag="AccX" Click="OnSeriesStyle"
+                                            ToolTip="Farbe, Linienbreite und Muster dieser Kurve">
+                                        <Border x:Name="SwAccX" Width="16" Height="4" CornerRadius="2"
+                                                Background="{StaticResource SeriesAccXBrush}"/>
+                                    </Button>
+                                    <CheckBox x:Name="SeriesAccX" VerticalAlignment="Center"
+                                              Foreground="{StaticResource SeriesAccXBrush}" FontWeight="SemiBold"
+                                              Checked="OnSeriesToggled" Unchecked="OnSeriesToggled">
+                                        <TextBlock><Run Text="a X"/></TextBlock>
+                                    </CheckBox>
+                                </DockPanel>
+                                <DockPanel Margin="0,2,0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                            Width="30" Height="22" Tag="AccY" Click="OnSeriesStyle"
+                                            ToolTip="Farbe, Linienbreite und Muster dieser Kurve">
+                                        <Border x:Name="SwAccY" Width="16" Height="4" CornerRadius="2"
+                                                Background="{StaticResource SeriesAccYBrush}"/>
+                                    </Button>
+                                    <CheckBox x:Name="SeriesAccY" VerticalAlignment="Center"
+                                              Foreground="{StaticResource SeriesAccYBrush}" FontWeight="SemiBold"
+                                              Checked="OnSeriesToggled" Unchecked="OnSeriesToggled">
+                                        <TextBlock><Run Text="a Y"/></TextBlock>
+                                    </CheckBox>
+                                </DockPanel>
+                                <DockPanel Margin="0,2,0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                            Width="30" Height="22" Tag="AccZ" Click="OnSeriesStyle"
+                                            ToolTip="Farbe, Linienbreite und Muster dieser Kurve">
+                                        <Border x:Name="SwAccZ" Width="16" Height="4" CornerRadius="2"
+                                                Background="{StaticResource SeriesAccZBrush}"/>
+                                    </Button>
+                                    <CheckBox x:Name="SeriesAccZ" VerticalAlignment="Center"
+                                              Foreground="{StaticResource SeriesAccZBrush}" FontWeight="SemiBold"
+                                              Checked="OnSeriesToggled" Unchecked="OnSeriesToggled">
+                                        <TextBlock><Run Text="a Z"/></TextBlock>
+                                    </CheckBox>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,14,0,12"/>
+
+                                <TextBlock Text="GLÄTTUNG" Style="{StaticResource SectionHeader}"/>
+
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Verfahren" Style="{StaticResource FieldLabel}" Width="62"
+                                               VerticalAlignment="Center"/>
+                                    <ComboBox x:Name="SmoothingMethodBox" Grid.Column="1" Height="24"
+                                              SelectionChanged="OnSmoothingMethodChanged">
+                                        <ComboBoxItem Content="Savitzky-Golay" Tag="SavitzkyGolay"
+                                                      ToolTip="Legt in jedes Fenster eine Parabel nach kleinsten Quadraten. Spitzen bleiben in Höhe und Lage erhalten. Empfohlen."/>
+                                        <ComboBoxItem Content="Gleitender Mittelwert" Tag="MovingAverage"
+                                                      ToolTip="Rechteckfenster. Einfach, senkt Rauschen, drückt aber Spitzen ab."/>
+                                        <ComboBoxItem Content="Gauß" Tag="Gaussian"
+                                                      ToolTip="Weiches Fenster ohne Überschwingen. Gleichmäßigste Glättung, dämpft Spitzen wie der Mittelwert."/>
+                                        <ComboBoxItem Content="Median" Tag="Median"
+                                                      ToolTip="Entfernt einzelne Ausreißer vollständig und lässt Sprünge stehen. Gegen Stufen des Drucksensors."/>
+                                        <ComboBoxItem Content="Glättender Spline" Tag="Spline"
+                                                      ToolTip="Legt eine einzige Kurve durch die ganze Reihe und wägt zwischen Nähe zu den Messwerten und geringer Krümmung ab. Glättet am stärksten."/>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="5"
+                                        Padding="9,7,9,8" Margin="0,7,0,9">
+                                    <TextBlock x:Name="SmoothingExplanation" TextWrapping="Wrap"
+                                               FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                </Border>
+
+                                <TextBlock TextWrapping="Wrap" Style="{StaticResource FieldLabel}" Margin="0,0,0,8"
+                                           Text="Fensterbreite je Kurve in Sekunden, 0 schaltet ab. Das Fenster liegt symmetrisch, die Kurve wird also nicht zeitlich verschoben. Die Zahlen im Reiter „Messen“ stammen immer aus den Rohwerten."/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="52"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="52"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="26"/>
+                                        <RowDefinition Height="26"/>
+                                        <RowDefinition Height="26"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Höhe" VerticalAlignment="Center"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesAltitudeBrush}"/>
+                                    <TextBox x:Name="SmoothAltitude" Grid.Row="0" Grid.Column="1" Tag="Altitude"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnSmoothingKey" LostFocus="OnSmoothingCommit"/>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="Sinkrate" VerticalAlignment="Center" Margin="0,0,8,0"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesSpeedBrush}"/>
+                                    <TextBox x:Name="SmoothSpeed" Grid.Row="0" Grid.Column="4" Tag="Speed"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnSmoothingKey" LostFocus="OnSmoothingCommit"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Temperatur" VerticalAlignment="Center"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesTemperatureBrush}"/>
+                                    <TextBox x:Name="SmoothTemperature" Grid.Row="1" Grid.Column="1" Tag="Temperature"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnSmoothingKey" LostFocus="OnSmoothingCommit"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Text="|a|" VerticalAlignment="Center" Margin="0,0,8,0"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccBrush}"/>
+                                    <TextBox x:Name="SmoothAcc" Grid.Row="1" Grid.Column="4" Tag="AccMagnitude"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnSmoothingKey" LostFocus="OnSmoothingCommit"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="a X" VerticalAlignment="Center"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccXBrush}"/>
+                                    <TextBox x:Name="SmoothAccX" Grid.Row="2" Grid.Column="1" Tag="AccX"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnSmoothingKey" LostFocus="OnSmoothingCommit"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="3" Text="a Y" VerticalAlignment="Center" Margin="0,0,8,0"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccYBrush}"/>
+                                    <TextBox x:Name="SmoothAccY" Grid.Row="2" Grid.Column="4" Tag="AccY"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnSmoothingKey" LostFocus="OnSmoothingCommit"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="a Z" VerticalAlignment="Center"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccZBrush}"/>
+                                    <TextBox x:Name="SmoothAccZ" Grid.Row="3" Grid.Column="1" Tag="AccZ"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnSmoothingKey" LostFocus="OnSmoothingCommit"/>
+
+                                    <Button Grid.Row="3" Grid.Column="3" Grid.ColumnSpan="2" Content="Zurücksetzen"
+                                            Style="{StaticResource ToolButton}" Height="23" Margin="0,0,0,0"
+                                            Click="OnSmoothingReset"/>
+                                </Grid>
+
+                                <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,14,0,12"/>
+
+                                <TextBlock Text="ACHSENGRENZEN" Style="{StaticResource SectionHeader}"/>
+                                <TextBlock TextWrapping="Wrap" Style="{StaticResource FieldLabel}" Margin="0,3,0,8"
+                                           Text="Mausrad zoomt, Ziehen verschiebt. Feste Grenzen mit Eingabetaste übernehmen; ein leeres Feld bedeutet automatisch."/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="72"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="20"/>
+                                        <RowDefinition Height="27"/>
+                                        <RowDefinition Height="27"/>
+                                        <RowDefinition Height="27"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="von" Style="{StaticResource FieldLabel}"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="bis" Style="{StaticResource FieldLabel}"
+                                               HorizontalAlignment="Center"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Höhe" VerticalAlignment="Center"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesAltitudeBrush}"/>
+                                    <TextBox x:Name="AxisAltMin" Grid.Row="1" Grid.Column="1" Tag="Altitude"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnAxisLimitKey"/>
+                                    <TextBox x:Name="AxisAltMax" Grid.Row="1" Grid.Column="3" Tag="Altitude"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnAxisLimitKey"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Sinkrate" VerticalAlignment="Center"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesSpeedBrush}"/>
+                                    <TextBox x:Name="AxisSpeedMin" Grid.Row="2" Grid.Column="1" Tag="Speed"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnAxisLimitKey"/>
+                                    <TextBox x:Name="AxisSpeedMax" Grid.Row="2" Grid.Column="3" Tag="Speed"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnAxisLimitKey"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Beschl." VerticalAlignment="Center"
+                                               FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource SeriesAccBrush}"/>
+                                    <TextBox x:Name="AxisAccMin" Grid.Row="3" Grid.Column="1" Tag="AccMagnitude"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnAxisLimitKey"/>
+                                    <TextBox x:Name="AxisAccMax" Grid.Row="3" Grid.Column="3" Tag="AccMagnitude"
+                                             Style="{StaticResource MiniBox}" KeyDown="OnAxisLimitKey"/>
+                                </Grid>
+
+                                <Button Content="Achsen automatisch" Style="{StaticResource ToolButton}"
+                                        Margin="0,10,0,0" Click="OnResetView"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </Border>
+        </Grid>
+
+        <!-- ================= Statusleiste ================= -->
+        <Border Grid.Row="2" Background="{StaticResource ChromeBrush}" Padding="14,0,14,0">
+            <DockPanel Height="28">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <ToggleButton x:Name="NoticeToggle" Style="{StaticResource ToolToggle}" Height="22"
+                                  Foreground="{StaticResource TextOnChromeBrush}"
+                                  ToolTip="Meldungen ein- und ausblenden">
+                        <StackPanel Orientation="Horizontal">
+                            <ctl:AppIcon Kind="Info" Width="13" Height="13"
+                                         Foreground="{StaticResource TextOnChromeBrush}"/>
+                            <TextBlock Margin="6,0,0,0" FontSize="{StaticResource FontSizeCaption}"
+                                       Text="{Binding Notices.Count, StringFormat=Meldungen ({0})}"/>
+                        </StackPanel>
+                    </ToggleButton>
+                </StackPanel>
+
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center"
+                           FontSize="{StaticResource FontSizeCaption}"
+                           Foreground="{StaticResource TextOnChromeBrush}"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Meldungsfenster -->
+        <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Margin="0,0,24,10" Width="430" MaxHeight="330"
+                Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineStrongBrush}"
+                BorderThickness="1" CornerRadius="8"
+                Visibility="{Binding IsChecked, ElementName=NoticeToggle, Converter={StaticResource BoolToVis}}">
+            <Border.Effect>
+                <DropShadowEffect Color="#30000000" BlurRadius="18" ShadowDepth="3" Direction="270"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" Style="{StaticResource CardHeader}" CornerRadius="7,7,0,0">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Height="22"
+                                Content="Leeren" Command="{Binding ClearNoticesCommand}"/>
+                        <TextBlock Text="MELDUNGEN" Style="{StaticResource SectionHeader}"/>
+                    </DockPanel>
+                </Border>
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Notices}" Margin="10">
+                    <ItemsControl.Template>
+                        <ControlTemplate TargetType="ItemsControl">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </ControlTemplate>
+                    </ItemsControl.Template>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock DockPanel.Dock="Left" Text="{Binding TimeText}" Width="54"
+                                           Style="{StaticResource FieldLabel}" VerticalAlignment="Top"/>
+                                <Border DockPanel.Dock="Left" Width="3" Margin="0,1,8,1" CornerRadius="2"
+                                        Background="{Binding Level, Converter={StaticResource NoticeBrush}}"/>
+                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap"
+                                           FontSize="{StaticResource FontSizeCaption}"
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

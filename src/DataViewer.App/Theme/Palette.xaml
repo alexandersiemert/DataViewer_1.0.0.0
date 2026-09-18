@@ -1,0 +1,105 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!--
+        Farbsystem.
+
+        Die Seriendarstellung nutzt die Okabe-Ito-Palette: sie bleibt bei allen verbreiteten
+        Formen der Farbfehlsichtigkeit unterscheidbar. Das ist bei einem Auswertewerkzeug keine
+        Kosmetik - wer Höhe und Beschleunigung verwechselt, liest den Sprung falsch.
+
+        Die Textfarben sind auf Kontrast geprüft: Sekundär- und Hilfstext erreichen auf der
+        Flächenfarbe mindestens 4,5:1 nach WCAG AA. Die frühere Hilfstextfarbe lag bei 2,9:1 und
+        war bei Sonnenlicht auf dem Sprungplatz praktisch unlesbar - sie trug ausgerechnet die
+        Einheitenangaben.
+    -->
+
+    <!-- Flächen -->
+    <Color x:Key="SurfaceColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceAltColor">#F4F6F8</Color>
+    <Color x:Key="CanvasColor">#EBEEF2</Color>
+    <Color x:Key="ChromeColor">#1E2733</Color>
+    <Color x:Key="ChromeAltColor">#27313F</Color>
+    <Color x:Key="LineColor">#D7DDE4</Color>
+    <Color x:Key="LineStrongColor">#B9C3CE</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimaryColor">#16202B</Color>
+    <Color x:Key="TextSecondaryColor">#4A5866</Color>
+    <Color x:Key="TextMutedColor">#5E6B79</Color>
+    <Color x:Key="TextOnChromeColor">#F2F5F8</Color>
+    <Color x:Key="TextOnAccentColor">#FFFFFF</Color>
+
+    <!-- Akzent -->
+    <Color x:Key="AccentColor">#0B6BCB</Color>
+    <Color x:Key="AccentHoverColor">#0A5BAD</Color>
+    <Color x:Key="AccentPressedColor">#084B8F</Color>
+    <Color x:Key="AccentSoftColor">#E6F0FB</Color>
+
+    <!-- Zustände -->
+    <Color x:Key="SuccessColor">#1B7F4B</Color>
+    <Color x:Key="SuccessSoftColor">#E4F4EB</Color>
+    <Color x:Key="WarningColor">#9A6206</Color>
+    <Color x:Key="WarningSoftColor">#FCF2E0</Color>
+    <Color x:Key="DangerColor">#B3261E</Color>
+    <Color x:Key="DangerSoftColor">#FBEAE9</Color>
+
+    <!-- Serienfarben (Okabe-Ito) -->
+    <Color x:Key="SeriesAltitudeColor">#0B0B0B</Color>
+    <Color x:Key="SeriesSpeedColor">#0072B2</Color>
+    <Color x:Key="SeriesTemperatureColor">#D55E00</Color>
+    <Color x:Key="SeriesAccColor">#CC79A7</Color>
+    <Color x:Key="SeriesAccXColor">#56B4E9</Color>
+    <Color x:Key="SeriesAccYColor">#009E73</Color>
+    <Color x:Key="SeriesAccZColor">#E69F00</Color>
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}"/>
+    <SolidColorBrush x:Key="CanvasBrush" Color="{StaticResource CanvasColor}"/>
+    <SolidColorBrush x:Key="ChromeBrush" Color="{StaticResource ChromeColor}"/>
+    <SolidColorBrush x:Key="ChromeAltBrush" Color="{StaticResource ChromeAltColor}"/>
+    <SolidColorBrush x:Key="LineBrush" Color="{StaticResource LineColor}"/>
+    <SolidColorBrush x:Key="LineStrongBrush" Color="{StaticResource LineStrongColor}"/>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}"/>
+    <SolidColorBrush x:Key="TextOnChromeBrush" Color="{StaticResource TextOnChromeColor}"/>
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="{StaticResource TextOnAccentColor}"/>
+
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}"/>
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressedColor}"/>
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource AccentSoftColor}"/>
+
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+    <SolidColorBrush x:Key="SuccessSoftBrush" Color="{StaticResource SuccessSoftColor}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+    <SolidColorBrush x:Key="WarningSoftBrush" Color="{StaticResource WarningSoftColor}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
+    <SolidColorBrush x:Key="DangerSoftBrush" Color="{StaticResource DangerSoftColor}"/>
+
+    <SolidColorBrush x:Key="SeriesAltitudeBrush" Color="{StaticResource SeriesAltitudeColor}"/>
+    <SolidColorBrush x:Key="SeriesSpeedBrush" Color="{StaticResource SeriesSpeedColor}"/>
+    <SolidColorBrush x:Key="SeriesTemperatureBrush" Color="{StaticResource SeriesTemperatureColor}"/>
+    <SolidColorBrush x:Key="SeriesAccBrush" Color="{StaticResource SeriesAccColor}"/>
+    <SolidColorBrush x:Key="SeriesAccXBrush" Color="{StaticResource SeriesAccXColor}"/>
+    <SolidColorBrush x:Key="SeriesAccYBrush" Color="{StaticResource SeriesAccYColor}"/>
+    <SolidColorBrush x:Key="SeriesAccZBrush" Color="{StaticResource SeriesAccZColor}"/>
+
+    <!-- Typografie -->
+    <FontFamily x:Key="UiFont">Segoe UI</FontFamily>
+    <FontFamily x:Key="NumericFont">Consolas</FontFamily>
+
+    <sys:Double x:Key="FontSizeCaption">11</sys:Double>
+    <sys:Double x:Key="FontSizeBody">12.5</sys:Double>
+    <sys:Double x:Key="FontSizeSubtitle">14</sys:Double>
+    <sys:Double x:Key="FontSizeTitle">17</sys:Double>
+    <sys:Double x:Key="FontSizeMetric">21</sys:Double>
+
+    <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
+    <CornerRadius x:Key="RadiusMedium">6</CornerRadius>
+    <CornerRadius x:Key="RadiusLarge">8</CornerRadius>
+
+</ResourceDictionary>

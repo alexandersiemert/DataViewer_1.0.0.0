@@ -1,0 +1,135 @@
+ENDBENUTZER-LIZENZBEDINGUNGEN
+SIEMERT DataViewer
+
+Stand: Fassung 2.0, ENTWURF, ANWALTLICHE PRÜFUNG STEHT AUS
+
+===============================================================================
+HINWEIS AN SIEMERT: DIESEN ABSCHNITT VOR AUSLIEFERUNG ENTFERNEN
+===============================================================================
+Dieser Text ist ein fachlich vorbereiteter Entwurf, keine Rechtsberatung und kein
+geprüfter Vertragstext. Vor der Auslieferung ist er anwaltlich zu prüfen. Besonders
+zu klären sind:
+  - § 6: Nach deutschem Recht darf die Haftung für Schäden aus der Verletzung von
+    Leben, Körper und Gesundheit sowie nach dem Produkthaftungsgesetz nicht
+    ausgeschlossen werden. Eine zu weit gefasste Klausel ist insgesamt unwirksam.
+  - Einbeziehung: Der Installer zeigt diesen Text an und holt die Zustimmung ein.
+    Ob das für die gewünschte Einbeziehung ausreicht, ist zu prüfen.
+  - Firmierung, Anschrift, Gerichtsstand und Kontaktdaten sind einzusetzen.
+  - Für Beschaffungen der öffentlichen Hand können abweichende Bedingungen gelten.
+===============================================================================
+
+
+1. GEGENSTAND
+
+   Diese Bedingungen regeln die Nutzung des Programms "SIEMERT DataViewer"
+   (nachfolgend "Software"), das der Auswertung von Aufzeichnungen der
+   SIEMERT-Datenlogger dient.
+
+
+2. NUTZUNGSRECHT
+
+   Der Kunde erhält ein einfaches, zeitlich unbefristetes, nicht ausschließliches
+   Recht, die Software auf beliebig vielen Rechnern innerhalb seiner Organisation
+   zu installieren und zu nutzen. Die Weitergabe der unveränderten Installations-
+   datei ist gestattet.
+
+   Nicht gestattet sind das Zurückentwickeln, Entassemblieren und Entkompilieren,
+   soweit dies nicht durch zwingendes Recht erlaubt ist, sowie das Entfernen von
+   Herstellerangaben.
+
+
+3. ZWECKBESTIMMUNG UND BESTIMMUNGSGEMÄSSER GEBRAUCH
+
+   Die Software dient der NACHTRÄGLICHEN Auswertung aufgezeichneter Messdaten für
+   Ausbildung, Debriefing und Materialbeobachtung.
+
+   Die Software ist ausdrücklich NICHT bestimmt als
+     - Höhenmesser,
+     - Sicherungsgerät oder Ersatz für ein solches,
+     - Hilfsmittel für Entscheidungen während eines Sprungs,
+     - kalibriertes Messmittel im Sinne einer Prüfmittelüberwachung,
+     - alleinige Grundlage für die Freigabe oder Sperrung von Sprungmaterial.
+
+   Der Kunde wird darauf hingewiesen, dass Entscheidungen über die Lufttüchtigkeit
+   von Sprungausrüstung ausschließlich durch dafür befugte Personen und auf
+   Grundlage der einschlägigen Vorschriften zu treffen sind.
+
+
+4. BEKANNTE GRENZEN DER MESSUNG
+
+   Der Kunde bestätigt, die Datei "Messgenauigkeit.txt" zur Kenntnis genommen zu
+   haben. Besonders hervorgehoben werden:
+
+   a) Die angezeigte Höhe wird aus dem Luftdruck berechnet und hängt vom
+      eingestellten Bezug ab. Bei der Einstellung "Druckhöhe gegen die
+      Normatmosphäre" kann die Abweichung von der Höhe über Grund mehrere hundert
+      Meter betragen.
+
+   b) Die Beschleunigung wird mit 4 Hz abgetastet. Kurze Spitzen, insbesondere
+      beim Öffnungsstoß, werden dadurch systematisch unterschätzt. Der angezeigte
+      Höchstwert ist eine UNTERGRENZE.
+
+   c) Erreicht der Beschleunigungssensor seinen Messbereich von ±16 g, ist der
+      tatsächliche Wert höher als der angezeigte. Die Software kennzeichnet solche
+      Messpunkte.
+
+   d) Der übertragene Datenstrom kann mit dem derzeitigen Gerätestand nicht auf
+      Einzelbitfehler geprüft werden.
+
+
+5. GEWÄHRLEISTUNG
+
+   SIEMERT gewährleistet, dass die Software im Wesentlichen der mitgelieferten
+   Dokumentation entspricht. Die gesetzlichen Gewährleistungsrechte des Kunden
+   bleiben unberührt.
+
+   Keine Gewähr wird dafür übernommen, dass die Software für einen vom Kunden
+   beabsichtigten Zweck geeignet ist, der über die Zweckbestimmung nach Ziffer 3
+   hinausgeht.
+
+
+6. HAFTUNG
+
+   SIEMERT haftet unbeschränkt
+     - für Schäden aus der Verletzung des Lebens, des Körpers oder der Gesundheit,
+     - bei Vorsatz und grober Fahrlässigkeit,
+     - nach den Vorschriften des Produkthaftungsgesetzes,
+     - im Umfang einer übernommenen Garantie.
+
+   Bei einfacher Fahrlässigkeit haftet SIEMERT nur bei Verletzung einer wesentlichen
+   Vertragspflicht, deren Erfüllung die ordnungsgemäße Durchführung des Vertrages
+   überhaupt erst ermöglicht und auf deren Einhaltung der Kunde regelmäßig vertrauen
+   darf; in diesem Fall ist die Haftung auf den vertragstypischen, vorhersehbaren
+   Schaden begrenzt.
+
+   Eine weitergehende Haftung ist ausgeschlossen. Dies gilt insbesondere für Schäden,
+   die daraus entstehen, dass Auswertungsergebnisse entgegen der Zweckbestimmung nach
+   Ziffer 3 verwendet wurden.
+
+   Der Kunde bleibt verpflichtet, seine Daten in angemessenen Abständen zu sichern.
+
+
+7. DATENVERARBEITUNG
+
+   Die Software verarbeitet ausschließlich lokal auf dem Rechner des Kunden. Sie
+   übermittelt keine Daten an SIEMERT oder Dritte, benötigt keine Internetverbindung
+   und enthält weder eine Aktivierung noch eine Nutzungserfassung.
+
+   Aufzeichnungen können Rückschlüsse auf Personen, Orte und Verfahren zulassen. Für
+   ihren Schutz ist der Kunde verantwortlich.
+
+
+8. FREMDKOMPONENTEN
+
+   Die Software verwendet Komponenten Dritter unter deren eigenen Lizenzbedingungen.
+   Die vollständigen Lizenztexte liegen der Installation im Ordner "Dokumentation"
+   bei. Diese Bedingungen gehen für die betreffenden Komponenten vor.
+
+
+9. SCHLUSSBESTIMMUNGEN
+
+   Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des
+   UN-Kaufrechts. Sollte eine Bestimmung unwirksam sein, bleibt die Wirksamkeit der
+   übrigen Bestimmungen unberührt.
+
+   [Firmierung, Anschrift, Gerichtsstand einsetzen]

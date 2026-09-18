@@ -363,3 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 # Installer-Ausgaben (Releases gehören nicht ins Repo)
 installer_out/
+
+# ---- SIEMERT DataViewer 2.x ----
+/publish/
+/installer_out/
+/Dokumentation/*.pdf

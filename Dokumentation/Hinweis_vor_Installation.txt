@@ -1,0 +1,34 @@
+SIEMERT DataViewer - Wichtiger Hinweis vor der Installation
+===========================================================
+
+ZWECKBESTIMMUNG
+
+Dieses Programm wertet Messdaten aus, die ein SIEMERT-Datenlogger waehrend eines
+Sprungs aufgezeichnet hat. Es dient der NACHTRAEGLICHEN Betrachtung fuer Ausbildung,
+Debriefing und Materialbeobachtung.
+
+Das Programm ist KEIN Hoehenmesser, KEIN Sicherungsgeraet und nicht fuer
+Entscheidungen waehrend des Sprungs bestimmt.
+
+
+BEKANNTE GRENZEN
+
+- Die angezeigte Hoehe wird aus dem Luftdruck berechnet und haengt vom eingestellten
+  Bezug ab. In der Einstellung "Druckhoehe gegen die Normatmosphaere" kann die
+  Abweichung von der Hoehe ueber Grund mehrere hundert Meter betragen.
+
+- Die Beschleunigung wird mit 4 Hz abgetastet. Kurze Spitzen, insbesondere beim
+  Oeffnungsstoss, werden dadurch systematisch unterschaetzt. Der angezeigte
+  Hoechstwert ist eine UNTERGRENZE, nicht der gemessene Spitzenwert.
+
+- Fuer die Qualifikation von Sprungmaterial nach einem harten Oeffnungsstoss sind die
+  Werte dieses Geraets nicht geeignet.
+
+Die vollstaendige Darstellung steht nach der Installation in der Datei
+"Messgenauigkeit.txt" im Ordner "Dokumentation".
+
+
+INSTALLATION
+
+Es werden keine Administratorrechte benoetigt. Das Programm arbeitet vollstaendig
+oertlich, benoetigt keine Internetverbindung und uebermittelt keine Daten.

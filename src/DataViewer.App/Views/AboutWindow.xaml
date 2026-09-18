@@ -1,0 +1,46 @@
+<Window x:Class="Siemert.DataViewer.App.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Über SIEMERT DataViewer"
+        Width="580" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        FontFamily="{StaticResource UiFont}"
+        Background="{StaticResource SurfaceBrush}">
+    <StackPanel Margin="24">
+        <TextBlock Text="SIEMERT DataViewer" FontSize="20" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextPrimaryBrush}"/>
+        <TextBlock x:Name="VersionText" Style="{StaticResource FieldLabel}" Margin="0,4,0,0"/>
+
+        <Border Style="{StaticResource NoticeBox}" Background="{StaticResource WarningSoftBrush}" Margin="0,18,0,0">
+            <StackPanel>
+                <TextBlock Text="ZWECKBESTIMMUNG UND GRENZEN" Style="{StaticResource SectionHeader}"
+                           Foreground="{StaticResource WarningBrush}"/>
+                <TextBlock TextWrapping="Wrap" Margin="0,6,0,0" FontSize="{StaticResource FontSizeBody}"
+                           Foreground="{StaticResource TextPrimaryBrush}">
+                    Dieses Programm dient der nachträglichen Auswertung aufgezeichneter Messdaten für
+                    Ausbildung, Debriefing und Materialbeobachtung. Es ist kein Höhenmesser, kein Ersatz
+                    für ein Sicherungsgerät und nicht für Entscheidungen während des Sprungs bestimmt.
+                    <LineBreak/><LineBreak/>
+                    Die Höhe wird aus dem Luftdruck berechnet und hängt vom eingestellten Bezug ab.
+                    Die Beschleunigung wird mit 4 Hz abgetastet; kurze Spitzen, etwa beim Öffnungsstoß,
+                    werden dadurch systematisch unterschätzt. Erreicht der Sensor seinen Messbereich von
+                    plus/minus 16 g, weist das Programm dies aus; der tatsächliche Wert liegt dann höher.
+                    Einzelheiten stehen unter Hilfe, Messgenauigkeit und Grenzen.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="VERWENDETE FREMDKOMPONENTEN" Style="{StaticResource SectionHeader}" Margin="0,18,0,0"/>
+        <TextBlock Margin="0,6,0,0" FontSize="{StaticResource FontSizeBody}"
+                   Foreground="{StaticResource TextSecondaryBrush}">
+            ScottPlot 5 (MIT-Lizenz) und .NET 10 (MIT-Lizenz).
+            <LineBreak/>
+            Die vollständigen Lizenztexte liegen im Ordner Dokumentation der Installation.
+        </TextBlock>
+
+        <TextBlock x:Name="PathsText" Style="{StaticResource FieldLabel}" Margin="0,16,0,0" TextWrapping="Wrap"/>
+
+        <Button Content="Schließen" Style="{StaticResource ActionButton}" Width="120"
+                HorizontalAlignment="Right" Margin="0,20,0,0" IsCancel="True" IsDefault="True"/>
+    </StackPanel>
+</Window>

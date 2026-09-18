@@ -1,0 +1,84 @@
+<Window x:Class="Siemert.DataViewer.App.Views.ClockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Uhr des Loggers stellen"
+        Width="600" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        FontFamily="{StaticResource UiFont}"
+        Background="{StaticResource SurfaceBrush}"
+        Loaded="OnLoaded" Closing="OnClosing">
+
+    <StackPanel Margin="22">
+
+        <TextBlock Text="Uhr und Kalender des Loggers"
+                   FontSize="{StaticResource FontSizeSubtitle}" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextPrimaryBrush}"/>
+
+        <TextBlock x:Name="DeviceLine" Style="{StaticResource FieldLabel}" Margin="0,4,0,0"
+                   TextWrapping="Wrap"/>
+
+        <!-- Gegenueberstellung: was das Geraet fuehrt, was dieser Rechner fuehrt -->
+        <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6" Padding="16" Margin="0,16,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="128"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Logger" Style="{StaticResource FieldLabel}"
+                           VerticalAlignment="Center"/>
+                <TextBlock x:Name="LoggerTime" Grid.Row="0" Grid.Column="1"
+                           FontFamily="{StaticResource NumericFont}"
+                           FontSize="{StaticResource FontSizeSubtitle}"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           Text="wird gelesen …"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Dieser Rechner" Style="{StaticResource FieldLabel}"
+                           VerticalAlignment="Center" Margin="0,10,0,0"/>
+                <TextBlock x:Name="PcTime" Grid.Row="1" Grid.Column="1" Margin="0,10,0,0"
+                           FontFamily="{StaticResource NumericFont}"
+                           FontSize="{StaticResource FontSizeSubtitle}"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Abweichung" Style="{StaticResource FieldLabel}"
+                           VerticalAlignment="Center" Margin="0,10,0,0"/>
+                <TextBlock x:Name="DriftText" Grid.Row="2" Grid.Column="1" Margin="0,10,0,0"
+                           FontFamily="{StaticResource NumericFont}"
+                           FontSize="{StaticResource FontSizeSubtitle}"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="-"/>
+            </Grid>
+        </Border>
+
+        <Border x:Name="StateBox" Style="{StaticResource NoticeBox}" Margin="0,16,0,0">
+            <StackPanel>
+                <TextBlock x:Name="StateHeader" Style="{StaticResource SectionHeader}" Text="HINWEIS"/>
+                <TextBlock x:Name="StateText" TextWrapping="Wrap" Margin="0,5,0,0"
+                           FontSize="{StaticResource FontSizeBody}"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Warum gewartet wird: das Geraet setzt die Sekunden beim Stellen selbst auf null. -->
+        <TextBlock TextWrapping="Wrap" Style="{StaticResource FieldLabel}" Margin="0,14,0,0">
+            Beim Stellen setzt der Logger die Sekunden selbst auf null. Der Befehl wird deshalb erst
+            im Augenblick des nächsten Minutenwechsels abgesetzt. andernfalls ginge die Loggeruhr
+            anschließend um bis zu 59 Sekunden vor. Das Fenster wartet diesen Augenblick selbst ab.
+        </TextBlock>
+
+        <ProgressBar x:Name="Countdown" Style="{StaticResource SlimProgress}" Margin="0,14,0,0"
+                     Minimum="0" Maximum="60" Value="0" Visibility="Collapsed"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button x:Name="CloseButton" Content="Schließen" Style="{StaticResource ToolButton}"
+                    Height="30" Width="108" IsCancel="True"/>
+            <Button x:Name="SetButton" Content="Uhr stellen" Style="{StaticResource ActionButton}"
+                    Width="150" Margin="8,0,0,0" IsDefault="True" IsEnabled="False" Click="OnSet"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

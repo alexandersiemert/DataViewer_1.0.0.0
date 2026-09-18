@@ -1,0 +1,26 @@
+<Application x:Class="Siemert.DataViewer.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:Siemert.DataViewer.App.Views"
+             StartupUri="Views/MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Theme/Palette.xaml"/>
+                <ResourceDictionary Source="Theme/Controls.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <v:BoolToVisibilityConverter x:Key="BoolToVis"/>
+            <v:BoolToVisibilityConverter x:Key="BoolToVisInv" Invert="True"/>
+            <v:NullToVisibilityConverter x:Key="NullToVis"/>
+            <v:NullToVisibilityConverter x:Key="NullToVisInv" Invert="True"/>
+            <v:CountToVisibilityConverter x:Key="CountToVis"/>
+            <v:CountToVisibilityConverter x:Key="CountToVisInv" Invert="True"/>
+            <v:NoticeLevelToBrushConverter x:Key="NoticeBrush"/>
+            <v:EventKindToTextConverter x:Key="EventKind"/>
+            <v:MetricConverter x:Key="Metric"/>
+            <v:UnitLabelConverter x:Key="UnitLabel"/>
+            <v:AltitudeModeToTextConverter x:Key="AltitudeModeText"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
